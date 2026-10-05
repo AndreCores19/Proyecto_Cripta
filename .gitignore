@@ -1,0 +1,14 @@
+# Entorno virtual
+.venv/
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Archivos de configuración del juego
+cache/
+saves/
+*.log
+
+# Editor
+.vscode/
