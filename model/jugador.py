@@ -1,5 +1,5 @@
 from model.entidad import Entidad
- 
+
  
 class Jugador(Entidad):
     def __init__(self, vida_max, ataque, defensa, velocidad, sala):
