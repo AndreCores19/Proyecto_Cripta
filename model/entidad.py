@@ -1,5 +1,5 @@
+
 class Entidad:
-    #hola
     def __init__(self, nombre, vida, vida_max, ataque, defensa, velocidad, sala):
         self.nombre = nombre
         self.vida = vida
