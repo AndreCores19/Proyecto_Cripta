@@ -4,7 +4,7 @@ URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
 cliente = ClienteHttp(URL, timeout=10)
 
 try:
-    # 1. Datos generales: de aquí sale el presupuesto
+    # presupuesto
     datos = cliente.datos_cripta("cripta-01")
     print(datos)
     cliente.asignar_presupuesto(datos["presupuesto_solicitudes"])
