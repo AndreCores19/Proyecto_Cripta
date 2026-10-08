@@ -48,3 +48,4 @@ class DatosCriptaDTO:
             inventario_max=datos["inventario_max"],
             jugador=EstadisticasJugadorDTO.desde_json(datos["jugador"])
         )
+# probando la rama
