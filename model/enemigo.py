@@ -1,5 +1,4 @@
 from model.entidad import Entidad
-#hola
 
 class Enemigo(Entidad):
     def __init__(self, id_enemigo, tipo, nombre, vida, vida_max, ataque, defensa,
