@@ -2,7 +2,7 @@ package app.ui;
 
 import app.Controllers.SesionActual;
 import app.DTO.UsuarioDTO;
-import app.Servicios.ServicioUsuario;
+import app.Servicios.ServicioUsuarioCliente;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
@@ -17,7 +17,7 @@ public class LoginViewController {
     @FXML private Button btnCancelar;
     @FXML private Hyperlink hyperPwd;
 
-    private ServicioUsuario servicioUsuario = new ServicioUsuario();
+    private ServicioUsuarioCliente servicioUsuario = new ServicioUsuarioCliente();
     @FXML
     private void initialize() {
         btnLogin.setOnAction(event -> intentarLogin());
