@@ -33,5 +33,5 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
 ## R6. Agenda under variable costs
 
 - **Decision**: keep the binary heap, pending the §Measurements of plan.md.
-- **Rationale**: heap operations are O(log n) whatever the intervals are. A fixed-width bucket queue is close to O(1) when every interval is 100, but with intervals from 1 to 2000 it needs either many buckets or rescans. That is why it is added as a benchmark candidate.
-- **Alternatives**: unsorted list (O(n) extract) and sorted list (O(n) insert), which were already measured and rejected in part one; they are re-measured for comparison.
+- **Rationale**: heap operations are O(log n) whatever the intervals are. Section 5.6 asks only to repeat the part-one comparison under the new load, so no new candidate is introduced.
+- **Alternatives**: unsorted list (O(n) extract) and sorted list (O(n) insert), which were already measured and rejected in part one; they are re-measured with variable move costs and many actors.

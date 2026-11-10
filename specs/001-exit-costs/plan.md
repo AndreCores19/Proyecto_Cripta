@@ -21,9 +21,10 @@ to confirm or revisit the heap decision (section 5.6).
 
 **Primary Dependencies**: `requests` (HTTP, unchanged); no new dependencies
 
-**Storage**: Unchanged. The skeleton is never persisted by the game: it is re-read from the
-service (or from offline recordings) on every start. Persisted saves and logs carry
-`version_cripta` and are already rejected on mismatch (`aplicacion.py` `validar_guardado`,
+**Storage**: Unchanged. The crypt skeleton is never persisted: it is downloaded from the service
+every time a game starts (read from its offline recording in `--offline` mode), so exit costs are
+never stored. Only catalog entries are cached. Saved games and replay logs store the crypt version
+and are rejected on mismatch by the existing check (`aplicacion.py` `validar_guardado`,
 `_versiones_coinciden`).
 
 **Testing**: pytest (`tests/`), one test per acceptance scenario, each citing its FR
@@ -47,7 +48,7 @@ structures), II (determinism), III (layers), IV (no hardcoded crypt data), V (ve
 
 | Principle / gate | Status | Notes |
 |---|---|---|
-| I. Own data structures | PASS | No new structure. The cost is an integer attribute on `Salida`. The agenda stays the hand-written binary heap in `structures/agenda.py`. The optional bucket-queue candidate in the benchmark is hand-written over plain lists. No `dict`/`set`/`heapq`/`bisect`/`collections` introduced in `model/`, `structures/` or `data/`. |
+| I. Own data structures | PASS | No new structure. The cost is an integer attribute on `Salida`. The agenda stays the hand-written binary heap in `structures/agenda.py`. The benchmark only re-runs the part-one candidates (heap, unsorted list, sorted list). No `dict`/`set`/`heapq`/`bisect`/`collections` introduced in `model/`, `structures/` or `data/`. |
 | II. Determinism | PASS | Costs come from data. The tie-break in the agenda (`tiempo`, then `num_sec`) is unchanged. Benchmark crypts are generated from a fixed seed. |
 | III. Layered architecture | PASS | DTO (`SalidaDTO.costo`) → data (`RepositorioCripta`) → model (`Salida.costo`) → view. The model imports nothing from `view/` or `controller/`. `--bench` does not instantiate a view. |
 | IV. No hardcoded data | PASS | Only the default 100 (a rule from the spec, FR-002) is a constant; it is `COSTO_MOVER`, already in `tiempo_logica.py`. |
@@ -71,7 +72,8 @@ structures), II (determinism), III (layers), IV (no hardcoded crypt data), V (ve
 | FR-008 | model | `_decidir_errante` / `_decidir_rastreador` are unchanged. |
 | FR-009 | model | No code change. `EfectosLogica._cambiar_velocidad` already rescales the pending event with `nuevo_tiempo_por_velocidad`. Tests cover the case where that event is an expensive move. |
 | FR-010 | view | `VistaConsola.mostrar_estado` prints `N -> Sala (abierta, costo 300)`. |
-| FR-011, FR-012 | data / app | No change: the skeleton is always re-read, and saves and logs are rejected by the existing `version_cripta` check. Tests confirm that an old-version save or log is refused. |
+| FR-011 | data | No change: exit costs are read from the skeleton downloaded on every start (offline recording in `--offline` mode). They are never written to saved games, replay logs or the catalog cache. |
+| FR-012 | app | No change: a saved game (`validar_guardado`) or replay log (`_versiones_coinciden`) whose crypt version differs is rejected by the existing check. Tests confirm that a different-version save and log are refused and that a same-version save uses the fresh skeleton's costs. |
 | FR-014 | all | Covered by the replay determinism test on a crypt with costs. |
 | FR-015 | all | Costs are only ever read from JSON. |
 
@@ -95,15 +97,15 @@ The part-one benchmark `bench/bench_agenda.py` is extended (measurement code onl
 1. **Real operations per player action with variable costs**: a variant of `armar_partida` (in `bench/bench_ciclo.py`) assigns exit costs from a seeded RNG over {1, 10, 50, 100, 250, 500, 1000}. The variant runs 100 rooms with 300, 1000 and 3000 `errante` enemies. Output: programar/extraer/cancelar/reprogramar per action and the maximum number of pending events. This is compared with the existing fixed-cost run.
 2. **Extract + schedule (µs/op)**: same candidates and sizes as part one (100, 300, 1000, 3000). The increment is drawn as `intervalo(cost, speed)`, with costs from the set above and speeds in [50, 200], instead of `randint(1, 200)`. Both increment models are printed side by side.
 3. **Cancel + schedule (µs/op)**: unchanged method, re-run for comparison.
-4. **Extra candidate**: a hand-written fixed-width bucket queue. This is the natural rival when every interval is 100, and it should degrade as intervals spread out. It shows whether variable costs change the part-one ranking.
+4. **Candidates**: only the part-one candidates (binary heap, unsorted list, sorted list) are measured, under the new load. No new candidate is added.
 
-**Decision rule**: keep the binary heap if it is the fastest, or within 10% of the fastest, at every size ≥ 300 in both increment models. Otherwise record the numbers here and reopen the agenda decision in a separate commit.
+**Decision rule**: keep the binary heap if it is the fastest, or within 10% of the fastest, of the three part-one candidates at every size ≥ 300 in both increment models. Otherwise record the numbers here and reopen the agenda decision in a separate commit.
 
 | Measurement | Part one (fixed 100) | Part two (variable) | Decision |
 |---|---|---|---|
 | ops/action, 300 enemies | _to fill from `--bench`_ | _to fill_ | |
-| µs extract+schedule, n=3000 (heap / unsorted / sorted / buckets) | _to fill_ | _to fill_ | |
-| µs cancel+schedule, n=3000 | _to fill_ | _to fill_ | |
+| µs extract+schedule, n=3000 (heap / unsorted / sorted) | _to fill_ | _to fill_ | |
+| µs cancel+schedule, n=3000 (heap / unsorted / sorted) | _to fill_ | _to fill_ | |
 
 ## Project Structure
 
@@ -135,7 +137,7 @@ model/efectos_logica.py        # unchanged
 structures/agenda.py           # unchanged unless §Measurements says otherwise
 view/vista_consola.py          # print exit cost
 bench/bench_ciclo.py           # seeded variable-cost crypt builder
-bench/bench_agenda.py          # variable-cost scenarios + bucket-queue candidate
+bench/bench_agenda.py          # variable-cost load for the part-one candidates (heap, unsorted, sorted)
 tests/test_costos_salida.py    # new: US1–US4 scenarios
 tests/test_puertas.py          # + inconsistent-cost door, one-sided cost
 tests/test_service.py          # + old-version save/log rejected (US5)

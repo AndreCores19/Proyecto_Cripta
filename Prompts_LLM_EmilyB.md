@@ -169,8 +169,8 @@ Respect the constitution: no dict, set, heapq, bisect or collections in evaluate
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Update plan.md: remove the bucket-queue candidate. The section 5.6 measurements must only repeat the part-one candidates with the new load. Update the constitution check, measurement item 4, the decision rule, the results table and the bench file description accordingly. Also align the Storage and FR-011/FR-012 wording with the corrected spec.
+- Uso: quitar la opción de bucket-queue del plan.md y actualizar las mediciones, la constitución, la regla de decisión, la tabla de resultados y la descripción del archivo de bench para que solo repita los candidatos de parte uno con la nueva carga
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
