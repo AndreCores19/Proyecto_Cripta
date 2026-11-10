@@ -191,12 +191,23 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-plan Update plan.md per the analysis report and the corrected spec:
+- C1: Andrea will add a view DTO. The service builds it from the game state and the controller passes it to the view, so the view never receives the game model. For this feature it carries what the console view shows today plus, for each exit of the current room: direction, destination name, open/closed state and cost. Later specs extend it. Fix the Constitution Check row III accordingly.
+- Align the plan with the new FR-016 (the actor enters the destination room when the move starts; its next action is at start + interval) and the reworded US2-2 and FR-009.
+- I4: mark Constitution Check row VII as PASS; the spec and plan are already committed.
+- Uso: actualizar el plan.md según el informe de análisis y el spec.md corregido
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
+- Prompt: /speckit-tasks Regenerate tasks.md from the updated spec and plan. Keep the same owners: Andrea (data, DTOs, service view method, controller, view, replay and version tests) and Emily (engine model, move scheduling, section 5.6 measurements). Also:
+- Add Andrea's tasks for EstadoVistaDTO, JuegoService.estado_vista() and the controller and view changes.
+- Mark T001 as done; the spec and plan are committed. Keep the part-one benchmark baseline as the first task before any code change.
+- U2: make the speed-change test setup concrete, following the plan's Timing semantics section.
+- G1: add a task (Emily) that runs a seeded game with costs and checks that every scheduled move follows the interval formula and no action lasts 0 (SC-002, SC-003).
+- G2: add a task (Andrea) that records a log on a crypt with costs, replays it and compares the final state (FR-014).
+- I2: the two determinism tests edit the same file, so they are not parallel.
+- A2: limit the constitution check to new attributes or fields used as an index or cache in the changed files.
+- Add tests for FR-016 (the actor is in the destination room at T and its next action is at T + interval).
 - Uso: 
 
 ### 10 de Noviembre, 2026
