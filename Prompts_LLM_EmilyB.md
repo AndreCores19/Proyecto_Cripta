@@ -174,8 +174,8 @@ Respect the constitution: no dict, set, heapq, bisect or collections in evaluate
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-tasks Mark the owner of every task. Andrea (data and view): reading costo in SalidaDTO and RepositorioCripta, the inconsistent-door cost check in the repository, and the console view. Emily (engine): Salida.costo and enlazar in the model, _programar_movimiento for player and enemy moves, and the section 5.6 agenda measurements. Andrea's DTO and repository tasks come first because the rest depends on them. Each owner writes the tests for her own tasks, and every task and test cites its FR.
+- Uso: hacer la asignación de tareas para el spec 001, con dueños y dependencias, y que cada tarea y prueba cite su FR correspondiente
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

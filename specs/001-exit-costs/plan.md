@@ -138,9 +138,11 @@ structures/agenda.py           # unchanged unless §Measurements says otherwise
 view/vista_consola.py          # print exit cost
 bench/bench_ciclo.py           # seeded variable-cost crypt builder
 bench/bench_agenda.py          # variable-cost load for the part-one candidates (heap, unsorted, sorted)
-tests/test_costos_salida.py    # new: US1–US4 scenarios
-tests/test_puertas.py          # + inconsistent-cost door, one-sided cost
-tests/test_service.py          # + old-version save/log rejected (US5)
+tests/test_costos_datos.py     # new (Andrea): DTO, repository linking, inconsistent-cost door
+tests/test_vista_costos.py     # new (Andrea): room view shows costs (US4)
+tests/test_version_cripta.py   # new (Andrea): fresh skeleton, old-version save/log rejected (US5)
+tests/test_costos_salida.py    # new (Emily): move durations, enemies, speed changes (US1–US3)
+tests/test_puertas.py          # + (Emily): Salida.costo sharing rules in enlazar
 ```
 
 **Structure Decision**: existing single-project layered layout; no new directories besides the new test file.
