@@ -233,8 +233,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Fix spec.md per analysis U8: remove "verification" mode from FR-014 and from the edge case about replays, benchmarks and verification. The verification mode does not exist yet; it is introduced by the solvability feature, which will state its own determinism requirement. Record this correction in the Clarifications section.
+- Uso: arreglar el spec.md según el análisis U8
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

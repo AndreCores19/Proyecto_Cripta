@@ -24,6 +24,7 @@
 - Correction (2026-11-10, analysis I3): Is the exit cost validated? → A: No. It is an integer, ≥ 1 per the assignment, and not validated (Key Entities aligned with FR-001).
 - Correction (2026-11-10, analysis D1): US1-3 overlapped US1-7 → A: US1-3 is now the case where both sides declare 250; US1-7 remains the one-sided case.
 - Correction (2026-11-10, analysis A1): What does offline mode read? → A: In `--offline` mode the skeleton, with its costs, is read from the recording of that crypt version.
+- Correction (2026-11-10, analysis U8): Does FR-014 cover a verification mode? → A: No. The verification mode does not exist yet; it is introduced by the solvability feature, which will state its own determinism requirement. "Verification" was removed from FR-014 and from the replay/benchmark edge case.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -143,7 +144,7 @@ one and check that both are rejected.
 - A connection declares different `costo` values on its two sides: it is an inconsistent door, reported like part-one inconsistent doors (FR-013, US1-6).
 - An exit with no opposite exit in the destination room: its own cost (declared or 100) applies (FR-002, FR-003).
 - Attacking or waiting in a room whose exits are expensive: the cost of those actions is unchanged (FR-006).
-- Replays, benchmarks and verification of a crypt with exit costs produce the same state every run (FR-014).
+- Replays and benchmarks of a crypt with exit costs produce the same state every run (FR-014).
 
 ## Requirements *(mandatory)*
 
@@ -162,7 +163,7 @@ one and check that both are rejected.
 - **FR-011**: Exit costs MUST be read from the crypt skeleton, which is downloaded from the service every time a game starts (in `--offline` mode, read from the offline recording of the skeleton); exit costs MUST NOT be persisted or read from saved games, replay logs or the catalog cache.
 - **FR-012**: A saved game or replay log whose stored crypt version differs from the current crypt version (for example, one from part one) MUST be rejected by the existing version check; no other invalidation mechanism (such as deleting files by hand) is introduced.
 - **FR-013**: The existing part-one inconsistent-door validation MUST be extended so that a connection whose two sides both declare `costo` with different values is reported as an inconsistent door, in the same way as part-one inconsistent doors. No other new invalid-data rule is introduced.
-- **FR-014**: With the same crypt, seed and sequence of actions, games with exit costs MUST always produce the same state, including in replay, benchmark and verification modes.
+- **FR-014**: With the same crypt, seed and sequence of actions, games with exit costs MUST always produce the same state, including in replay and benchmark modes.
 - **FR-015**: Exit costs MUST NOT be hardcoded for any particular crypt; they come only from the crypt skeleton served by the service (or its offline recording).
 - **FR-016**: An actor that moves through an exit MUST enter the destination room when the move starts; traps, victory and trail marks MUST apply at that moment. The actor's next action MUST be scheduled at the move's start time + interval (FR-004).
 
