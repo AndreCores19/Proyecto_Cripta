@@ -102,3 +102,26 @@
 - Prompt: necesito que me pase estas tablas del readme a un formato de texto que funcione en el readme.md
 - porque no sé hacerlo y ocupo que se vea bien
 - Uso: usé las tablas en un formato de texto que funciona en markdown y se ve bien en el readme
+
+### 09 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-constitution Cripta project, part two. Python 3.11+. Principles:
+
+1. Own data structures. The data structures for the evaluated problems are hand-written: hunter pathfinding, route invalidation, known map, solvability, timeline, and the part-one structures we are re-evaluating (event agenda and undo history). In those problems, dict and set are forbidden as an index or cache, as are heapq, bisect, collections and any graph or pathfinding library. A plan that proposes any of them is wrong: it must be caught in /speckit-plan and checked again in /speckit-analyze, before implementation. Reason: the course grades our structures, not Python's.
+
+2. Determinism. Same crypt, same seed and same actions always produce the same game. Every tie is broken by a fixed rule (e.g. lowest id), never by data order.
+
+3. Layered architecture. Keep the project's layers (data, logic, service, controller and view, with DTOs between them). The model never prints or knows the view. --replay, --bench and --verificar never instantiate the view.
+
+4. No hardcoded data. No data from a specific crypt (room, key or enemy ids) is written in the code; everything comes from the web service, or from data recorded or cached from it (--offline mode and persistent cache).
+
+5. Network budget and versions. Every service request, including /llaves, counts toward presupuesto_solicitudes and is always respected. Data persisted by part one is invalidated through the existing version check, never by deleting files by hand.
+
+6. Evidence-backed performance. No performance claim is accepted without a reproducible --bench measurement. Synthetic bench crypts are deterministic by seed.
+
+7. Spec before code. Each capability's spec is committed to Git before its code. If the spec was wrong, fix the spec first, then the code, in separate commits.
+
+8. What goes where. spec.md holds rules, scenarios and numbered requirements (FR-xxx), with no data structure or class names. plan.md holds structures, alternatives, complexity and measurements, with no new rules.
+
+9. Traceability. Every task cites the FR it addresses, every acceptance scenario has a test that cites its FR, and every case in Appendix B appears as an acceptance scenario in some spec.
+- Uso: se crea la constitción del proyecto

@@ -4,7 +4,7 @@ Juego de exploración de criptas por turnos, con tiempo virtual, hecho en Python
 Estructuras de Datos (II ciclo 2026).
 
 Integrantes:
-- Emily Benavides Rodríguez
+- Emily Benavides Rodríguez.
 - Andrea Cordero Espinoza.
 
 ## 1. ¿Qué se necesita para ejecutarlo?
