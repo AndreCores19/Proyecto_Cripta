@@ -208,7 +208,7 @@ Record these corrections in the Clarifications section.
 - I2: the two determinism tests edit the same file, so they are not parallel.
 - A2: limit the constitution check to new attributes or fields used as an index or cache in the changed files.
 - Add tests for FR-016 (the actor is in the destination room at T and its next action is at T + interval).
-- Uso: 
+- Uso: actualizar tasks.md con las tareas de los dueños, las pruebas y los cambios de código según el spec y plan actualizados
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
