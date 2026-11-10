@@ -8,6 +8,16 @@
 
 **Input**: User description: "Terrain: exit costs. Each exit may declare a "costo" field, an integer >= 1. If it is not declared, its cost is 100. The cost is the same in both directions. Moving through an exit is an action whose base cost is that exit's cost, instead of the fixed value 100 from part one. The interval is still computed with the part-one formula: interval = max(1, exit_cost * 100 // speed). The rule applies to all actors (player, wanderers, trackers and hunters). The cost of attacking, waiting and every other action does not change. Wanderers and trackers keep their behavior; only the duration of their movement changes. Data: exit costs come from the crypt skeleton and are valid while the crypt version matches. Data persisted by part one must be invalidated through the existing version check. View: the view shows the cost of each exit of the current room. Required scenarios: A high-speed actor crosses an exit of cost 1: the interval is at least 1. An actor's speed changes while crossing an expensive exit: the remaining time is rescaled as remaining = max(1, (end_time - now) * old_speed // new_speed), and the action now ends at now + remaining."
 
+## Clarifications
+
+### Session 2026-11-10
+
+- Q: If only one side of a connection declares `costo`, what is the cost in the other direction? → A: The declared value applies to both directions.
+- Q: Should crypt data with `costo` < 1 or a non-integer `costo` be rejected? → A: No. The assignment does not define that rule; as in part one, `costo` is optional and defaults to 100 (like `cerrada` defaults to false). No new invalid-data rule is added.
+- Q: What happens if the two sides of a connection declare different `costo` values? → A: The connection is an inconsistent door, reported by extending the existing part-one inconsistent-door validation (not a new invalid-data rule).
+- Q: Does this spec define how hunters choose their route? → A: No; hunter route selection stays in the hunter spec. This spec only fixes the duration of hunter moves.
+- Q: Is the existing version check enough to invalidate part-one persisted data? → A: Yes; the assignment states that part-two crypts have new versions.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Movement duration depends on the exit crossed (Priority: P1)
@@ -30,8 +40,9 @@ player through each one, and check the time at which each move finishes.
 3. **Given** an exit A→B declared with `costo` 250, **When** an actor moves from B to A through the same connection, **Then** the move uses cost 250. *(FR-005)*
 4. **Given** an exit with `costo` 50 and a player with speed 150, **When** the player moves through it, **Then** the interval is 50 × 100 // 150 = 33. *(FR-004)*
 5. **Given** an exit with `costo` 1 and an actor with a very high speed (e.g. 1000), **When** the actor crosses it, **Then** the interval is 1 (never 0): max(1, 1 × 100 // 1000) = max(1, 0) = 1. *(FR-004, FR-006)*
-6. **Given** crypt data where an exit declares `costo` 0 (or the two sides of a connection declare 100 and 200), **When** the crypt is loaded, **Then** it is rejected and the invalid exit is reported. *(FR-013)*
-7. **Given** a player standing in a room whose exits cost 500, **When** the player attacks or waits, **Then** the action takes the same time as in part one. *(FR-006)*
+6. **Given** a connection whose two sides declare `costo` 100 and 200, **When** the crypt is loaded, **Then** the connection is reported as an inconsistent door by the same validation that reports part-one inconsistent doors. *(FR-013)*
+7. **Given** a connection where only the exit A→B declares `costo` 300 and the exit B→A declares none, **When** an actor moves from B to A, **Then** the move uses cost 300. *(FR-005)*
+8. **Given** a player standing in a room whose exits cost 500, **When** the player attacks or waits, **Then** the action takes the same time as in part one. *(FR-006)*
 
 ---
 
@@ -114,9 +125,9 @@ version and check that the data is reloaded and the exit costs appear.
 
 - `costo` = 1 with a very high speed: interval is clamped to 1 (US1-5).
 - Speed change that would make the remaining time 0: remaining is clamped to 1 (US3-3).
-- `costo` declared with a value < 1, or non-integer: the crypt data is invalid (FR-013).
-- A connection declares `costo` on only one of its two sides: that cost applies to both directions (FR-005).
-- A connection declares different `costo` values on its two sides: the crypt data is invalid (FR-013).
+- A connection declares `costo` on only one of its two sides: that cost applies to both directions (FR-005, US1-7).
+- A connection declares different `costo` values on its two sides: it is an inconsistent door, reported like part-one inconsistent doors (FR-013, US1-6).
+- An exit with no opposite exit in the destination room: its own cost (declared or 100) applies (FR-002, FR-003).
 - Attacking or waiting in a room whose exits are expensive: the cost of those actions is unchanged (FR-006).
 - Replays, benchmarks and verification of a crypt with exit costs produce the same state every run (FR-014).
 
@@ -124,8 +135,8 @@ version and check that the data is reloaded and the exit costs appear.
 
 ### Functional Requirements
 
-- **FR-001**: Each exit in the crypt skeleton MAY declare a `costo` field whose value is an integer ≥ 1.
-- **FR-002**: An exit that does not declare `costo` MUST have cost 100.
+- **FR-001**: Each exit in the crypt skeleton MAY declare an optional `costo` field (an integer ≥ 1 per the assignment). No additional validation of its value is performed.
+- **FR-002**: An exit that does not declare `costo` (and whose opposite exit does not declare one either) MUST have cost 100.
 - **FR-003**: Moving through an exit MUST be an action whose base cost is that exit's cost, replacing the fixed move cost of 100 from part one.
 - **FR-004**: The interval of a move MUST be computed as `interval = max(1, exit_cost × 100 // speed)`, where `//` is integer division and `speed` is the actor's speed when the move starts.
 - **FR-005**: The cost of an exit MUST be the same in both directions of the connection. If only one side of the connection declares `costo`, that value applies to both directions.
@@ -136,7 +147,7 @@ version and check that the data is reloaded and the exit costs appear.
 - **FR-010**: The view of the current room MUST show the cost of each of its exits (the declared value, or 100 when not declared), for open and closed exits alike.
 - **FR-011**: Exit costs MUST be taken from the crypt skeleton and are valid only while the crypt version of the persisted data matches the current crypt version.
 - **FR-012**: Data persisted by part one MUST be invalidated through the existing version check; no other invalidation mechanism (such as deleting files by hand) is introduced.
-- **FR-013**: The system MUST reject crypt data in which an exit declares a `costo` that is not an integer ≥ 1, or in which the two sides of a connection declare different `costo` values, reporting which exit is invalid.
+- **FR-013**: The existing part-one inconsistent-door validation MUST be extended so that a connection whose two sides both declare `costo` with different values is reported as an inconsistent door, in the same way as part-one inconsistent doors. No other new invalid-data rule is introduced.
 - **FR-014**: With the same crypt, seed and sequence of actions, games with exit costs MUST always produce the same state, including in replay, benchmark and verification modes.
 - **FR-015**: Exit costs MUST NOT be hardcoded for any particular crypt; they come only from the crypt data served by the service or recorded/persisted from it.
 
@@ -162,8 +173,9 @@ version and check that the data is reloaded and the exit costs appear.
 ## Assumptions
 
 - "Speed" in FR-004 is the actor's speed at the moment the move starts; later changes are handled only by FR-009.
-- How hunters choose their route (e.g. whether they prefer cheaper exits) is defined by the hunter feature, not by this spec; this spec only fixes the duration of their moves.
+- How hunters choose their route (e.g. whether they prefer cheaper exits) is defined by the hunter spec, not by this spec; this spec only fixes the duration of their moves (confirmed 2026-11-10).
 - Wanderers and trackers ignore exit costs when choosing an exit (FR-008).
-- The crypt version is bumped by the service when exit costs are introduced, so the existing version check is sufficient to invalidate part-one persisted data.
+- Part-two crypts have new versions (stated by the assignment), so the existing version check is sufficient to invalidate part-one persisted data (confirmed 2026-11-10).
+- `costo` values are supplied by the service as the assignment describes them; the game does not validate their range or type (FR-001).
 - Closed exits keep their cost; the cost applies once the exit can be crossed.
 - Offline mode uses the costs from recorded crypt data under the same version rule.

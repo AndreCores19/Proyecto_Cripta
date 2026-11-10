@@ -125,3 +125,19 @@
 
 9. Traceability. Every task cites the FR it addresses, every acceptance scenario has a test that cites its FR, and every case in Appendix B appears as an acceptance scenario in some spec.
 - Uso: se crea la constitción del proyecto
+
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-specify Terrain: exit costs. Each exit may declare a "costo" field, an integer >= 1. If it is not declared, its cost is 100. The cost is the same in both directions.
+
+Moving through an exit is an action whose base cost is that exit's cost, instead of the fixed value 100 from part one. The interval is still computed with the part-one formula: interval = max(1, exit_cost * 100 // speed). The rule applies to all actors (player, wanderers, trackers and hunters). The cost of attacking, waiting and every other action does not change. Wanderers and trackers keep their behavior; only the duration of their movement changes.
+
+Data: exit costs come from the crypt skeleton and are valid while the crypt version matches. Data persisted by part one must be invalidated through the existing version check.
+
+View: the view shows the cost of each exit of the current room.
+
+Required scenarios:
+- A high-speed actor crosses an exit of cost 1: the interval is at least 1.
+- An actor's speed changes while crossing an expensive exit: the remaining time is rescaled as remaining = max(1, (end_time - now) * old_speed // new_speed), and the action now ends at now + remaining.
+- Uso: hacer el spec de terreno y costos de salida, con escenarios de prueba y reglas de juego
