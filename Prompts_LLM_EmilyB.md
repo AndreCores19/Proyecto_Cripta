@@ -179,6 +179,33 @@ Respect the constitution: no dict, set, heapq, bisect or collections in evaluate
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: Fix spec.md per the analysis report:
+- I1: rewrite US2-2 to test the rule, not the outcome: given the same state (room, trails, clock, open exits), a tracker chooses the same exit as the part-one rule. The identical-sequence check only holds when every exit costs 100 (SC-004).
+- U1: add an FR: an actor enters the destination room when the move starts (traps, victory and trail marks apply immediately), and its next action is scheduled at start + interval. Reword scenarios that say "the move ends at" as "the actor's next action is at".
+- G3: add an assumption that the hunter spec must include a scenario equivalent to US2-3.
+- I3: in Key Entities, say the cost is an integer, >= 1 per the assignment, and not validated.
+- D1: make US1-3 the case where both sides declare 250.
+- A1: rewrite the offline assumption: in --offline mode the skeleton, with its costs, is read from the recording of that crypt version.
+Record these corrections in the Clarifications section.
+- Uso: corregir el spec.md según el informe de análisis
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt:
 - Uso: 
 

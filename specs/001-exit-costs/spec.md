@@ -18,6 +18,12 @@
 - Q: Does this spec define how hunters choose their route? → A: No; hunter route selection stays in the hunter spec. This spec only fixes the duration of hunter moves.
 - Q: Is the existing version check enough to invalidate part-one persisted data? → A: Yes; the assignment states that part-two crypts have new versions.
 - Correction (2026-11-10): Is the crypt skeleton persisted? → A: No. It is downloaded from the service every time a game starts; only catalog entries are cached, and saved games and replay logs store the crypt version. Exit costs are therefore read from the skeleton on every start, and a saved game or replay log from a different crypt version is rejected by the existing version check. The earlier scenario reusing persisted exit costs without a new request was removed.
+- Correction (2026-11-10, analysis I1): Must a tracker choose the same sequence of exits as in part one when costs differ? → A: No. Trail freshness and random draws depend on time, so only the rule is preserved: given the same state (room, trails, clock, open exits), a tracker chooses the same exit as the part-one rule. The identical-sequence check holds only when every exit costs 100 (SC-004). US2-2 rewritten.
+- Correction (2026-11-10, analysis U1): Where is an actor while crossing an exit? → A: The actor enters the destination room when the move starts (traps, victory and trail marks apply immediately), and its next action is scheduled at start + interval. Added as FR-016; scenarios now say "the actor's next action is at" instead of "the move ends at".
+- Correction (2026-11-10, analysis G3): How is the hunter case of US2-3 covered? → A: The hunter spec must include a scenario equivalent to US2-3 (Assumptions).
+- Correction (2026-11-10, analysis I3): Is the exit cost validated? → A: No. It is an integer, ≥ 1 per the assignment, and not validated (Key Entities aligned with FR-001).
+- Correction (2026-11-10, analysis D1): US1-3 overlapped US1-7 → A: US1-3 is now the case where both sides declare 250; US1-7 remains the one-sided case.
+- Correction (2026-11-10, analysis A1): What does offline mode read? → A: In `--offline` mode the skeleton, with its costs, is read from the recording of that crypt version.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -32,13 +38,13 @@ slow. Exits that declare no cost behave exactly as in part one.
 costs actually affecting the timeline.
 
 **Independent Test**: Load a crypt whose skeleton declares exits with different costs, move the
-player through each one, and check the time at which each move finishes.
+player through each one, and check the time of the player's next action after each move.
 
 **Acceptance Scenarios**:
 
-1. **Given** an exit with `costo` 300 and a player with speed 100, **When** the player moves through it at time T, **Then** the move ends at T + 300 (interval = max(1, 300 × 100 // 100) = 300). *(FR-003, FR-004)*
-2. **Given** an exit that declares no `costo` and a player with speed 100, **When** the player moves through it at time T, **Then** the move ends at T + 100, identical to part one. *(FR-002, FR-004)*
-3. **Given** an exit A→B declared with `costo` 250, **When** an actor moves from B to A through the same connection, **Then** the move uses cost 250. *(FR-005)*
+1. **Given** an exit with `costo` 300 and a player with speed 100, **When** the player moves through it at time T, **Then** the player is in the destination room at T and the player's next action is at T + 300 (interval = max(1, 300 × 100 // 100) = 300). *(FR-003, FR-004, FR-016)*
+2. **Given** an exit that declares no `costo` and a player with speed 100, **When** the player moves through it at time T, **Then** the player's next action is at T + 100, identical to part one. *(FR-002, FR-004)*
+3. **Given** a connection whose two sides, A→B and B→A, both declare `costo` 250, **When** an actor moves from A to B and later from B to A, **Then** both moves use cost 250. *(FR-005)*
 4. **Given** an exit with `costo` 50 and a player with speed 150, **When** the player moves through it, **Then** the interval is 50 × 100 // 150 = 33. *(FR-004)*
 5. **Given** an exit with `costo` 1 and an actor with a very high speed (e.g. 1000), **When** the actor crosses it, **Then** the interval is 1 (never 0): max(1, 1 × 100 // 1000) = max(1, 0) = 1. *(FR-004, FR-006)*
 6. **Given** a connection whose two sides declare `costo` 100 and 200, **When** the crypt is loaded, **Then** the connection is reported as an inconsistent door by the same validation that reports part-one inconsistent doors. *(FR-013)*
@@ -56,34 +62,35 @@ to go does not change.
 **Why this priority**: The rule must be uniform for all actors, otherwise the timeline and
 determinism guarantees break.
 
-**Independent Test**: Place a wanderer and a tracker in a crypt with costed exits, advance time,
-and check that their decisions match part one while the time at which each move finishes follows
-the exit cost.
+**Independent Test**: Place a wanderer and a tracker in a crypt with costed exits, check that from a
+given state they choose the exit the part-one rule chooses, and that the time of their next action
+after moving follows the exit cost.
 
 **Acceptance Scenarios**:
 
-1. **Given** a wanderer with speed 100 that decides to move through an exit with `costo` 200 at time T, **When** the move is scheduled, **Then** it ends at T + 200. *(FR-007)*
-2. **Given** a tracker and the same crypt, seed and action sequence as in part one, **When** the game runs, **Then** the sequence of exits the tracker chooses is the same as in part one; only the move end times differ where exits declare a cost other than 100. *(FR-008)*
-3. **Given** a hunter with speed 50 moving through an exit with `costo` 120, **When** the move is scheduled at time T, **Then** it ends at T + 240. *(FR-007)*
+1. **Given** a wanderer with speed 100 that moves through an exit with `costo` 200 at time T, **When** its turn ends, **Then** the wanderer is in the destination room at T and its next action is at T + 200. *(FR-007, FR-016)*
+2. **Given** a tracker in a given state (room, trail marks of the neighbouring rooms, clock, open exits) where the exits declare costs other than 100, **When** the tracker decides where to move, **Then** it chooses the same exit that the part-one rule chooses from that same state. *(FR-008)*
+3. **Given** a hunter with speed 50 that moves through an exit with `costo` 120 at time T, **When** its turn ends, **Then** its next action is at T + 240. *(FR-007)*
 
 ---
 
 ### User Story 3 - Speed change while crossing an expensive exit (Priority: P1)
 
-An actor is in the middle of crossing an expensive exit when its speed changes (for example
-because an effect starts or ends). The remaining time of the crossing is rescaled to the new speed.
+An actor has moved through an expensive exit and is waiting for its next action when its speed
+changes (for example because an effect starts or ends). The remaining time until its next action
+is rescaled to the new speed.
 
 **Why this priority**: Explicitly required scenario; long crossings make speed changes mid-action
 far more frequent than in part one.
 
-**Independent Test**: Start a crossing of an expensive exit, change the actor's speed before it
-ends, and check the new end time.
+**Independent Test**: Move an actor through an expensive exit, change its speed before its next
+action, and check the new time of that next action.
 
 **Acceptance Scenarios**:
 
-1. **Given** an actor with speed 100 that starts crossing an exit with `costo` 500 at time 0 (ends at 500), **When** its speed changes to 200 at time 100, **Then** remaining = max(1, (500 − 100) × 100 // 200) = 200, and the move now ends at 300. *(FR-009)*
-2. **Given** an actor with speed 200 crossing an exit that ends at time 1000, **When** its speed changes to 50 at time 900, **Then** remaining = max(1, (1000 − 900) × 200 // 50) = 400, and the move now ends at 1300. *(FR-009)*
-3. **Given** an actor whose crossing ends at time 101, **When** its speed changes from 10 to 1000 at time 100, **Then** remaining = max(1, 1 × 10 // 1000) = max(1, 0) = 1, and the move ends at 101 (never at the current time). *(FR-009, FR-006)*
+1. **Given** an actor with speed 100 that moves through an exit with `costo` 500 at time 0 (next action at 500), **When** its speed changes to 200 at time 100, **Then** remaining = max(1, (500 − 100) × 100 // 200) = 200, and the actor's next action is now at 300. *(FR-009)*
+2. **Given** an actor with speed 200 that moved through an exit and whose next action is at time 1000, **When** its speed changes to 50 at time 900, **Then** remaining = max(1, (1000 − 900) × 200 // 50) = 400, and the actor's next action is now at 1300. *(FR-009)*
+3. **Given** an actor that moved through an exit and whose next action is at time 101, **When** its speed changes from 10 to 1000 at time 100, **Then** remaining = max(1, 1 × 10 // 1000) = max(1, 0) = 1, and the actor's next action is at 101 (never at the current time). *(FR-009, FR-006)*
 
 ---
 
@@ -150,19 +157,20 @@ one and check that both are rejected.
 - **FR-006**: The cost of attacking, waiting and every action other than moving MUST remain as in part one; every action interval MUST be at least 1.
 - **FR-007**: FR-003 and FR-004 MUST apply to every actor: the player, wanderers, trackers and hunters.
 - **FR-008**: The decision rules of wanderers and trackers (which exit they choose) MUST remain as in part one; only the duration of their moves changes.
-- **FR-009**: When an actor's speed changes while a move is in progress, the remaining time MUST be rescaled as `remaining = max(1, (end_time − now) × old_speed // new_speed)`, and the move MUST end at `now + remaining`.
+- **FR-009**: When an actor's speed changes while it is waiting for its next action after a move, the remaining time MUST be rescaled as `remaining = max(1, (end_time − now) × old_speed // new_speed)`, where `end_time` is the time of that next action, and the actor's next action MUST be at `now + remaining`.
 - **FR-010**: The view of the current room MUST show the cost of each of its exits (the declared value, or 100 when not declared), for open and closed exits alike.
 - **FR-011**: Exit costs MUST be read from the crypt skeleton, which is downloaded from the service every time a game starts (in `--offline` mode, read from the offline recording of the skeleton); exit costs MUST NOT be persisted or read from saved games, replay logs or the catalog cache.
 - **FR-012**: A saved game or replay log whose stored crypt version differs from the current crypt version (for example, one from part one) MUST be rejected by the existing version check; no other invalidation mechanism (such as deleting files by hand) is introduced.
 - **FR-013**: The existing part-one inconsistent-door validation MUST be extended so that a connection whose two sides both declare `costo` with different values is reported as an inconsistent door, in the same way as part-one inconsistent doors. No other new invalid-data rule is introduced.
 - **FR-014**: With the same crypt, seed and sequence of actions, games with exit costs MUST always produce the same state, including in replay, benchmark and verification modes.
 - **FR-015**: Exit costs MUST NOT be hardcoded for any particular crypt; they come only from the crypt skeleton served by the service (or its offline recording).
+- **FR-016**: An actor that moves through an exit MUST enter the destination room when the move starts; traps, victory and trail marks MUST apply at that moment. The actor's next action MUST be scheduled at the move's start time + interval (FR-004).
 
 ### Key Entities
 
-- **Exit**: A connection from one room to another in a given direction. Attributes relevant here: destination room, closed/open state, required key, and cost (integer ≥ 1, default 100, shared by both directions of the connection).
+- **Exit**: A connection from one room to another in a given direction. Attributes relevant here: destination room, closed/open state, required key, and cost (an integer, ≥ 1 per the assignment and not validated; default 100; shared by both directions of the connection).
 - **Actor**: Player, wanderer, tracker or hunter. Has a speed that determines how long each action takes.
-- **Move action**: An action in the timeline with a start time, an end time and a base cost equal to the cost of the exit being crossed.
+- **Move action**: An action in the timeline. At its start time the actor enters the destination room; its base cost is the cost of the exit crossed, and the actor's next action is at start time + interval.
 - **Crypt skeleton**: The crypt structure (rooms and exits, including exit costs) tied to a crypt version.
 
 ## Success Criteria *(mandatory)*
@@ -170,7 +178,7 @@ one and check that both are rejected.
 ### Measurable Outcomes
 
 - **SC-001**: 100% of the acceptance scenarios in this spec pass as automated tests, each citing its FR.
-- **SC-002**: For every move by every actor type, the observed end time equals the start time plus `max(1, exit_cost × 100 // speed)`, with 0 discrepancies across a full replayed game.
+- **SC-002**: For every move by every actor type, the actor's next action is at the move's start time plus `max(1, exit_cost × 100 // speed)` (unless a speed change rescales it per FR-009), with 0 discrepancies across a full replayed game.
 - **SC-003**: No action in any game ever has a duration of 0 (verified over all recorded games and benchmark crypts).
 - **SC-004**: A crypt where no exit declares `costo` produces exactly the same game state as in part one for the same seed and actions.
 - **SC-005**: Running the same crypt, seed and actions twice produces identical states in 100% of runs.
@@ -180,9 +188,9 @@ one and check that both are rejected.
 ## Assumptions
 
 - "Speed" in FR-004 is the actor's speed at the moment the move starts; later changes are handled only by FR-009.
-- How hunters choose their route (e.g. whether they prefer cheaper exits) is defined by the hunter spec, not by this spec; this spec only fixes the duration of their moves (confirmed 2026-11-10).
+- How hunters choose their route (e.g. whether they prefer cheaper exits) is defined by the hunter spec, not by this spec; this spec only fixes the duration of their moves (confirmed 2026-11-10). The hunter spec MUST include an acceptance scenario equivalent to US2-3 (a hunter's next action after a move is at T + `max(1, costo × 100 // speed)`), tested against the real hunter behaviour.
 - Wanderers and trackers ignore exit costs when choosing an exit (FR-008).
 - Part-two crypts have new versions (stated by the assignment), so the existing version check is sufficient to reject part-one saved games and replay logs (confirmed 2026-11-10). The skeleton itself is never persisted.
 - `costo` values are supplied by the service as the assignment describes them; the game does not validate their range or type (FR-001).
 - Closed exits keep their cost; the cost applies once the exit can be crossed.
-- Offline mode uses the costs from recorded crypt data under the same version rule.
+- In `--offline` mode the skeleton, with its costs, is read from the recording of that crypt version.
