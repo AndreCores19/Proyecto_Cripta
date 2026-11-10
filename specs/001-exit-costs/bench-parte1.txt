@@ -1,0 +1,21 @@
+﻿ Agenda de eventos 
+Operaciones reales por acción del jugador (100 salas, 300 enemigos):
+    programar       301.0
+    extraer         301.0
+    cancelar          0.0
+    reprogramar       0.0
+    eventos pendientes a la vez (máximo): 300
+
+ Extraer el próximo y programar otro (microsegundos por operación):
+ pendientes                heap   lista sin ordenar      lista ordenada
+        100                 3.1                 6.0                 8.5
+        300                 3.6                17.0                24.0
+       1000                 4.2                60.0                69.1
+       3000                 4.6               180.2               131.5
+
+Cancelar un evento cualquiera y programar otro (microsegundos):
+ pendientes                heap   lista sin ordenar      lista ordenada
+        100                 2.3                 1.8                 8.2
+        300                 2.4                 3.7                22.6
+       1000                 2.4                11.3                81.6
+       3000                 2.5                37.3               249.3
