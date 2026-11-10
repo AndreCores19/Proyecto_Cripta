@@ -29,11 +29,39 @@
 | x | x | both x |
 | x | y, x ≠ y | `ValueError("Puerta inconsistente: …")`, the part-one error extended with the costs (FR-013) |
 
-## Move event (structures/agenda.py `Evento`, unchanged)
+## Move and next action (FR-016; structures/agenda.py `Evento`, unchanged)
 
-`tiempo = reloj + intervalo(salida.costo, actor.velocidad)`, with type `"accion"` and owner = actor.
-When the actor's speed changes while the event is pending:
+At the move's start time T the actor's room becomes `salida.destino` (traps, victory and trail
+marks apply at T). Then the actor's next action is scheduled as an `Evento` with
+`tiempo = T + intervalo(salida.costo, actor.velocidad)`, type `"accion"` and owner = actor.
+When the actor's speed changes while that event is pending (FR-009):
 `tiempo = nuevo_tiempo_por_velocidad(tiempo, reloj, vieja, nueva)`, through `reprogramar`.
+
+## EstadoVistaDTO (dto/estado_vista_dto.py)
+
+Built by `JuegoService.estado_vista()` from the game state; passed by `Controlador.jugar` to
+`mostrar_estado`. The view never receives `Partida` for the room view. Plain lists, display only.
+
+| Field | Type | From |
+|---|---|---|
+| id_sala, nombre_sala | int, str | `jugador.sala` |
+| reloj | int | `partida.reloj` |
+| jugador | `JugadorVistaDTO` | see below |
+| salidas | list of `SalidaVistaDTO` | `jugador.sala.salidas`, in room order |
+| enemigos | list of `EnemigoVistaDTO` | `partida.enemigos` where `enemigo.sala is sala` (same filter as today) |
+| trampas | list of `TrampaVistaDTO` | `sala.trampas` |
+| objetos | list of `ObjetoVistaDTO` | `sala.objetos` |
+| bitacora | list of str | `partida.bitacora.obtener_todos()[-20:]` |
+
+| DTO | Fields |
+|---|---|
+| JugadorVistaDTO | nombre, vida, vida_max, ataque, defensa, velocidad, arma (name or None), armadura (name or None), efectos (list of type str) |
+| **SalidaVistaDTO** | direccion, nombre_destino, cerrada (bool), **costo** (int, already resolved: declared or 100) |
+| EnemigoVistaDTO | nombre, id_enemigo, vida, vida_max, efectos (list of type str) |
+| TrampaVistaDTO | nombre, dano, armada (bool) |
+| ObjetoVistaDTO | id_instancia, nombre |
+
+Later specs extend this DTO; this feature adds only `SalidaVistaDTO.costo` beyond today's output.
 
 ## Actors
 

@@ -14,11 +14,11 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
 - **Rationale**: it reuses the part-one door-linking point and its error, as the clarification asked.
 - **Alternatives**: a separate validation pass. Rejected: it adds a new invalid-data rule, which the clarification excludes.
 
-## R3. Which event represents "crossing"
+## R3. Mapping FR-016 to the engine
 
-- **Decision**: the engine moves the actor instantly and schedules its next action `intervalo(salida.costo, velocidad)` later. That pending event is the crossing.
-- **Rationale**: this matches part one, where moves scheduled `COSTO_MOVER`. Speed changes already rescale `actor.evento` through `nuevo_tiempo_por_velocidad` (`efectos_logica.py`), so FR-009 needs no new code.
-- **Alternatives**: delay the room change until the end of the interval. Rejected: it changes trap, victory and tracker-trail timing from part one, beyond what the spec asks.
+- **Decision**: no change to the order in `Partida.mover`. It already refreshes the origin trail, enters the destination room, runs traps and the victory check, and then schedules the next action. Only the scheduled cost changes, to `intervalo(salida.costo, velocidad)`.
+- **Rationale**: FR-016 (added to the spec after analysis U1) makes this part-one behaviour a rule. Speed changes already rescale `actor.evento` through `nuevo_tiempo_por_velocidad` (`efectos_logica.py`), so FR-009 needs no new code.
+- **Alternatives**: delay the room change until the end of the interval. It contradicts FR-016.
 
 ## R4. Enemy moves
 
@@ -29,6 +29,12 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
 
 - **Decision**: no new mechanism.
 - **Rationale**: the skeleton is not persisted. It is re-read on every start through `pagina_esqueleto`, so costs are always fresh. Saves (`validar_guardado`) and logs (`_versiones_coinciden`) compare `version_cripta`, and part-two crypts have new versions. The catalog cache is keyed by the catalog version and holds no exits. Offline recordings store the raw skeleton JSON, so newly recorded crypts include `costo`.
+
+## R7. View DTO for the room view (analysis C1)
+
+- **Decision**: a new `EstadoVistaDTO`, built by `JuegoService.estado_vista()` and passed by `Controlador.jugar` to `mostrar_estado`. It carries what the room view prints today plus each exit's cost.
+- **Rationale**: Constitution III requires DTOs at every layer boundary. Until now, `mostrar_estado` received `Partida`. The service already owns the `Partida`, so it is the layer that can read it and hand out a snapshot.
+- **Alternatives**: (a) add only `costo` to the existing model read in the view. Rejected: it extends the violation. (b) Have the controller build the DTO. Rejected: the controller would then read the model directly, which moves the problem instead of fixing it. (c) Convert every view method now. Deferred: the request limits this feature to the room view (see plan Complexity Tracking).
 
 ## R6. Agenda under variable costs
 

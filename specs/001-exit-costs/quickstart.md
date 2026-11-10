@@ -15,14 +15,17 @@ Each test name or docstring cites its FR. Expected mapping:
 
 | Scenario | Test checks | FR |
 |---|---|---|
-| US1-1..4 | next action at `reloj + max(1, costo*100//velocidad)` | FR-003, FR-004 |
+| US1-1 | actor in destination room at T; next action at T+300 | FR-003, FR-004, FR-016 |
+| US1-2, US1-4 | next action at `T + max(1, costo*100//velocidad)` | FR-002, FR-004 |
+| US1-3 | both sides declare 250 → 250 in both directions | FR-005 |
 | US1-5 | cost 1, speed 1000 → interval 1 | FR-004, FR-006 |
 | US1-6 | sides declare 100 / 200 → "Puerta inconsistente" | FR-013 |
 | US1-7 | one-sided 300 applies B→A | FR-005 |
 | US1-8 | attack/wait unchanged next to cost-500 exits | FR-006 |
-| US2-1..3 | wanderer / tracker / (hunter when it exists) move durations; same decisions as part one with the same seed | FR-007, FR-008 |
-| US3-1..3 | speed change mid-crossing → end = now + max(1, (end−now)*old//new) | FR-009 |
-| US4-1..2 | room view prints `costo` for open and closed exits | FR-010 |
+| US2-1, US2-3 | wanderer (and enemy via `_programar_movimiento` for the hunter case) in destination at T, next action at T + interval | FR-007, FR-016 |
+| US2-2 | from a fixed state (room, trails, clock, open exits) with costs ≠ 100, the tracker picks the part-one rule's exit | FR-008 |
+| US3-1..3 | speed change before the next action → next action at now + max(1, (end−now)*old//new) | FR-009 |
+| US4-1..2 | `estado_vista()` exits carry `costo`; the room view prints it for open and closed exits; the view never receives `Partida` | FR-010 |
 | US5-1 | exit costs come from the skeleton downloaded at start | FR-011 |
 | US5-2..3 | saved game / replay log from another crypt version refused | FR-012 |
 | US5-4 | same-version save loads and uses the fresh skeleton's costs | FR-011, FR-012 |
