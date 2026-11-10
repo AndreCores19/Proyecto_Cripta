@@ -221,6 +221,38 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: /speckit-tasks Regenerate tasks.md from the updated plan. Keep the same owners; all DTO, service, controller, view, aplicacion.py and boundary-test work is Andrea's. Keep T001 and T002 as done. Also:
+- U3: in T014 and T016, put the player in another room and remove the enemy's pending activation turn from the agenda before calling the method under test.
+- U4: in T032, build the rooms with a helper function called once for the recording and once for the replay, with the same seed.
+- U5: the fake view in T019 also needs mostrar_final.
+- U6: in T024 (US5-4), name the load path in aplicacion.py or test it at the repository level.
+- A3: in T029, write "no speed effects are applied" instead of "disabled".
+- A4: state in T029 that a fixed seed and action sequence is a replayed game in the sense of SC-002.
+- I5: accept that T029 imports the room builder from bench/bench_ciclo.py and say so in the task.
+- Uso: regenerar tasks.md con los dueños, las pruebas y los cambios de código según el plan actualizado, con detalles de cada tarea y prueba
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt:
 - Uso: 
 
