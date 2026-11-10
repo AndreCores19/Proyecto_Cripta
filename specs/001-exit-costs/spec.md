@@ -17,6 +17,7 @@
 - Q: What happens if the two sides of a connection declare different `costo` values? → A: The connection is an inconsistent door, reported by extending the existing part-one inconsistent-door validation (not a new invalid-data rule).
 - Q: Does this spec define how hunters choose their route? → A: No; hunter route selection stays in the hunter spec. This spec only fixes the duration of hunter moves.
 - Q: Is the existing version check enough to invalidate part-one persisted data? → A: Yes; the assignment states that part-two crypts have new versions.
+- Correction (2026-11-10): Is the crypt skeleton persisted? → A: No. It is downloaded from the service every time a game starts; only catalog entries are cached, and saved games and replay logs store the crypt version. Exit costs are therefore read from the skeleton on every start, and a saved game or replay log from a different crypt version is rejected by the existing version check. The earlier scenario reusing persisted exit costs without a new request was removed.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -103,21 +104,27 @@ cost) and check the room description.
 
 ---
 
-### User Story 5 - Persisted data from part one is refreshed through the version check (Priority: P2)
+### User Story 5 - Exit costs are always current; old saves and logs are rejected by version (Priority: P2)
 
-A player who has crypt data persisted from part one (which has no exit costs) starts a game. The
-existing version check detects that the persisted data does not match the current crypt version and
-the data is invalidated and reloaded, so exit costs are available.
+The crypt skeleton is never persisted: it is downloaded from the service every time a game starts,
+so exit costs are always read fresh from it. Saved games and replay logs store the crypt version;
+one recorded against a different crypt version (for example, from part one, without exit costs) is
+rejected by the existing version check, so it can never be loaded or replayed against costs it was
+not played with.
 
-**Why this priority**: Without it, stale persisted data would silently make every exit cost 100.
+**Why this priority**: Without it, a part-one save or log could be loaded or replayed with
+different move durations, producing a state that was never played.
 
-**Independent Test**: Start with persisted crypt data whose version differs from the current crypt
-version and check that the data is reloaded and the exit costs appear.
+**Independent Test**: Start a game and check that exit costs come from the skeleton downloaded at
+start; then try to load a saved game and replay a log whose crypt version differs from the current
+one and check that both are rejected.
 
 **Acceptance Scenarios**:
 
-1. **Given** persisted crypt data whose version differs from the current crypt version, **When** the game starts, **Then** the persisted data is invalidated by the existing version check and the skeleton (with exit costs) is obtained again. *(FR-011, FR-012)*
-2. **Given** persisted crypt data whose version matches the current crypt version, **When** the game starts, **Then** the persisted exit costs are used without a new request. *(FR-011)*
+1. **Given** a crypt whose skeleton declares exit costs, **When** a game starts, **Then** the skeleton is downloaded from the service and every exit has the cost it declares (or 100), with no exit data taken from saved games, replay logs or the catalog cache. *(FR-011)*
+2. **Given** a saved game whose stored crypt version differs from the current crypt version (e.g. saved in part one), **When** the player tries to load it, **Then** it is rejected by the existing version check. *(FR-012)*
+3. **Given** a replay log whose stored crypt version differs from the current crypt version, **When** it is replayed, **Then** it is rejected by the existing version check. *(FR-012)*
+4. **Given** a saved game whose stored crypt version matches the current crypt version, **When** the player loads it, **Then** it loads and moves use the exit costs from the skeleton downloaded at start. *(FR-011, FR-012)*
 
 ---
 
@@ -145,11 +152,11 @@ version and check that the data is reloaded and the exit costs appear.
 - **FR-008**: The decision rules of wanderers and trackers (which exit they choose) MUST remain as in part one; only the duration of their moves changes.
 - **FR-009**: When an actor's speed changes while a move is in progress, the remaining time MUST be rescaled as `remaining = max(1, (end_time − now) × old_speed // new_speed)`, and the move MUST end at `now + remaining`.
 - **FR-010**: The view of the current room MUST show the cost of each of its exits (the declared value, or 100 when not declared), for open and closed exits alike.
-- **FR-011**: Exit costs MUST be taken from the crypt skeleton and are valid only while the crypt version of the persisted data matches the current crypt version.
-- **FR-012**: Data persisted by part one MUST be invalidated through the existing version check; no other invalidation mechanism (such as deleting files by hand) is introduced.
+- **FR-011**: Exit costs MUST be read from the crypt skeleton, which is downloaded from the service every time a game starts (in `--offline` mode, read from the offline recording of the skeleton); exit costs MUST NOT be persisted or read from saved games, replay logs or the catalog cache.
+- **FR-012**: A saved game or replay log whose stored crypt version differs from the current crypt version (for example, one from part one) MUST be rejected by the existing version check; no other invalidation mechanism (such as deleting files by hand) is introduced.
 - **FR-013**: The existing part-one inconsistent-door validation MUST be extended so that a connection whose two sides both declare `costo` with different values is reported as an inconsistent door, in the same way as part-one inconsistent doors. No other new invalid-data rule is introduced.
 - **FR-014**: With the same crypt, seed and sequence of actions, games with exit costs MUST always produce the same state, including in replay, benchmark and verification modes.
-- **FR-015**: Exit costs MUST NOT be hardcoded for any particular crypt; they come only from the crypt data served by the service or recorded/persisted from it.
+- **FR-015**: Exit costs MUST NOT be hardcoded for any particular crypt; they come only from the crypt skeleton served by the service (or its offline recording).
 
 ### Key Entities
 
@@ -168,14 +175,14 @@ version and check that the data is reloaded and the exit costs appear.
 - **SC-004**: A crypt where no exit declares `costo` produces exactly the same game state as in part one for the same seed and actions.
 - **SC-005**: Running the same crypt, seed and actions twice produces identical states in 100% of runs.
 - **SC-006**: The player can read the cost of every exit of the current room directly from the room view, without any extra command.
-- **SC-007**: Starting a game with part-one persisted data of a different version always results in exit costs being shown correctly, with no manual deletion of files.
+- **SC-007**: Every game start shows the exit costs declared by the current skeleton, and 100% of saved games and replay logs from a different crypt version are rejected, with no manual deletion of files.
 
 ## Assumptions
 
 - "Speed" in FR-004 is the actor's speed at the moment the move starts; later changes are handled only by FR-009.
 - How hunters choose their route (e.g. whether they prefer cheaper exits) is defined by the hunter spec, not by this spec; this spec only fixes the duration of their moves (confirmed 2026-11-10).
 - Wanderers and trackers ignore exit costs when choosing an exit (FR-008).
-- Part-two crypts have new versions (stated by the assignment), so the existing version check is sufficient to invalidate part-one persisted data (confirmed 2026-11-10).
+- Part-two crypts have new versions (stated by the assignment), so the existing version check is sufficient to reject part-one saved games and replay logs (confirmed 2026-11-10). The skeleton itself is never persisted.
 - `costo` values are supplied by the service as the assignment describes them; the game does not validate their range or type (FR-001).
 - Closed exits keep their cost; the cost applies once the exit can be crossed.
 - Offline mode uses the costs from recorded crypt data under the same version rule.

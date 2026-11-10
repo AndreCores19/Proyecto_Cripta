@@ -141,3 +141,48 @@ Required scenarios:
 - A high-speed actor crosses an exit of cost 1: the interval is at least 1.
 - An actor's speed changes while crossing an expensive exit: the remaining time is rescaled as remaining = max(1, (end_time - now) * old_speed // new_speed), and the action now ends at now + remaining.
 - Uso: hacer el spec de terreno y costos de salida, con escenarios de prueba y reglas de juego
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-clarify Decisions on the four assumptions:
+1. Cost declared on only one side of a connection: keep it, that value applies to both directions.
+2. Remove the rule that rejects costo < 1 or non-integer values; the assignment does not define it. As in part one, costo is optional and defaults to 100 (like cerrada defaults to False). If the two sides of a connection declare different costs, treat it as an inconsistent door by extending the existing part-one inconsistent-door validation, not as a new invalid-data rule.
+3. How hunters choose their route stays in the hunter spec. Keep it.
+4. Confirmed: the assignment states that part-two crypts have new versions, so the existing version check is enough to invalidate part-one persisted data.
+- Uso: hacer las aclaraciones para el spec 001
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-plan Python 3.11+, tests with pytest. Reuse the existing layered code: dto/ and adapters/ read the crypt skeleton; model/tiempo.py already has intervalo(costo, velocidad) and nuevo_tiempo_por_velocidad(...), which must be reused unchanged; structures/agenda.py is our own event agenda from part one.
+
+Approach: each exit stores its cost when the skeleton is read (default 100, shared by both sides of the connection). Every move uses intervalo(exit_cost, speed) instead of the fixed COSTO_MOVER. Speed changes keep using nuevo_tiempo_por_velocidad. The existing inconsistent-door validation is extended to compare costs on both sides.
+
+Measurements (section 5.6): re-run the part-one event agenda benchmarks with variable move costs and many active actors, compare with the part-one results, and keep or change the agenda decision based on the data.
+
+Respect the constitution: no dict, set, heapq, bisect or collections in evaluated structures.
+- Uso: hacer el plan para el spec 001, con mediciones y decisiones de diseño
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Fix spec.md: the crypt skeleton is never persisted; it is downloaded from the service every time a game starts. Only catalog entries are cached, and saved games and replay logs store the crypt version. Rewrite FR-011, FR-012, User Story 5 and SC-007 accordingly: exit costs are read from the skeleton on every start; a saved game or replay log whose crypt version differs (for example, from part one) is rejected by the existing version check, with no other invalidation mechanism. Remove the scenario where persisted exit costs are reused without a new request. Record this correction in the Clarifications section.
+- Uso: arreglar el spec.md para que quede claro que los costos de salida se leen del esqueleto de la cripta en cada inicio y que los guardados y logs de replay con versión distinta son rechazados por la verificación de versión existente
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
