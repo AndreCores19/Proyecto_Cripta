@@ -63,6 +63,43 @@ Built by `JuegoService.estado_vista()` from the game state; passed by `Controlad
 
 Later specs extend this DTO; this feature adds only `SalidaVistaDTO.costo` beyond today's output.
 
+## Other service boundary DTOs
+
+All of these are built by `JuegoService`, hold plain values and lists of DTOs only, and import nothing from `model/`.
+
+### ResumenFinalDTO (dto/resumen_final_dto.py)
+
+Returned by `JuegoService.resumen_final()`. It is used by `mostrar_final` (console, replay and silent views) and by `Aplicacion.registrar_puntaje`.
+
+| Field | Type | From |
+|---|---|---|
+| nombre_jugador | str | `partida.jugador.nombre` |
+| reloj | int | `partida.reloj` |
+| victoria | bool | `partida.victoria` |
+| terminada | bool | `partida.terminada` |
+| acciones | int | `partida.acciones_jugador` |
+| enemigos_derrotados | int | `partida.enemigos_derrotados` |
+| bitacora | list of str | `partida.bitacora.obtener_todos()[-20:]`. The console prints all of them; `VistaReplay` prints the last 6. |
+
+### InventarioVistaDTO and ObjetoInventarioDTO (dto/inventario_vista_dto.py)
+
+`JuegoService.inventario_vista()` → `InventarioVistaDTO`. `JuegoService.vista_ordenada(criterio)` → list of `ObjetoInventarioDTO`, in the order returned by the existing `Inventario.vista_ordenada`.
+
+| DTO | Fields |
+|---|---|
+| InventarioVistaDTO | tamano, capacidad_max, objetos (list of `ObjetoInventarioDTO`, in list order from `cabeza`) |
+| ObjetoInventarioDTO | id_instancia, nombre, peso, valor, equipado (bool), actual (bool: the node is `inventario.actual`) |
+
+### Lists and plain values
+
+| Service method | Returns | Notes |
+|---|---|---|
+| `objetos_en_sala()` | list of `ObjetoVistaDTO` | objects of the player's room, in room order |
+| `enemigos_en_sala()` | list of `EnemigoVistaDTO` | enemies with `enemigo.sala is jugador.sala and enemigo.esta_vivo()`, in `partida.enemigos` order. This is the controller's attack filter. The room view's list keeps today's filter, without the alive check. |
+| `atacar(id_enemigo)` | bool | resolves the first match in `partida.enemigos` order among the `enemigos_en_sala()` candidates; `False` if there is none |
+| `terminada()` | bool | `partida.terminada` |
+| `semilla()` | int | `partida.semilla`, for `guardar_partida` |
+
 ## Actors
 
 Player and enemies (`errante`, `rastreador`, future hunters) all schedule moves through

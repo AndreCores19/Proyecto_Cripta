@@ -212,8 +212,12 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-plan Update plan.md to resolve C1 completely, as Andrea will finish the DTO work in this feature:
+- mostrar_final, mostrar_inventario and mostrar_inventario_ordenado receive DTOs built by the service instead of model objects.
+- The controller never reads the game model: no servicio.partida, no room objects. Everything it needs (enemies and objects in the room, end-of-game data, score data for persistence) comes from service methods that return DTOs.
+- Remove the Complexity Tracking entry for these items and mark Constitution Check row III as PASS without exceptions.
+- All of this work is Andrea's (dto, service, controller, view).
+- Uso: cubre completamente la C1 del plan.md, con el trabajo de Andrea en DTOs, servicio, controlador y vista, y marca la fila III de la constitución como PASS sin excepciones
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

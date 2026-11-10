@@ -30,11 +30,22 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
 - **Decision**: no new mechanism.
 - **Rationale**: the skeleton is not persisted. It is re-read on every start through `pagina_esqueleto`, so costs are always fresh. Saves (`validar_guardado`) and logs (`_versiones_coinciden`) compare `version_cripta`, and part-two crypts have new versions. The catalog cache is keyed by the catalog version and holds no exits. Offline recordings store the raw skeleton JSON, so newly recorded crypts include `costo`.
 
-## R7. View DTO for the room view (analysis C1)
+## R7. DTOs across the whole service boundary (analysis C1)
 
-- **Decision**: a new `EstadoVistaDTO`, built by `JuegoService.estado_vista()` and passed by `Controlador.jugar` to `mostrar_estado`. It carries what the room view prints today plus each exit's cost.
-- **Rationale**: Constitution III requires DTOs at every layer boundary. Until now, `mostrar_estado` received `Partida`. The service already owns the `Partida`, so it is the layer that can read it and hand out a snapshot.
-- **Alternatives**: (a) add only `costo` to the existing model read in the view. Rejected: it extends the violation. (b) Have the controller build the DTO. Rejected: the controller would then read the model directly, which moves the problem instead of fixing it. (c) Convert every view method now. Deferred: the request limits this feature to the room view (see plan Complexity Tracking).
+- **Decision**: the service returns DTOs or plain values for everything outside the model:
+  - `EstadoVistaDTO` for the room view, including exit costs
+  - `ResumenFinalDTO` for the end-of-game screens and the score table
+  - `InventarioVistaDTO` / `ObjetoInventarioDTO` for the inventory views
+  - `objetos_en_sala()` and `enemigos_en_sala()` for the controller
+  - `atacar(id_enemigo)`, `terminada()` and `semilla()`
+  
+  The controller and `Aplicacion` (after construction) never read `Partida`.
+- **Rationale**: Constitution III requires DTOs at every layer boundary and allows no exceptions. The second analysis found that the controller also reads the model (`servicio.partida`, room objects, `Enemigo` objects passed back to `atacar`), not just the views. The service already owns `Partida`, so it is the one place that can read it and hand out snapshots.
+- **Alternatives**:
+  - (a) Convert only the room view and record the rest as debt. Rejected: a recorded violation is still a violation (analysis C1, second pass).
+  - (b) Have the controller build the DTOs. Rejected: the controller would still read the model.
+  - (c) Keep `atacar(enemigo)` and hand the controller enemy objects wrapped in a DTO with a model reference. Rejected: a DTO holding a model reference leaks the model. The target is resolved by id inside the service instead.
+  - (d) Amend the constitution to allow phased migration. Not needed, since the whole boundary is converted in this feature.
 
 ## R6. Agenda under variable costs
 
