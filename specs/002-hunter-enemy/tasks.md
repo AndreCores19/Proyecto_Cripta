@@ -64,11 +64,11 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
 
 **Purpose**: save the "before" numbers and state. Nothing in this phase edits code. Every later task depends on it.
 
-- [ ] T001 Check that `specs/002-hunter-enemy/spec.md` is committed (commit `3ad9823`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `bench/` or `main.py`. Commit the plan artifacts (plan, research, data-model, contracts, quickstart, this file) in their own commit before any code, per Constitution VII — all FRs
-- [ ] T002 Run `python -m pytest` on the unchanged code and note the result (expected: 115 passed). It is the "all green before" reference for Phase 3 and Phase 11 — FR-013, FR-014
-- [ ] T003 [P] Run `python -m bench.bench_ciclo` three times on the unchanged code and save all three outputs, separated by a line `--- corrida N ---`, to `specs/002-hunter-enemy/bench-antes-ciclo.txt`. Do not edit the output — FR-017
-- [ ] T004 [P] Run `python -m bench.bench_agenda` three times on the unchanged code and save all three outputs, separated by `--- corrida N ---`, to `specs/002-hunter-enemy/bench-antes-agenda.txt`. Do not edit the output — FR-017, FR-019
-- [ ] T005 Capture the state of seeded games without hunters before any change — FR-013, FR-014 (SC-006):
+- [X] T001 Check that `specs/002-hunter-enemy/spec.md` is committed (commit `3ad9823`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `bench/` or `main.py`. Commit the plan artifacts (plan, research, data-model, contracts, quickstart, this file) in their own commit before any code, per Constitution VII — all FRs
+- [X] T002 Run `python -m pytest` on the unchanged code and note the result (expected: 115 passed). It is the "all green before" reference for Phase 3 and Phase 11 — FR-013, FR-014
+- [X] T003 [P] Run `python -m bench.bench_ciclo` three times on the unchanged code and save all three outputs, separated by a line `--- corrida N ---`, to `specs/002-hunter-enemy/bench-antes-ciclo.txt`. Do not edit the output — FR-017
+- [X] T004 [P] Run `python -m bench.bench_agenda` three times on the unchanged code and save all three outputs, separated by `--- corrida N ---`, to `specs/002-hunter-enemy/bench-antes-agenda.txt`. Do not edit the output — FR-017, FR-019
+- [X] T005 Capture the state of seeded games without hunters before any change — FR-013, FR-014 (SC-006):
   - Create `tests/estado_sin_cazadores.py` (helper, not a test module). `resumen(semilla)` builds `bench.bench_ciclo.armar_partida_costos(30, 50, semilla)`, turns the odd-numbered enemies into `"rastreador"` (`enemigo.comportamiento = "rastreador"`), plays 500 actions (every 5th is `esperar_jugador()`, the others `mover()` along the chain, turning around when there is no exit, like `_jugar` in `tests/test_costos_salida.py`) and returns one text: `reloj`, `acciones_jugador`, the player's room id and life, and one line `id sala vida` per enemy.
   - Create `tests/capturar_estado_sin_cazadores.py` (like `tests/capturar_salida_parte1.py`): writes the summaries for seeds 1, 2 and 3 to `specs/002-hunter-enemy/estado-sin-cazadores-antes.txt`. Run it now, on the unchanged code.
 

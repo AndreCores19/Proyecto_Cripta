@@ -1,0 +1,21 @@
+--- corrida 1 ---
+ escenario  salas  enemigos   promedio       p99      peor   (ms)
+    normal     20        30      0.247     0.563     1.309   cumple
+    grande    100       100      1.034     2.441    24.633   cumple
+   extremo    100       300      3.409     7.152    13.609   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99)
+--- corrida 2 ---
+ escenario  salas  enemigos   promedio       p99      peor   (ms)
+    normal     20        30      0.248     0.720     2.262   cumple
+    grande    100       100      0.848     2.127     2.891   cumple
+   extremo    100       300      3.111     7.848    11.561   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99)
+--- corrida 3 ---
+ escenario  salas  enemigos   promedio       p99      peor   (ms)
+    normal     20        30      0.235     0.667     1.163   cumple
+    grande    100       100      0.906     2.072     5.033   cumple
+   extremo    100       300      2.962     6.513    17.093   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99)
