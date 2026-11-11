@@ -387,6 +387,63 @@ FR-017 and SC-007 must use the same measurement convention as the existing event
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: /speckit-plan Technical context and constraints for spec 002 (hunter):
+- Python 3.11+. Follow the constitution: in the evaluated code, no dict or set as an index or cache, and no heapq, bisect, collections, networkx or any graph or pathfinding library. Every auxiliary structure the search needs is our own.
+- Build our own min-heap in structures/ before the hunter search. It must be generic (any priority, with a deterministic order between equal priorities) because the "ir a" travel of spec 003 will reuse it. Evaluate whether the existing agenda heap (structures/agenda.py) can be reused or generalized instead of writing a second heap, and justify the choice.
+- The agenda of part one stays as the event queue (measured in spec 001).
+- The hunter moves only through the existing Partida._programar_movimiento(actor, salida); no second movement path.
+- Reading "comportamiento": "cazador" and "rango" goes through the existing catalog DTO and repository.
+- Everything that crosses from service to controller or view is a DTO: add the hunter mark as a field of the existing EstadoVistaDTO; never pass model objects to the view.
+- --bench and --replay never create view classes; replay output goes through adapters/salida_replay.py.
+- Uso: plan para el spec 002 (cazador), con contexto técnico y restricciones, incluyendo la construcción de un min-heap genérico, la reutilización del heap de agenda, el movimiento del cazador a través de Partida._programar_movimiento, la lectura de comportamiento y rango desde el DTO y repositorio del catálogo, el uso de DTOs para pasar datos a la vista, y la no creación de clases de vista en --bench y --replay
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Review specs/002-hunter-enemy/plan.md and research.md and fix them if needed. Do not touch code. Do not commit. Report what you changed.
+1. FR-018: confirm that every search stops once the popped distance exceeds the rango it serves. In shared mode, if the cached result was computed up to a smaller rango than the hunter now asking, the plan must extend or recompute it; a hunter must never decide from a result that did not reach its rango.
+2. Section 5.6 of the assignment: add to the plan the review of the part-one agenda under the new load (dozens of hunters, variable move costs), and a task-level step to save the current event-cycle benchmark results as the "before" baseline before any change to the event cycle.
+3. The per-room search fields (busq_marca, busq_dist): state how the cache stays valid if another search (the "ir a" travel of spec 003) runs between two hunter turns. Either the cache check detects it, or "ir a" must use separate fields. Write it as a note for spec 003.
+- Uso:  revisar specs/002-hunter-enemy/plan.md y research.md y corregirlos si es necesario, sin tocar código, y reportar los cambios, incluyendo la confirmación de que cada búsqueda se detiene cuando la distancia supera el rango, la revisión de la agenda de parte uno bajo la nueva carga, y cómo se mantiene válida la caché de búsqueda por habitación si otra búsqueda se ejecuta entre dos turnos de cazador
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-tasks Every task cites the FR(s) it serves. Order: first, save the "before" benchmark baseline (bench_ciclo and bench_agenda) before any code change; then the generic min-heap with its tests; then the hunter decision; then catalog reading, view mark and benchmark. Every acceptance scenario of spec.md has a test task that cites its FR, using fake data and no network. Group tasks in phases so each phase can be implemented and reviewed on its own.
+- Uso: hacer la asignación de tareas para el spec 002, con cada tarea citando los FR que sirve, y ordenadas en fases para que cada fase pueda implementarse y revisarse por sí sola
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-analyze Pay special attention to: constitution violations (dict or set as index or cache, heapq, bisect, collections, graph libraries); FRs with no task or no test; tasks with no FR; anything in plan.md or tasks.md that is not in spec.md; and spec.md naming classes, modules or data structures.
+- Uso: analizar el spec 002, prestando atención a violaciones de la constitución, FRs sin tarea o prueba, tareas sin FR, cualquier cosa en plan.md o tasks.md que no esté en spec.md, y spec.md nombrando clases, módulos o estructuras de datos
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Apply fixes to plan.md, research.md, tasks.md, contracts/ and quickstart.md only. Do not change spec.md. Do not commit.
+- C1: rewrite the justification: the heap's order between equal priorities never reaches a decision, because decisions use distances and the (room id, direction) tie-break. Add to T029 a test that permutes Sala.salidas and Sala.entradas and checks decisions do not change. In contracts/monticulo.md state that any reuser must break ties with an explicit rule.
+- C3: Appendix B cases for terrain and hunter, with their scenarios: no open route -> US1-5; route cost above rango -> US1-4; fewer rooms but higher cost vs more rooms and lower cost -> US1-6; two neighbors tie -> US2-1; a door on the route closes between turns -> US3-1; high-speed actor through an exit of cost 1 -> spec 001; speed change while crossing a costly exit -> spec 001 (also covered for the hunter by G2). Add this mapping to the scenario-to-test table.
+- I1: reword the 10% rule as an investigation trigger, not an acceptance gate.
+- I2: use "p99 <= 20 ms" in plan and tasks, matching the spec.
+- S1: no change; the comparisons are required verbatim by the assignment.
+- Apply your recommendations for C2, G1, G2, G3, U1, U2, U3, U4, U5, A1 and I3.
+Report what you changed.
+- Uso: aplicar correcciones a plan.md, research.md, tasks.md, contracts/ y quickstart.md según las recomendaciones, sin cambiar spec.md, y reportar los cambios, incluyendo la reescritura de la justificación del heap, la adición de pruebas para permutaciones de salidas y entradas de Sala, el mapeo de escenarios a pruebas, la reformulación de la regla del 10% como un disparador de investigación, el uso de "p99 <= 20 ms" en plan y tasks, y aplicar recomendaciones para C2, G1, G2, G3, U1, U2, U3, U4, U5, A1 e I3
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt:
 - Uso: 
 
@@ -409,3 +466,14 @@ FR-017 and SC-007 must use the same measurement convention as the existing event
 - Herramienta: Claude
 - Prompt:
 - Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
