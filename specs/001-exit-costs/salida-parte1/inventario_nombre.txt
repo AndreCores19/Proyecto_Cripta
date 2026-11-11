@@ -1,0 +1,4 @@
+Inventario ordenado por nombre:
+  [1] Espada (peso 5, valor 30)
+  [2] Llave (peso 1, valor 2)
+  [3] Poción (peso 2, valor 50)

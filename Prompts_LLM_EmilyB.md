@@ -272,8 +272,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only T003 from tasks.md. Create tests/estado_fijo.py and tests/capturar_salida_parte1.py, run the capture script once to write the golden files, and mark T003 as done. Do not change any file in view/, controller/, service/ or aplicacion.py. Do not commit.
+- Uso: implementar T003 de tasks.md
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

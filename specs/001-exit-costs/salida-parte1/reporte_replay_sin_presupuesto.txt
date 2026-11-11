@@ -1,0 +1,5 @@
+----------------------------------------
+Solicitudes realizadas: 12 de None
+Aciertos: 0, Fallos: 0
+Porcentaje de aciertos: N/A
+----------------------------------------

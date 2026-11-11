@@ -1,0 +1,40 @@
+----------------------------------------
+Sala 1: Entrada
+Tiempo: 0
+Jugador: Ana (Vida: 50/50)
+  Ataque: 14  Defensa: 1  Velocidad: 100
+  Arma: Espada
+  Armadura: ninguna
+  Efectos: ninguno
+Salidas:
+  N -> Pasillo (cerrada)
+  E -> Pasillo (abierta)
+Enemigos en la sala:
+  Rata [r1] (Vida: 12/15) [velocidad]
+Trampas en la sala:
+  Pinchos (Daño: 5, armada)
+Objetos en la sala:
+  [4] Escudo
+  [5] Antorcha
+Bitácora:
+  t=0: línea de bitácora 06
+  t=0: línea de bitácora 07
+  t=0: línea de bitácora 08
+  t=0: línea de bitácora 09
+  t=0: línea de bitácora 10
+  t=0: línea de bitácora 11
+  t=0: línea de bitácora 12
+  t=0: línea de bitácora 13
+  t=0: línea de bitácora 14
+  t=0: línea de bitácora 15
+  t=0: línea de bitácora 16
+  t=0: línea de bitácora 17
+  t=0: línea de bitácora 18
+  t=0: línea de bitácora 19
+  t=0: línea de bitácora 20
+  t=0: línea de bitácora 21
+  t=0: línea de bitácora 22
+  t=0: línea de bitácora 23
+  t=0: línea de bitácora 24
+  t=0: línea de bitácora 25
+----------------------------------------

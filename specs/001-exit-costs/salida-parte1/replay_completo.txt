@@ -1,0 +1,17 @@
+No puedes moverte en esa dirección.
+Comando no reconocido.
+----------------------------------------
+  t=0: línea de bitácora 21
+  t=0: línea de bitácora 22
+  t=0: línea de bitácora 23
+  t=0: línea de bitácora 24
+  t=0: línea de bitácora 25
+  t=200: Rata espera
+Tiempo final: 200
+Saliste de la partida.
+----------------------------------------
+Solicitudes realizadas: 12 de 50
+Presupuesto restante: 38
+Aciertos: 7, Fallos: 3
+Porcentaje de aciertos: 70.00%
+----------------------------------------

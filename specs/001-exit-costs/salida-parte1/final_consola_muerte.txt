@@ -1,0 +1,23 @@
+----------------------------------------
+  t=0: línea de bitácora 06
+  t=0: línea de bitácora 07
+  t=0: línea de bitácora 08
+  t=0: línea de bitácora 09
+  t=0: línea de bitácora 10
+  t=0: línea de bitácora 11
+  t=0: línea de bitácora 12
+  t=0: línea de bitácora 13
+  t=0: línea de bitácora 14
+  t=0: línea de bitácora 15
+  t=0: línea de bitácora 16
+  t=0: línea de bitácora 17
+  t=0: línea de bitácora 18
+  t=0: línea de bitácora 19
+  t=0: línea de bitácora 20
+  t=0: línea de bitácora 21
+  t=0: línea de bitácora 22
+  t=0: línea de bitácora 23
+  t=0: línea de bitácora 24
+  t=0: línea de bitácora 25
+Tiempo final: 0
+Has muerto.

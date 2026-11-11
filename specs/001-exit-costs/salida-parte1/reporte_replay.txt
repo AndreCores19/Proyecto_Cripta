@@ -1,0 +1,6 @@
+----------------------------------------
+Solicitudes realizadas: 12 de 50
+Presupuesto restante: 38
+Aciertos: 7, Fallos: 3
+Porcentaje de aciertos: 70.00%
+----------------------------------------
