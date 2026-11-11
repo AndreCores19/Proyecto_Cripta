@@ -120,7 +120,7 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T011 [US1] Write tests in `tests/test_costos_salida.py` using the common fixture. Read the next action time as `partida.jugador.evento.tiempo` right after `partida.mover`; `mover` advances the clock to that action, so `partida.reloj` equals it after the call — FR-002, FR-003, FR-004, FR-005, FR-006, FR-016:
+- [x] T011 [US1] Write tests in `tests/test_costos_salida.py` using the common fixture. Read the next action time as `partida.jugador.evento.tiempo` right after `partida.mover`; `mover` advances the clock to that action, so `partida.reloj` equals it after the call — FR-002, FR-003, FR-004, FR-005, FR-006, FR-016:
   - US1-1: cost 300, speed 100, move at T → player is in the destination room and next action is at T+300 (FR-003, FR-004, FR-016)
   - US1-2: no cost → T+100 (FR-002, FR-004)
   - US1-3: both sides declare 250 → A→B and then B→A each take 250 (FR-005)
@@ -128,7 +128,7 @@ After that, the only pending action of that enemy is the one the method under te
   - US1-5: cost 1, speed 1000 → T+1 (FR-004, FR-006)
   - US1-7: only A→B declares 300 → moving B→A takes 300 (FR-005)
   - US1-8: in a room whose exits cost 500, `atacar` and `esperar_jugador` take the part-one intervals (FR-006)
-- [ ] T012 [US1] Add FR-016 order tests to `tests/test_costos_salida.py`. Wrap `partida._programar_movimiento` (after T013) with a test double that records `partida.jugador.sala`, `partida.reloj` and the destination's trail mark when it is called, then calls the original — FR-016:
+- [x] T012 [US1] Add FR-016 order tests to `tests/test_costos_salida.py`. Wrap `partida._programar_movimiento` (after T013) with a test double that records `partida.jugador.sala`, `partida.reloj` and the destination's trail mark when it is called, then calls the original — FR-016:
   - the player is already in the destination room at T, before the next action is scheduled
   - the destination room's trail mark is T (`sala.rastro == T`)
   - an armed trap in the destination room fires at T, before the next action
@@ -136,8 +136,8 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Implementation
 
-- [ ] T013 [US1] In `model/partida_logica.py`, add `Partida._programar_movimiento(self, actor, salida)`, which calls `self._programar_siguiente(actor, salida.costo)`. Do not modify `intervalo` or `nuevo_tiempo_por_velocidad` — FR-003, FR-004, FR-007
-- [ ] T014 [US1] In `Partida.mover` (`model/partida_logica.py`), replace `self._programar_siguiente(self.jugador, COSTO_MOVER)` with `self._programar_movimiento(self.jugador, salida)`. Keep the existing order: refresh trail → `_entrar_en_sala` → traps → victory → schedule. Remove `COSTO_MOVER` from that file's import if it is no longer used there — FR-003, FR-016
+- [x] T013 [US1] In `model/partida_logica.py`, add `Partida._programar_movimiento(self, actor, salida)`, which calls `self._programar_siguiente(actor, salida.costo)`. Do not modify `intervalo` or `nuevo_tiempo_por_velocidad` — FR-003, FR-004, FR-007
+- [x] T014 [US1] In `Partida.mover` (`model/partida_logica.py`), replace `self._programar_siguiente(self.jugador, COSTO_MOVER)` with `self._programar_movimiento(self.jugador, salida)`. Keep the existing order: refresh trail → `_entrar_en_sala` → traps → victory → schedule. Remove `COSTO_MOVER` from that file's import if it is no longer used there — FR-003, FR-016
 
 **Checkpoint**: US1 tests green; MVP done.
 

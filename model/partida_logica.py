@@ -4,7 +4,7 @@ from structures.agenda import AgendaEventos
 from structures.bitacora import Bitacora
 from structures.historial import Historial
 from model.objeto_logica import PERGAMINO_RETROCESO
-from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_MOVER, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
+from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
 from model.efectos_logica import Efectos
 
 RASTRO_VIGENCIA = 400
@@ -192,7 +192,7 @@ class Partida:
                 self.victoria = True
                 self.bitacora.agregar(f"t={self.reloj}: el jugador llega a la salida. ¡Victoria!")
                 return True
-            self._programar_siguiente(self.jugador, COSTO_MOVER)
+            self._programar_movimiento(self.jugador, salida)
             self.avanzar_hasta_jugador()
         return True
 
@@ -267,6 +267,10 @@ class Partida:
         tiempo = self.reloj + intervalo(costo, actor.velocidad)
         evento = self.agenda.programar(tiempo, "accion", actor)
         self.historial.asignar(actor, "evento", evento)
+
+    def _programar_movimiento(self, actor, salida):
+        #la siguiente acción de quien cruzó la salida tarda lo que cuesta esa salida
+        self._programar_siguiente(actor, salida.costo)
 
     def _calcular_dano(self, atacante, defensor):
         return max(1, atacante.ataque + self.azar.randint(0, 4) - defensor.defensa)

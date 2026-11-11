@@ -282,8 +282,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 3 of tasks.md (T011 to T014). Write the tests first and run them, then implement until they pass. At the end, run python -m pytest tests/test_costos_salida.py and the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 3 de tasks.md (T011 a T014), escribiendo las pruebas primero y ejecutándolas, luego implementando hasta que pasen, y al final ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
