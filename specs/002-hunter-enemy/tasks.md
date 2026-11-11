@@ -80,7 +80,7 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
 
 **Purpose**: the hand-written heap of [contracts/monticulo.md](./contracts/monticulo.md). It depends on nothing else and is reused by spec 003.
 
-- [ ] T006 [P] Write `tests/test_monticulo.py`. Docstrings cite FR and the Constitution principle I/II — FR-003, FR-007, FR-014, FR-018:
+- [X] T006 [P] Write `tests/test_monticulo.py`. Docstrings cite FR and the Constitution principle I/II — FR-003, FR-007, FR-014, FR-018:
   - extraction order equals a sorted list for 1000 seeded random integer priorities (`random.Random(5)`);
   - equal priorities come out in insertion order (insert 20 values with 3 distinct priorities and check the order);
   - tuple priorities `(2, 1)`, `(1, 9)`, `(1, 3)` come out as `(1, 3)`, `(1, 9)`, `(2, 1)`;
@@ -89,8 +89,8 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
   - `vaciar()` empties the heap and a second use gives the same order as a new heap (the insertion counter restarts);
   - a caller that needs a tie-break puts it in the priority: `(2, 7)`, `(2, 3)` come out as `(2, 3)`, `(2, 7)` whatever the insertion order;
   - the module imports neither `heapq`, `bisect` nor `collections` (read the source file text).
-- [ ] T007 Implement `structures/monticulo.py`: class `MonticuloMinimo` with `insertar(prioridad, valor)`, `extraer()`, `proximo()`, `vaciar()`, `__len__`. Array-based binary heap; nodes hold `(prioridad, secuencia, valor)`; order by `prioridad` using only `<`, equal priorities by `secuencia`. No `heapq`, `bisect` or `collections`. Depends on T006 — FR-007, FR-014, FR-018
-- [ ] T008 Run `python -m pytest tests/test_monticulo.py -v`; all green. Check with `grep -nE "heapq|bisect|collections|networkx|\bdict\(|\bset\(|\bfrozenset\(|\{\}|\{[^}]*:[^}]*\}" structures/monticulo.py` (review each hit by hand: f-strings and JSON parsing are not indexes) — FR-018
+- [X] T007 Implement `structures/monticulo.py`: class `MonticuloMinimo` with `insertar(prioridad, valor)`, `extraer()`, `proximo()`, `vaciar()`, `__len__`. Array-based binary heap; nodes hold `(prioridad, secuencia, valor)`; order by `prioridad` using only `<`, equal priorities by `secuencia`. No `heapq`, `bisect` or `collections`. Depends on T006 — FR-007, FR-014, FR-018
+- [X] T008 Run `python -m pytest tests/test_monticulo.py -v`; all green. Check with `grep -nE "heapq|bisect|collections|networkx|\bdict\(|\bset\(|\bfrozenset\(|\{\}|\{[^}]*:[^}]*\}" structures/monticulo.py` (review each hit by hand: f-strings and JSON parsing are not indexes) — FR-018
 
 **Checkpoint**: Phase 2 can be reviewed alone: one new file and one new test file.
 
