@@ -307,7 +307,7 @@ After that, the only pending action of that enemy is the one the method under te
 
 ## Phase 11: Polish & cross-cutting
 
-- [ ] T043 G1: in `tests/test_costos_salida.py`, run a seeded game on rooms built by `armar_partida_costos` — FR-004, FR-006, FR-007, SC-002, SC-003:
+- [X] T043 G1: in `tests/test_costos_salida.py`, run a seeded game on rooms built by `armar_partida_costos` — FR-004, FR-006, FR-007, SC-002, SC-003:
   - The test imports this builder from `bench/bench_ciclo.py`. That dependency on benchmark code is accepted, so the test and the benchmark use the same costed crypt.
   - Use a fixed seed, 50 wanderers and trackers, and a fixed sequence of 500 player actions (moves and waits). No speed effects are applied.
   - A fixed seed plus a fixed action sequence is a replayed game in the sense of SC-002: running it again reproduces the same game (FR-014).
@@ -316,23 +316,24 @@ After that, the only pending action of that enemy is the one the method under te
   - Assert that at least one move was checked for every exit cost in the set.
   
   Depends on T016 and T040.
-- [ ] T044 SC-004 regression: in `tests/test_costos_salida.py`, a fixed seed and action sequence on rooms with no `costo` and on rooms with `costo` 100 everywhere produce identical `reloj`, rooms and HP for the player and every enemy — FR-002, FR-014
-- [ ] T045 FR-014 determinism: in `tests/test_costos_salida.py`, the same seed and actions on rooms with mixed costs, run twice, give identical final state. Same file as T044, so not parallel; do it after T044 — FR-014
-- [ ] T046 [P] G2: write `tests/test_replay_costos.py` — FR-014:
+- [X] T044 SC-004 regression: in `tests/test_costos_salida.py`, a fixed seed and action sequence on rooms with no `costo` and on rooms with `costo` 100 everywhere produce identical `reloj`, rooms and HP for the player and every enemy — FR-002, FR-014
+- [X] T045 FR-014 determinism: in `tests/test_costos_salida.py`, the same seed and actions on rooms with mixed costs, run twice, give identical final state. Same file as T044, so not parallel; do it after T044 — FR-014
+- [X] T046 [P] G2: write `tests/test_replay_costos.py` — FR-014:
   - Define a helper `armar_salas(semilla)` that builds a fresh set of rooms with mixed exit costs (and the same enemies) from `random.Random(semilla)`. Call it once for the recording and once for the replay, with the same seed, so the replay never reuses rooms the recorded game changed.
   - Recording: build a service on `armar_salas(7)`, with `FabricaFalsa` from `tests/estado_fijo.py`. Run a fixed command list through `Controlador.ejecutar` with `VistaSilenciosa` and a `BitacoraPartida(tmp_path)` opened with `abrir(id_cripta, version, version, semilla)`. Close the log.
   - Replay: read the log with `LectorBitacora(tmp_path / f"partida_{id_cripta}_{semilla}.log")` and `leer()`. Build a new service on `armar_salas(7)` with `Partida(…, semilla=lector.semilla)`, and replay `lector.comandos` through `Controlador(servicio, None, None, None).ejecutar`, as `Aplicacion.reproducir` does after T037.
   - Compare `resumen_final()` (clock, victory, actions) and `estado_vista()` (room, player HP, enemies in the room) between the two runs.
   
   Depends on T016, T031 and T036.
-- [ ] T047 Run `python -m pytest`; all part-one tests stay green — FR-006, FR-008, FR-014
-- [ ] T048 Constitution gate, limited to new attributes or fields in the changed files that are used as an index or cache — FR-014, FR-015:
+- [X] T047 Run `python -m pytest`; all part-one tests stay green — FR-006, FR-008, FR-014
+- [X] T048 Constitution gate, limited to new attributes or fields in the changed files that are used as an index or cache — FR-014, FR-015:
   - None of them is a `dict`, `set`, `heapq`, `bisect` or `collections` structure. `Salida.costo_declarado` is an int; the DTO lists are display-only.
   - `model/` imports nothing from `view/`, `controller/` or the view DTO modules, and `dto/` and `adapters/salida_replay.py` import nothing from `model/` or `view/`.
   - No class from `view/` is instantiated in `--replay` (checked by T034) or `--bench` (`grep -rn "Vista" bench/` finds nothing).
-- [ ] T049 Run the manual check in `specs/001-exit-costs/quickstart.md` — FR-004, FR-010, FR-014:
+- [X] T049 Run the manual check in `specs/001-exit-costs/quickstart.md` — FR-004, FR-010, FR-014:
   - `python main.py`: exit lines show `costo`, `Tiempo:` advances by `costo*100//velocidad` after a move, and `inv`, `inv peso`, `atacar`, `recoger`, `guardar` and the end screen behave as in part one
   - `python main.py --replay <log>` prints the same text as part one, apart from any differences in the game itself
+  - Note: checked by hand on `cripta-02`: `python main.py` (`inv`, `inv peso`, `atacar`, `recoger`, `guardar` and the end screen) and `python main.py --replay <log>` all behave as in part one. Also run `PYTHONPATH=. python pruebas_manuales/prueba_vista.py cripta-02`: exit lines show `costo 60` / `costo 100`, and `Tiempo:` went 0 → 60 after moving through the cost-60 exit (60*100//100). `tests/test_comando_inv.py` was added as a regression test for the `inv` command (golden `inventario.txt` with objects, and the part-one output with an empty inventory).
 
 ---
 

@@ -327,17 +327,17 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: In pruebas_manuales/prueba_vista.py, stop hardcoding "cripta-01": read the crypt id from the command line (sys.argv[1]) and print a short usage message if it is missing. Add this to the T024 note in tasks.md. Do not commit.
+- Uso: cambiar pruebas_manuales/prueba_vista.py para que no tenga "cripta-01" codificado, sino que lea el id de la cripta desde la línea de comandos (sys.argv[1]) y muestre un mensaje de uso si falta, y agregar esto a la nota de T024 en tasks.md, sin hacer commit
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 11 of tasks.md (T043 to T049). Write the remaining tests first and run them. For T049, the manual check, use pruebas_manuales/prueba_vista.py with crypt cripta-02 instead of cripta-01, and report what you could check. At the end, run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 11 de tasks.md (T043 a T049), escribiendo las pruebas restantes primero y ejecutándolas, para T049, la verificación manual, usar pruebas_manuales/prueba_vista.py con la cripta cripta-02 en lugar de cripta-01, y reportar lo que se pudo verificar, y al final ejecutar la suite completa y marcar las tareas como hechas sin hacer commit
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
+- Prompt: 
 - Uso: 
 
 ### 10 de Noviembre, 2026
