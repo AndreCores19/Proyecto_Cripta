@@ -35,7 +35,7 @@ crypt version and are rejected on mismatch by the existing check (`aplicacion.py
 
 **Testing**: pytest (`tests/`), one test per acceptance scenario, each citing its FR
 
-**Target Platform**: Desktop console (Windows/Linux), headless modes `--replay`, `--bench`, `--verificar`
+**Target Platform**: Desktop console (Windows/Linux), headless modes `--replay` and `--bench` (the verification mode is introduced later by the solvability feature)
 
 **Project Type**: CLI game, five-layer architecture (data → logic → service → controller → view)
 
@@ -57,7 +57,7 @@ unchanged.
 |---|---|---|
 | I. Own data structures | PASS | No new evaluated structure. The cost is an integer attribute on `Salida`. The agenda stays the hand-written binary heap in `structures/agenda.py`. The benchmark only re-runs the part-one candidates (heap, unsorted list, sorted list). The view DTOs hold plain lists for display only; they are not an index or cache in an evaluated problem. No `dict`/`set`/`heapq`/`bisect`/`collections` introduced in `model/`, `structures/`, `data/` or `dto/`. |
 | II. Determinism | PASS | Costs come from data. The agenda tie-break (`tiempo`, then `num_sec`) is unchanged. The DTO builders only read state. `atacar` by id resolves the target by scanning `partida.enemigos` in list order, the same order the controller used before. Benchmark crypts are generated from a fixed seed. |
-| III. Layered architecture | PASS | Data in: `SalidaDTO.costo` → `RepositorioCripta` → `Salida.costo`. Data out: every service method the controller calls returns a DTO from `dto/` or a plain value (bool, int, str). The controller holds no reference to `Partida`, `Sala`, `Enemigo` or `Objeto`. Every view method (`mostrar_estado`, `mostrar_final`, `mostrar_inventario`, `mostrar_inventario_ordenado`) receives DTOs. `Aplicacion.reproducir` and `_reejecutar` use the service too. The model imports nothing from `view/` or `controller/`. `--replay`, `--bench` and `--verificar` do not instantiate `VistaConsola`. |
+| III. Layered architecture | PASS | Data in: `SalidaDTO.costo` → `RepositorioCripta` → `Salida.costo`. Data out: every service method the controller calls returns a DTO from `dto/` or a plain value (bool, int, str). The controller holds no reference to `Partida`, `Sala`, `Enemigo` or `Objeto`. Every view method (`mostrar_estado`, `mostrar_final`, `mostrar_inventario`, `mostrar_inventario_ordenado`) receives DTOs. `Aplicacion.reproducir` and `_reejecutar` use the service too. The model imports nothing from `view/` or `controller/`. **No class from `view/` is instantiated in `--replay` or `--bench`.** `--bench` never touches `view/`. `--replay` runs the controller with `vista=None` and prints through plain functions in `adapters/salida_replay.py`, and `VistaReplay` is deleted (see "Replay output without view classes"). |
 | IV. No hardcoded data | PASS | The only constant is the default 100 (FR-002), which is the existing `COSTO_MOVER` in `tiempo_logica.py`. |
 | V. Network budget and versions | PASS | No new request: `costo` arrives inside the skeleton pages that are already downloaded. Invalidation stays in the existing crypt-version comparison. |
 | VI. Evidence-backed performance | PASS (pending data) | The agenda decision is kept or changed only from the §Measurements numbers. |
@@ -82,7 +82,7 @@ unchanged.
 | FR-010 | dto + service + controller + view | The room view prints from `EstadoVistaDTO`; exit lines read `N -> Sala (abierta, costo 300)`. See "Service boundary DTOs" for the rest of the boundary. |
 | FR-011 | data | No change: exit costs are read from the skeleton downloaded on every start (offline recording in `--offline` mode). They are never written to saved games, replay logs or the catalog cache. |
 | FR-012 | app | No change in behaviour: a saved game (`validar_guardado`) or replay log (`_versiones_coinciden`) whose crypt version differs is rejected by the existing check. Tests confirm that a different-version save and log are refused and that a same-version save uses the fresh skeleton's costs. |
-| FR-014 | all | Covered by the determinism tests and a replay determinism test on a crypt with costs. The DTO refactor must not change any printed output or any game state. |
+| FR-014 | all | Covered by the determinism tests and a replay determinism test on a crypt with costs (replay and benchmark modes; there is no verification mode yet). The DTO refactor and the replay output change must not change any printed output or any game state; golden files captured from the unchanged code are the reference. |
 | FR-015 | all | Costs are only ever read from JSON. |
 
 ### Timing semantics (FR-016, FR-004, FR-009)
@@ -109,7 +109,7 @@ is the only class above the model that touches `Partida`. Full field lists are i
 |---|---|---|
 | `Controlador.jugar` loop condition | `servicio.partida.terminada` | `servicio.terminada()` → bool |
 | `VistaConsola.mostrar_estado(partida)` | `Partida` | `servicio.estado_vista()` → `EstadoVistaDTO` (includes exit costs) |
-| `mostrar_final(partida)` (console, replay, silent) | `Partida` | `servicio.resumen_final()` → `ResumenFinalDTO` |
+| `mostrar_final(partida)` (console, silent) | `Partida` | `servicio.resumen_final()` → `ResumenFinalDTO` |
 | `persistencia.registrar_puntaje(partida)` | `Partida` | `registrar_puntaje(resumen)` with the same `ResumenFinalDTO` |
 | `Controlador._cmd_guardar` → `persistencia.guardar_partida(partida, …)` | `partida.semilla` | `guardar_partida(servicio.semilla(), comandos, nombre)` → int |
 | `Controlador._cmd_recoger` | `servicio.partida.jugador.sala.objetos` | `servicio.objetos_en_sala()` → list of `ObjetoVistaDTO` |
@@ -117,13 +117,32 @@ is the only class above the model that touches `Partida`. Full field lists are i
 | `mostrar_inventario(partida)` | `Partida` inventory | `servicio.inventario_vista()` → `InventarioVistaDTO` |
 | `servicio.vista_ordenada(criterio)` → `mostrar_inventario_ordenado` | list of model `Objeto` | the same method returns a list of `ObjetoInventarioDTO`, sorted by the existing `Inventario.vista_ordenada` |
 | `Aplicacion._reejecutar` | `controlador.servicio.partida.terminada` | `controlador.servicio.terminada()` |
-| `Aplicacion.reproducir` | `partida.terminada`; `vista.mostrar_final(partida)` | `servicio.terminada()`; `vista.mostrar_final(servicio.resumen_final())` |
+| `Aplicacion.reproducir` | `partida.terminada`; `VistaReplay().mostrar_final(partida)` | `servicio.terminada()`; `imprimir_final_replay(servicio.resumen_final())`, a plain function (see below) |
 
 Rules:
 - DTOs are snapshots made of plain values and lists of other DTOs. They never hold a model reference, and `dto/` imports nothing from `model/`.
-- The views print exactly what they print today, apart from the exit costs. `VistaReplay.mostrar_final` keeps showing the last 6 log lines by slicing the DTO's list (which holds the last 20); the console shows all 20.
+- The views print exactly what they print today, apart from the exit costs. The console `mostrar_final` shows all 20 log lines in `ResumenFinalDTO.bitacora`; the replay summary shows the last 6 by slicing the same list.
 - `JuegoService.atacar(id_enemigo)` returns `False` when no living enemy with that id is in the player's room. `tests/test_service.py` is updated to call it with the id.
 - `Aplicacion` remains the composition root. It still builds the `Partida` (`fabrica.nueva_partida`, setting the player's name), but after that it only talks to the game through the service.
+
+### Replay output without view classes (Constitution III, analysis C2)
+
+Principle III says `--replay` MUST NOT instantiate any view class. Today `Aplicacion.reproducir` creates `VistaReplay` and hands it to the controller. New design:
+
+- **Plain output functions** in a new module `adapters/salida_replay.py` (outside `view/`, no classes, no imports from `model/`). Each one prints exactly the text `VistaReplay` prints today:
+  - `imprimir_final_replay(resumen)`: the separator, the last 6 lines of `resumen.bitacora` indented by two spaces, `Tiempo final: {resumen.reloj}`, and the victory / death / quit line (same text as `VistaReplay.mostrar_final`).
+  - `imprimir_reporte(solicitudes, presupuesto, aciertos, fallos)`: same text as `VistaReplay.mostrar_reporte`.
+  - The version-mismatch message in `reproducir` is printed with `print`, with the same text.
+- **Controller without a view**: `Controlador(servicio, vista, bitacora, persistencia, avisar=None)`. When `vista is None`:
+  - `mostrar_mensaje(texto)` calls `avisar(texto)` if it is given.
+  - `mostrar_estado`, `mostrar_inventario`, `mostrar_inventario_ordenado` and `mostrar_final` are skipped. `VistaReplay` implemented them as no-ops, so the output doesn't change.
+  
+  All view calls in the controller go through one small helper per method, so the `None` check lives in one place. `reproducir` builds `Controlador(servicio, None, None, None, avisar=print)`, so replay messages are still printed at the same moment as today.
+- **`VistaReplay` is deleted.** Its only other user was `VistaSilenciosa`, which inherits from it. `VistaSilenciosa` becomes a standalone class with all methods as no-ops (no `mostrar_reporte`, which is never called on it). It is still used only by `Aplicacion._reejecutar` when loading a save in interactive mode, which is not `--replay`.
+- `Aplicacion._reportar(vista)` stays for interactive mode (`VistaConsola.mostrar_reporte`). `reproducir` calls `imprimir_reporte` with the same four values.
+- `--bench` imports nothing from `view/` today, and that does not change.
+
+Before deleting `VistaReplay`, capture its output for a fixed state as the expected text for the new functions (see tasks).
 
 Complexity per call: O(size of what is shown). For example, O(exits + enemies + traps + objects + 20) for `estado_vista`, and O(inventory) for `inventario_vista`. None of these run in the `--bench` paths.
 
@@ -181,12 +200,16 @@ data/repositorio_cripta.py     # pass costo to Salida; extend inconsistent-door 
 service/juego_service.py       # + estado_vista, resumen_final, inventario_vista, objetos_en_sala,
                                #   enemigos_en_sala, terminada, semilla; atacar(id_enemigo);
                                #   vista_ordenada returns DTOs                             (Andrea)
-controller/controlador.py      # no Partida/Sala/Enemigo/Objeto access; only service DTOs   (Andrea)
+controller/controlador.py      # no Partida/Sala/Enemigo/Objeto access; only service DTOs;
+                               #   vista may be None (replay), messages go to avisar       (Andrea)
 view/vista_consola.py          # every method prints from DTOs; exit lines show costo      (Andrea)
-view/vista_replay.py           # mostrar_final(resumen) prints last 6 lines from the DTO    (Andrea)
-view/vista_silenciosa.py       # signatures renamed to DTO parameters, still no-ops        (Andrea)
-aplicacion.py                  # reproducir/_reejecutar use servicio.terminada() and resumen_final();
-                               #   guardar_partida(semilla, …), registrar_puntaje(resumen)  (Andrea)
+view/vista_replay.py           # DELETED                                                   (Andrea)
+view/vista_silenciosa.py       # standalone (no longer inherits VistaReplay), DTO params, no-ops (Andrea)
+adapters/salida_replay.py      # new: imprimir_final_replay(resumen), imprimir_reporte(...) (Andrea)
+aplicacion.py                  # reproducir: no view class, Controlador(..., None, ..., avisar=print),
+                               #   imprimir_final_replay / imprimir_reporte; _reejecutar uses
+                               #   servicio.terminada(); guardar_partida(semilla, …),
+                               #   registrar_puntaje(resumen)                              (Andrea)
 model/sala_logica.py           # Salida.costo_declarado, Salida.costo, enlazar shares cost (Emily)
 model/partida_logica.py        # _programar_movimiento; player and enemy moves use it      (Emily)
 model/tiempo_logica.py         # unchanged (intervalo, nuevo_tiempo_por_velocidad, COSTO_MOVER)
@@ -201,11 +224,14 @@ tests/test_frontera_servicio.py # new (Andrea): every service→controller/view 
 tests/test_service.py          # updated (Andrea): atacar(id_enemigo)
 tests/test_version_cripta.py   # new (Andrea): fresh skeleton, old-version save/log rejected (US5)
 tests/test_replay_costos.py    # new (Andrea): record + replay on a crypt with costs (FR-014)
+tests/test_salida_replay.py    # new (Andrea): replay output equals the captured VistaReplay text;
+                               #   no view/ class is instantiated during reproducir
+specs/001-exit-costs/salida-parte1/ # captured part-one output of the views and VistaReplay (golden files)
 tests/test_costos_salida.py    # new (Emily): move durations, FR-016 order, enemies, speed changes (US1–US3)
 tests/test_puertas.py          # + (Emily): Salida.costo sharing rules in enlazar
 ```
 
-**Structure Decision**: existing single-project layered layout; three new DTO modules and new test files, no new directories.
+**Structure Decision**: existing single-project layered layout. This feature adds three DTO modules, one output-function module in `adapters/` and new test files, and removes `view/vista_replay.py`. The only new directory is the golden-output folder under `specs/`.
 
 ## Complexity Tracking
 

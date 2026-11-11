@@ -4,7 +4,7 @@
 
 `VistaConsola.mostrar_estado(estado)` receives an `EstadoVistaDTO` built by
 `JuegoService.estado_vista()` ([data-model.md](../data-model.md)). It never receives `Partida`.
-`VistaReplay.mostrar_estado(estado)` and `VistaSilenciosa.mostrar_estado(estado)` stay no-ops.
+`VistaSilenciosa.mostrar_estado(estado)` stays a no-op. In `--replay` there is no view: the controller has `vista=None` and skips `mostrar_estado` ([service-boundary.md](./service-boundary.md)).
 
 ## Output
 

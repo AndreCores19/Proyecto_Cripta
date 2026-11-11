@@ -238,8 +238,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-plan Resolve analysis C2: --replay must not instantiate any view class. Aplicacion.reproducir stops creating VistaReplay; the replay end summary is printed from the ResumenFinalDTO by a plain function outside view/, with the same text VistaReplay prints today. Remove VistaReplay if nothing else uses it. Widen Constitution Check row III so that no view class is created in --replay or --bench. This work is Andrea's. Also remove the verification mode from the plan, following the corrected FR-014.
+- Uso: arreglar el plan.md para que --replay no instancie ninguna clase de vista, y que la impresión del resumen final se haga desde un DTO por una función fuera de view/, y eliminar VistaReplay si nadie más la usa, y ampliar la fila III de la constitución para que no se cree ninguna clase de vista en --replay o --bench, y eliminar el modo de verificación del plan siguiendo el FR-014 corregido
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

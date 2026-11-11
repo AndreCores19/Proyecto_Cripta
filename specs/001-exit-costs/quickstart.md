@@ -8,7 +8,7 @@
 ## Automated tests
 
 ```powershell
-python -m pytest tests/test_costos_datos.py tests/test_puertas.py tests/test_costos_salida.py tests/test_vista_costos.py tests/test_frontera_servicio.py tests/test_service.py tests/test_version_cripta.py tests/test_replay_costos.py -v
+python -m pytest tests/test_costos_datos.py tests/test_puertas.py tests/test_costos_salida.py tests/test_vista_costos.py tests/test_frontera_servicio.py tests/test_service.py tests/test_version_cripta.py tests/test_replay_costos.py tests/test_salida_replay.py -v
 ```
 
 Each test name or docstring cites its FR. Expected mapping:
@@ -26,6 +26,7 @@ Each test name or docstring cites its FR. Expected mapping:
 | US2-2 | from a fixed state (room, trails, clock, open exits) with costs ≠ 100, the tracker picks the part-one rule's exit | FR-008 |
 | US3-1..3 | speed change before the next action → next action at now + max(1, (end−now)*old//new) | FR-009 |
 | US4-1..2 | `estado_vista()` exits carry `costo`; the room view prints it for open and closed exits; the view never receives `Partida` | FR-010 |
+| Replay | `--replay` creates no `view/` class; its output equals the golden files captured from part-one `VistaReplay` | FR-014, Constitution III |
 | Boundary | every service → controller/view/persistence crossing is a DTO or plain value ([contracts/service-boundary.md](./contracts/service-boundary.md)); end-of-game and inventory output unchanged; `atacar` by id | FR-010, FR-014, Constitution III |
 | US5-1 | exit costs come from the skeleton downloaded at start | FR-011 |
 | US5-2..3 | saved game / replay log from another crypt version refused | FR-012 |

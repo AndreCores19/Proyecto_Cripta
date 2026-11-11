@@ -69,7 +69,7 @@ All of these are built by `JuegoService`, hold plain values and lists of DTOs on
 
 ### ResumenFinalDTO (dto/resumen_final_dto.py)
 
-Returned by `JuegoService.resumen_final()`. It is used by `mostrar_final` (console, replay and silent views) and by `Aplicacion.registrar_puntaje`.
+Returned by `JuegoService.resumen_final()`. It is used by `mostrar_final` (console and silent views), by `imprimir_final_replay` in `adapters/salida_replay.py` (`--replay`), and by `Aplicacion.registrar_puntaje`.
 
 | Field | Type | From |
 |---|---|---|
@@ -79,7 +79,7 @@ Returned by `JuegoService.resumen_final()`. It is used by `mostrar_final` (conso
 | terminada | bool | `partida.terminada` |
 | acciones | int | `partida.acciones_jugador` |
 | enemigos_derrotados | int | `partida.enemigos_derrotados` |
-| bitacora | list of str | `partida.bitacora.obtener_todos()[-20:]`. The console prints all of them; `VistaReplay` prints the last 6. |
+| bitacora | list of str | `partida.bitacora.obtener_todos()[-20:]`. The console prints all of them; `imprimir_final_replay` prints the last 6. |
 
 ### InventarioVistaDTO and ObjetoInventarioDTO (dto/inventario_vista_dto.py)
 

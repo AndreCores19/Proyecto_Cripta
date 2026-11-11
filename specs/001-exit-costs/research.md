@@ -47,6 +47,19 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
   - (c) Keep `atacar(enemigo)` and hand the controller enemy objects wrapped in a DTO with a model reference. Rejected: a DTO holding a model reference leaks the model. The target is resolved by id inside the service instead.
   - (d) Amend the constitution to allow phased migration. Not needed, since the whole boundary is converted in this feature.
 
+## R8. Replay without view classes (analysis C2)
+
+- **Decision**:
+  - `--replay` creates no class from `view/`. The controller runs with `vista=None` and an `avisar` function (`print`) for its messages.
+  - The end summary and the request report are printed by plain functions in `adapters/salida_replay.py`, from `ResumenFinalDTO` and the four request counters.
+  - `VistaReplay` is deleted, and `VistaSilenciosa` stops inheriting from it.
+- **Rationale**: Constitution III forbids instantiating any view class in `--replay`. Plain functions outside `view/` are not view classes. Passing `print` keeps replay messages printed at the same moment as today, so the replay output is identical.
+- **Alternatives**:
+  - (a) Move `VistaReplay` to another folder. Rejected: it is still a view class under another name.
+  - (b) Collect controller messages in a list and print them at the end. Rejected: the text would be the same, but the messages would no longer appear while the replay runs.
+  - (c) Let the controller print directly. Rejected: the controller would take on view work.
+  - (d) Keep `VistaSilenciosa` inheriting from `VistaReplay`. Rejected: that keeps `VistaReplay` alive only for inheritance, and `VistaSilenciosa` already overrides every method it uses.
+
 ## R6. Agenda under variable costs
 
 - **Decision**: keep the binary heap, pending the §Measurements of plan.md.
