@@ -2,7 +2,7 @@ from view.vista_replay import VistaReplay
 
 
 class VistaSilenciosa(VistaReplay):
-    def mostrar_estado(self, partida):
+    def mostrar_estado(self, estado):
         pass
 
     def pedir_comando(self):

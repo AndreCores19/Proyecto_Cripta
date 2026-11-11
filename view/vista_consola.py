@@ -1,43 +1,36 @@
 class VistaConsola:
-    def mostrar_estado(self, partida):
-        sala = partida.jugador.sala
+    def mostrar_estado(self, estado):
+        j = estado.jugador
         print("-" * 40)
-        print(f"Sala {sala.id}: {sala.nombre}")
-        print(f"Tiempo: {partida.reloj}")
-        print(f"Jugador: {partida.jugador.nombre} "
-              f"(Vida: {partida.jugador.vida}/{partida.jugador.vida_max})")
-        jugador = partida.jugador
-        inv = jugador.inventario
-        arma = inv.arma_equipada
-        armadura = inv.armadura_equipada
-        print(f"  Ataque: {jugador.ataque}  Defensa: {jugador.defensa}  Velocidad: {jugador.velocidad}")
-        print(f"  Arma: {arma.nombre if arma is not None else 'ninguna'}")
-        print(f"  Armadura: {armadura.nombre if armadura is not None else 'ninguna'}")
-        efectos = ", ".join(e.tipo for e in jugador.efectos)
+        print(f"Sala {estado.id_sala}: {estado.nombre_sala}")
+        print(f"Tiempo: {estado.reloj}")
+        print(f"Jugador: {j.nombre} (Vida: {j.vida}/{j.vida_max})")
+        print(f"  Ataque: {j.ataque}  Defensa: {j.defensa}  Velocidad: {j.velocidad}")
+        print(f"  Arma: {j.arma if j.arma is not None else 'ninguna'}")
+        print(f"  Armadura: {j.armadura if j.armadura is not None else 'ninguna'}")
+        efectos = ", ".join(j.efectos)
         print(f"  Efectos: {efectos if efectos else 'ninguno'}")
 
         print("Salidas:")
-        for salida in sala.salidas:
-            estado = "cerrada" if salida.cerrada else "abierta"
-            print(f"  {salida.direccion} -> {salida.destino.nombre} ({estado})")
+        for s in estado.salidas:
+            print(f"  {s.direccion} -> {s.nombre_destino} "
+                  f"({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})")
         print("Enemigos en la sala:")
-        for enemigo in partida.enemigos:
-            if enemigo.sala is sala:
-                efectos = ", ".join(e.tipo for e in enemigo.efectos)
-                linea = (f"  {enemigo.nombre} [{enemigo.id_enemigo}] "
-                         f"(Vida: {enemigo.vida}/{enemigo.vida_max})")
-                if efectos:
-                    linea += f" [{efectos}]"
-                print(linea)
+        for enemigo in estado.enemigos:
+            linea = (f"  {enemigo.nombre} [{enemigo.id_enemigo}] "
+                     f"(Vida: {enemigo.vida}/{enemigo.vida_max})")
+            if enemigo.efectos:
+                linea += f" [{', '.join(enemigo.efectos)}]"
+            print(linea)
         print("Trampas en la sala:")
-        for trampa in sala.trampas:
-            estado = "armada" if trampa.armada else "desarmada"
-            print(f"  {trampa.nombre} (Daño: {trampa.dano}, {estado})")
+        for trampa in estado.trampas:
+            print(f"  {trampa.nombre} (Daño: {trampa.dano}, "
+                  f"{'armada' if trampa.armada else 'desarmada'})")
         print("Objetos en la sala:")
-        for objeto in sala.objetos:
+        for objeto in estado.objetos:
             print(f"  [{objeto.id_instancia}] {objeto.nombre}")
         print("Bitácora:")
-        for mensaje in partida.bitacora.obtener_todos()[-20:]:
+        for mensaje in estado.bitacora:
             print(f"  {mensaje}")
         print("-" * 40)
 

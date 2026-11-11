@@ -4,6 +4,7 @@ from data.repositorio_cripta import RepositorioCripta
 from data.repositorio_catalogo import RepositorioCatalogo
 from data.fabrica_modelo import FabricaModelo
 from structures.cache_fichas import CacheFichas
+from service.juego_service import JuegoService
 from view.vista_consola import VistaConsola
 
 URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
@@ -20,8 +21,9 @@ fabrica.iniciar()
 
 partida = fabrica.nueva_partida(semilla=1)
 vista = VistaConsola()
+servicio = JuegoService(partida, fabrica)
 
-vista.mostrar_estado(partida)
+vista.mostrar_estado(servicio.estado_vista())
 
 # Probar que moverse cambia lo que se ve
 sala = partida.jugador.sala
@@ -31,5 +33,5 @@ for salida in sala.salidas:
         partida.mover(salida.direccion)
         break
 
-vista.mostrar_estado(partida)
+vista.mostrar_estado(servicio.estado_vista())
 print("Solicitudes:", cliente.solicitudes_realizadas())

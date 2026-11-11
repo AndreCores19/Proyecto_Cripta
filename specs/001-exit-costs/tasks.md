@@ -183,19 +183,20 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T019 [P] [US4] Write tests in `tests/test_vista_costos.py`. Depends on T003 — FR-010:
+- [x] T019 [P] [US4] Write tests in `tests/test_vista_costos.py`. Depends on T003 — FR-010:
   - US4-1: on rooms where `norte` costs 300 and `sur` declares no cost, `servicio.estado_vista().salidas` has `norte` with `costo 300` and `sur` with `costo 100`
   - US4-2: a closed exit with cost 40 has `cerrada is True` and `costo 40`
   - `VistaConsola().mostrar_estado(estado)`, captured with `capsys`, prints `(abierta, costo 300)`, `(abierta, costo 100)` and `(cerrada, costo 40)`
   - Golden: for `armar_estado_fijo()`, the output of `mostrar_estado(servicio.estado_vista())` equals `cargar_golden("estado.txt")` after appending `, costo 100` inside the parentheses of each exit line. All exits there have the default cost.
-- [ ] T020 [US4] Add to `tests/test_vista_costos.py`, after T019 (same file): run `Controlador.jugar` for one loop iteration with a fake view. The fake view implements `mostrar_estado`, `pedir_comando` (returns `"salir"`), `mostrar_mensaje` and `mostrar_final` (which only records the call). Use `persistencia=None`. Assert that `mostrar_estado` received an `EstadoVistaDTO`, not a `Partida`. What `mostrar_final` receives is checked in T027 — FR-010
+- [x] T020 [US4] Add to `tests/test_vista_costos.py`, after T019 (same file): run `Controlador.jugar` for one loop iteration with a fake view. The fake view implements `mostrar_estado`, `pedir_comando` (returns `"salir"`), `mostrar_mensaje` and `mostrar_final` (which only records the call). Use `persistencia=None`. Assert that `mostrar_estado` received an `EstadoVistaDTO`, not a `Partida`. What `mostrar_final` receives is checked in T027 — FR-010
 
 ### Implementation
 
-- [ ] T021 [P] [US4] Create `dto/estado_vista_dto.py` with `EstadoVistaDTO`, `JugadorVistaDTO`, `SalidaVistaDTO`, `EnemigoVistaDTO`, `TrampaVistaDTO` and `ObjetoVistaDTO`, with exactly the fields in data-model.md "EstadoVistaDTO". `SalidaVistaDTO.costo` is "int, already resolved: declared or 100". Use plain classes and plain lists, and import nothing from `model/`. Depends on T003 — FR-010
-- [ ] T022 [US4] Add `JuegoService.estado_vista(self)` in `service/juego_service.py`. It builds an `EstadoVistaDTO` from `self.partida`, following the "From" column in data-model.md: exits in room order with `salida.costo`; enemies where `enemigo.sala is sala`; `bitacora.obtener_todos()[-20:]`. It must only read state, never change it. Depends on T007 and T021 — FR-010
-- [ ] T023 [US4] In `controller/controlador.py` `jugar`, replace `self.vista.mostrar_estado(partida)` with `self.vista.mostrar_estado(self.servicio.estado_vista())`. Depends on T022 — FR-010
-- [ ] T024 [US4] In `view/vista_consola.py`, rewrite `mostrar_estado(self, estado)` to print only from the DTO, with the same lines as today, and exit lines as `f"  {s.direccion} -> {s.nombre_destino} ({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})"`. In `view/vista_silenciosa.py`, rename the `mostrar_estado` parameter to `estado`; it stays a no-op. Depends on T021 — FR-010
+- [x] T021 [P] [US4] Create `dto/estado_vista_dto.py` with `EstadoVistaDTO`, `JugadorVistaDTO`, `SalidaVistaDTO`, `EnemigoVistaDTO`, `TrampaVistaDTO` and `ObjetoVistaDTO`, with exactly the fields in data-model.md "EstadoVistaDTO". `SalidaVistaDTO.costo` is "int, already resolved: declared or 100". Use plain classes and plain lists, and import nothing from `model/`. Depends on T003 — FR-010
+- [x] T022 [US4] Add `JuegoService.estado_vista(self)` in `service/juego_service.py`. It builds an `EstadoVistaDTO` from `self.partida`, following the "From" column in data-model.md: exits in room order with `salida.costo`; enemies where `enemigo.sala is sala`; `bitacora.obtener_todos()[-20:]`. It must only read state, never change it. Depends on T007 and T021 — FR-010
+- [x] T023 [US4] In `controller/controlador.py` `jugar`, replace `self.vista.mostrar_estado(partida)` with `self.vista.mostrar_estado(self.servicio.estado_vista())`. Depends on T022 — FR-010
+- [x] T024 [US4] In `view/vista_consola.py`, rewrite `mostrar_estado(self, estado)` to print only from the DTO, with the same lines as today, and exit lines as `f"  {s.direccion} -> {s.nombre_destino} ({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})"`. In `view/vista_silenciosa.py`, rename the `mostrar_estado` parameter to `estado`; it stays a no-op. Depends on T021 — FR-010
+  - Note: `pruebas_manuales/prueba_vista.py` was also updated as part of this task. It now builds a `JuegoService(partida, fabrica)` and calls `vista.mostrar_estado(servicio.estado_vista())` instead of passing `partida`.
 
 **Checkpoint**: `python -m pytest tests/test_vista_costos.py` is green.
 

@@ -1,4 +1,6 @@
 from model.objeto_logica import PERGAMINO_RETROCESO
+from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDTO,
+                                  EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
 
 
 class JuegoService:
@@ -90,3 +92,25 @@ class JuegoService:
 
     def vista_ordenada(self, criterio):
         return self.partida.jugador.inventario.vista_ordenada(criterio)
+
+    def estado_vista(self):
+        #Solo lee el estado; nunca lo cambia
+        partida = self.partida
+        sala = partida.jugador.sala
+        j = partida.jugador
+        inv = j.inventario
+        jugador = JugadorVistaDTO(
+            j.nombre, j.vida, j.vida_max, j.ataque, j.defensa, j.velocidad,
+            inv.arma_equipada.nombre if inv.arma_equipada is not None else None,
+            inv.armadura_equipada.nombre if inv.armadura_equipada is not None else None,
+            [e.tipo for e in j.efectos])
+        salidas = [SalidaVistaDTO(s.direccion, s.destino.nombre, s.cerrada, s.costo)
+                   for s in sala.salidas]
+        enemigos = [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
+                                    [ef.tipo for ef in e.efectos])
+                    for e in partida.enemigos if e.sala is sala]
+        trampas = [TrampaVistaDTO(t.nombre, t.dano, t.armada) for t in sala.trampas]
+        objetos = [ObjetoVistaDTO(o.id_instancia, o.nombre) for o in sala.objetos]
+        return EstadoVistaDTO(sala.id, sala.nombre, partida.reloj, jugador, salidas,
+                              enemigos, trampas, objetos,
+                              list(partida.bitacora.obtener_todos()[-20:]))

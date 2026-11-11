@@ -23,7 +23,7 @@ class Controlador:
     def jugar(self):
         partida = self.servicio.partida
         while self.activo and not partida.terminada:
-            self.vista.mostrar_estado(partida)
+            self.vista.mostrar_estado(self.servicio.estado_vista())
             texto = self.vista.pedir_comando()
             self.ejecutar(texto)
         if self.ruta_carga is None:

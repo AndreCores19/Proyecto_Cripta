@@ -297,13 +297,13 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 6 of tasks.md (T019 to T024). Write the tests first and run them, then implement until they pass. The output must match the golden file estado.txt from T003, plus ", costo N" on exit lines. At the end, run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 6 de tasks.md (T019 a T024), escribiendo las pruebas primero y ejecutándolas, luego implementando hasta que pasen, asegurando que la salida coincida con el archivo dorado estado.txt de T003, más ", costo N" en las líneas de salida, y al final ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: pruebas_manuales/prueba_vista.py still calls vista.mostrar_estado(partida). As part of T024, update it to build a JuegoService and pass servicio.estado_vista(), and add a note to T024 in tasks.md saying this script was updated. Run it once to check it works. Do not commit.
+- Uso: arreglar pruebas_manuales/prueba_vista.py para que construya un JuegoService y pase servicio.estado_vista(), y agregar una nota a T024 en tasks.md diciendo que este script fue actualizado, y ejecutarlo una vez para verificar que funciona
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
