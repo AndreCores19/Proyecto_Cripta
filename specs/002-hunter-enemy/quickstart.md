@@ -42,7 +42,7 @@ Each test name or docstring cites its FR. Expected mapping:
 
 ## Assignment Appendix B cases (Constitution IX)
 
-Every Appendix B case about terrain and hunters, and where it is covered:
+The "Terreno y cazador" section of Appendix B has exactly seven cases; this mapping was confirmed against the full appendix. Where each is covered:
 
 | Appendix B case | Acceptance scenario | Test |
 |---|---|---|

@@ -429,8 +429,8 @@ Report what you changed.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Apply your proposed wording for T029 to fix N1 (record the steps of the first run as (type, room id, direction) and replay them in the second run) and N2 (per step: cancel each hunter's pending event at setup, compute decidir and compare with the oracle, then call _actuar_enemigo once and check doors). N3: I checked the assignment PDF; the "Terreno y cazador" section of Appendix B has exactly those seven cases, so update the note to say the mapping was confirmed against the full appendix. N4: cite SC-001, SC-004, SC-008, SC-009 and SC-010 in the tasks that cover them. Do not change spec.md. Do not commit. Report what you changed.
+- Uso: aplicar la redacción propuesta para T029 para arreglar N1 (registrar los pasos de la primera ejecución como (tipo, id de sala, dirección) y reproducirlos en la segunda ejecución) y N2 (por paso: cancelar el evento pendiente de cada cazador en la configuración, calcular decidir y comparar con el oráculo, luego llamar a _actuar_enemigo una vez y verificar las puertas), N3 (confirmar que la sección "Terreno y cazador" del Apéndice B tiene exactamente esos siete casos y actualizar la nota para decir que el mapeo fue confirmado contra el apéndice completo), N4 (citar SC-001, SC-004, SC-008, SC-009 y SC-010 en las tareas que los cubren), sin cambiar spec.md ni hacer commit, y reportar los cambios
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
