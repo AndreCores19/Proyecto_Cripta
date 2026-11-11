@@ -9,7 +9,7 @@ from data.repositorio_cripta import RepositorioCripta
 from service.juego_service import JuegoService
 from structures.cache_fichas import CacheFichas
 from view.vista_consola import VistaConsola
-from view.vista_replay import VistaReplay
+from adapters.salida_replay import imprimir_final_replay, imprimir_reporte
 from pathlib import Path
 from adapters.guardado_binario import GuardadoBinario, ErrorGuardado
 from view.vista_silenciosa import VistaSilenciosa
@@ -98,23 +98,24 @@ class Aplicacion:
         return None
 
     def reproducir(self, lector):
-        vista = VistaReplay()
         if not self._versiones_coinciden(lector):
-            vista.mostrar_mensaje(
-                "No se puede garantizar una reproducción fiel: la versión de la "
-                "cripta o del catálogo cambió desde que se grabó el log.")
+            print("No se puede garantizar una reproducción fiel: la versión de la "
+                  "cripta o del catálogo cambió desde que se grabó el log.")
             return
 
         partida = self.fabrica.nueva_partida(semilla=lector.semilla)
         servicio = JuegoService(partida, self.fabrica)
         servicio.actualizar_fichas()
-        controlador = Controlador(servicio, vista, None, None)
+        controlador = Controlador(servicio, None, None, None, avisar=print)
         for comando in lector.comandos:
-            if partida.terminada:
+            if servicio.terminada():
                 break
             controlador.ejecutar(comando)
-        vista.mostrar_final(partida)
-        self._reportar(vista)
+        imprimir_final_replay(servicio.resumen_final())
+        imprimir_reporte(
+            self.cliente.solicitudes, self.cliente.presupuesto,
+            self.repo_catalogo.aciertos_memoria + self.repo_catalogo.aciertos_disco,
+            self.repo_catalogo.fallos)
 
     def _versiones_coinciden(self, lector):
         return (lector.version_cripta == self.repo_cripta.datos.version

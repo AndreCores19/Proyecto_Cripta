@@ -11,9 +11,10 @@ def direccionar(tecla):
         return "E"
 
 class Controlador:
-    def __init__(self, servicio, vista, bitacora, persistencia):
+    def __init__(self, servicio, vista, bitacora, persistencia, avisar=None):
         self.servicio = servicio
         self.vista = vista
+        self.avisar = avisar
         self.bitacora = bitacora
         self.activo = True
         self.comandos = []
@@ -22,22 +23,45 @@ class Controlador:
 
     def jugar(self):
         while self.activo and not self.servicio.terminada():
-            self.vista.mostrar_estado(self.servicio.estado_vista())
+            self._mostrar_estado(self.servicio.estado_vista())
             texto = self.vista.pedir_comando()
             self.ejecutar(texto)
         if self.ruta_carga is None:
             resumen = self.servicio.resumen_final()
-            self.vista.mostrar_final(resumen)
+            self._mostrar_final(resumen)
             if (resumen.victoria or resumen.terminada) and self.persistencia is not None:
                 puntajes = self.persistencia.registrar_puntaje(resumen)
                 self.vista.mostrar_puntajes(puntajes)
+
+    # Con vista=None (--replay) solo los mensajes salen, por avisar; lo demás se omite.
+    def _mostrar_mensaje(self, texto):
+        if self.vista is not None:
+            self.vista.mostrar_mensaje(texto)
+        elif self.avisar is not None:
+            self.avisar(texto)
+
+    def _mostrar_estado(self, estado):
+        if self.vista is not None:
+            self.vista.mostrar_estado(estado)
+
+    def _mostrar_final(self, resumen):
+        if self.vista is not None:
+            self.vista.mostrar_final(resumen)
+
+    def _mostrar_inventario(self, inventario):
+        if self.vista is not None:
+            self.vista.mostrar_inventario(inventario)
+
+    def _mostrar_inventario_ordenado(self, objetos, criterio):
+        if self.vista is not None:
+            self.vista.mostrar_inventario_ordenado(objetos, criterio)
 
     def _enemigos_en_sala(self):
         return self.servicio.enemigos_en_sala()
 
     def _avisar_si_falla(self, resultado, mensaje):
         if not resultado:
-            self.vista.mostrar_mensaje(mensaje)
+            self._mostrar_mensaje(mensaje)
 
     def ejecutar(self, texto):
         palabras = texto.lower().split()
@@ -73,7 +97,7 @@ class Controlador:
         elif comando in ("inv", "sig", "ant"):
             self._cmd_inventario(palabras)
         else:
-            self.vista.mostrar_mensaje("Comando no reconocido.")
+            self._mostrar_mensaje("Comando no reconocido.")
 
     def _cmd_recoger(self, palabras):
         objetos = self.servicio.objetos_en_sala()
@@ -81,18 +105,18 @@ class Controlador:
             try:
                 id_instancia = int(palabras[1])
             except ValueError:
-                self.vista.mostrar_mensaje("El id del objeto debe ser un número.")
+                self._mostrar_mensaje("El id del objeto debe ser un número.")
                 return
         elif len(objetos) == 1:
             id_instancia = objetos[0].id_instancia
         else:
-            self.vista.mostrar_mensaje("Indica qué recoger: recoger <id>.")
+            self._mostrar_mensaje("Indica qué recoger: recoger <id>.")
             return
         self._avisar_si_falla(self.servicio.recoger_objeto(id_instancia),"No se pudo recoger (¿inventario lleno o el id no existe?).")
 
     def _cmd_abrir(self, palabras):
         if len(palabras) < 2 or direccionar(palabras[1]) is None:
-            self.vista.mostrar_mensaje("Indica la dirección: abrir w/a/s/d.")
+            self._mostrar_mensaje("Indica la dirección: abrir w/a/s/d.")
         else:
             self._avisar_si_falla(self.servicio.abrir_puerta(direccionar(palabras[1])),"No se pudo abrir (¿no hay puerta cerrada o falta la llave?).")
 
@@ -105,12 +129,12 @@ class Controlador:
         elif len(palabras) > 1:
             criterio = palabras[1]
             if criterio not in ("peso", "valor", "nombre"):
-                self.vista.mostrar_mensaje("Usa: inv peso|valor|nombre")
+                self._mostrar_mensaje("Usa: inv peso|valor|nombre")
                 return
             objetos = self.servicio.vista_ordenada(criterio)
-            self.vista.mostrar_inventario_ordenado(objetos, criterio)
+            self._mostrar_inventario_ordenado(objetos, criterio)
             return
-        self.vista.mostrar_inventario(self.servicio.inventario_vista())
+        self._mostrar_inventario(self.servicio.inventario_vista())
 
     def _cmd_atacar(self, palabras):
         id_enemigo = self._elegir_enemigo(palabras)
@@ -120,17 +144,17 @@ class Controlador:
     def _elegir_enemigo(self, palabras):
         enemigos = self._enemigos_en_sala()
         if not enemigos:
-            self.vista.mostrar_mensaje("No hay enemigos aquí.")
+            self._mostrar_mensaje("No hay enemigos aquí.")
             return None
         if len(palabras) > 1:
             for enemigo in enemigos:
                 if str(enemigo.id_enemigo).lower() == palabras[1]:
                     return enemigo.id_enemigo
-            self.vista.mostrar_mensaje("Ese enemigo no está en la sala.")
+            self._mostrar_mensaje("Ese enemigo no está en la sala.")
             return None
         if len(enemigos) == 1:
             return enemigos[0].id_enemigo
-        self.vista.mostrar_mensaje("Hay varios enemigos: usa atacar <id>.")
+        self._mostrar_mensaje("Hay varios enemigos: usa atacar <id>.")
         return None
 
     def _cmd_simple(self, comando):
@@ -149,17 +173,17 @@ class Controlador:
         nombre = palabras[1] if len(palabras) > 1 else "partida"
         ruta = self.persistencia.guardar_partida(
             self.servicio.semilla(), self.comandos, nombre)
-        self.vista.mostrar_mensaje(f"Partida guardada en {ruta}")
+        self._mostrar_mensaje(f"Partida guardada en {ruta}")
 
     def _cmd_cargar(self, palabras):
         nombre = palabras[1] if len(palabras) > 1 else "partida"
         ruta = self.persistencia.ruta_guardado(nombre)
         if not ruta.exists():
-            self.vista.mostrar_mensaje("No existe esa partida.")
+            self._mostrar_mensaje("No existe esa partida.")
             return
         error = self.persistencia.validar_guardado(ruta)
         if error is not None:
-            self.vista.mostrar_mensaje(error)
+            self._mostrar_mensaje(error)
             return
         self.ruta_carga = ruta
         self.activo = False

@@ -267,7 +267,7 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T034 [P] Write `tests/test_salida_replay.py`, using `tests/estado_fijo.py`. Depends on T003 — FR-012, FR-014:
+- [X] T034 [P] Write `tests/test_salida_replay.py`, using `tests/estado_fijo.py`. Depends on T003 — FR-012, FR-014:
   - `imprimir_final_replay(servicio.resumen_final())` output equals `final_replay_{victoria,muerte,salida}.txt` for the three `final` values
   - `imprimir_reporte(12, 50, 7, 3)` and `imprimir_reporte(12, None, 0, 0)` equal `reporte_replay.txt` and `reporte_replay_sin_presupuesto.txt`
   - Monkeypatch `VistaConsola.__init__` and `VistaSilenciosa.__init__` to raise `AssertionError("vista instanciada en --replay")`. Then run `Aplicacion.reproducir(AppFalsa(v, v), LectorFalso(1, ["w", "d", "esperar", "zz"], v, v))` and compare the captured output with `replay_completo.txt`. Then run it again with **another new** `AppFalsa(v, v)` and a lector with a different `version_cripta`, and compare with `replay_version.txt`. Never reuse an `AppFalsa` between `reproducir` calls; its `fabrica.nueva_partida` builds a fresh game from `armar_estado_fijo()` each time (FR-012)
@@ -275,20 +275,20 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Implementation
 
-- [ ] T035 [P] Create `adapters/salida_replay.py` with two plain functions and no classes. Copy the text and order of `view/vista_replay.py` exactly. Import nothing from `model/` or `view/` — FR-014:
+- [X] T035 [P] Create `adapters/salida_replay.py` with two plain functions and no classes. Copy the text and order of `view/vista_replay.py` exactly. Import nothing from `model/` or `view/` — FR-014:
   - `imprimir_final_replay(resumen)`: the 40-dash separator, each of `resumen.bitacora[-6:]` as `f"  {mensaje}"`, `f"Tiempo final: {resumen.reloj}"`, then "¡Victoria! Escapaste de la cripta." / "Has muerto." / "Saliste de la partida." by `victoria` / `terminada`
   - `imprimir_reporte(solicitudes, presupuesto, aciertos, fallos)`: same lines as `VistaReplay.mostrar_reporte`
-- [ ] T036 In `controller/controlador.py`, add the `avisar=None` parameter to `Controlador.__init__` and allow `vista=None`. Depends on T031 (same file) — FR-014:
+- [X] T036 In `controller/controlador.py`, add the `avisar=None` parameter to `Controlador.__init__` and allow `vista=None`. Depends on T031 (same file) — FR-014:
   - Route every view call through one private helper per method: `_mostrar_mensaje`, `_mostrar_estado`, `_mostrar_final`, `_mostrar_inventario`, `_mostrar_inventario_ordenado`.
   - When `self.vista is None`, `_mostrar_mensaje(texto)` calls `self.avisar(texto)` if `avisar` is not `None`, and the other helpers do nothing.
   - When `vista` is given, behaviour is unchanged.
-- [ ] T037 In `aplicacion.py` `reproducir`. Depends on T030, T035 and T036 — FR-012, FR-014:
+- [X] T037 In `aplicacion.py` `reproducir`. Depends on T030, T035 and T036 — FR-012, FR-014:
   - On a version mismatch, `print` the same message text and return.
   - Otherwise build `Controlador(servicio, None, None, None, avisar=print)` and loop on `servicio.terminada()`.
   - Then call `imprimir_final_replay(servicio.resumen_final())` and `imprimir_reporte(self.cliente.solicitudes, self.cliente.presupuesto, self.repo_catalogo.aciertos_memoria + self.repo_catalogo.aciertos_disco, self.repo_catalogo.fallos)`.
   - Remove `from view.vista_replay import VistaReplay`; `_reportar(vista)` stays for interactive mode.
-- [ ] T038 Make `view/vista_silenciosa.py` standalone: remove `from view.vista_replay import VistaReplay` and the inheritance. Keep `mostrar_estado`, `pedir_comando`, `mostrar_mensaje`, `mostrar_inventario`, `mostrar_final` and `mostrar_inventario_ordenado` as no-ops with DTO parameter names. Depends on T032 (same file) — FR-014
-- [ ] T039 Delete `view/vista_replay.py` after checking that `grep -rn "vista_replay\|VistaReplay" --include=*.py .` finds no references outside `tests/capturar_salida_parte1.py`. That script is kept as the record of how the golden files were made (its full part-one version stays in Git history from T003). Remove its `from view.vista_replay import VistaReplay` import and replace its whole body with `import sys`, a `print` saying the golden files were captured from the part-one code in commit <T003 hash> and can no longer be regenerated, and `sys.exit(1)`. Then check that `grep` finds no `vista_replay`/`VistaReplay` references at all. Depends on T037 and T038 — FR-014
+- [X] T038 Make `view/vista_silenciosa.py` standalone: remove `from view.vista_replay import VistaReplay` and the inheritance. Keep `mostrar_estado`, `pedir_comando`, `mostrar_mensaje`, `mostrar_inventario`, `mostrar_final` and `mostrar_inventario_ordenado` as no-ops with DTO parameter names. Depends on T032 (same file) — FR-014
+- [X] T039 Delete `view/vista_replay.py` after checking that `grep -rn "vista_replay\|VistaReplay" --include=*.py .` finds no references outside `tests/capturar_salida_parte1.py`. That script is kept as the record of how the golden files were made (its full part-one version stays in Git history from T003). Remove its `from view.vista_replay import VistaReplay` import and replace its whole body with `import sys`, a `print` saying the golden files were captured from the part-one code in commit <T003 hash> and can no longer be regenerated, and `sys.exit(1)`. Then check that `grep` finds no `vista_replay`/`VistaReplay` references at all. Depends on T037 and T038 — FR-014
 
 **Checkpoint**: `python -m pytest tests/test_salida_replay.py` is green, and `python main.py --replay <log>` prints the same text as before.
 

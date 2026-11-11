@@ -1,7 +1,4 @@
-from view.vista_replay import VistaReplay
-
-
-class VistaSilenciosa(VistaReplay):
+class VistaSilenciosa:
     def mostrar_estado(self, estado):
         pass
 
