@@ -2,6 +2,9 @@ from model.tiempo_logica import COSTO_MOVER
 
 
 class Salida:
+    #contador de cambios de puertas: sube con cada asignación de `cerrada`
+    epoca_puertas = 0
+
     def __init__(self, direccion, destino, cerrada=False, llave=None, cierre_automatico=None, costo=None):
         self.direccion = direccion
         self.destino = destino
@@ -10,6 +13,16 @@ class Salida:
         self.cierre_automatico = cierre_automatico
         self.costo_declarado = costo  #None si los datos no lo declaran
         self.opuesta = None  #la Salida gemela
+        self.origen = None   #la Sala de la que sale (la fija Sala.agregar_salida)
+
+    @property
+    def cerrada(self):
+        return self._cerrada
+
+    @cerrada.setter
+    def cerrada(self, valor):
+        self._cerrada = valor
+        Salida.epoca_puertas += 1
 
     @property
     def costo(self):
@@ -45,9 +58,14 @@ class Sala:
         self.inactivos = []     
         self.objetos = []        
         self.trampas = []       
+        self.entradas = []       #salidas de otras salas que llegan aquí
+        self.busq_marca = -1     #estampa de la última búsqueda del cazador
+        self.busq_dist = 0       #distancia hallada en esa búsqueda
 
     def agregar_salida(self, salida):
         self.salidas.append(salida)
+        salida.origen = self
+        salida.destino.entradas.append(salida)
 
     def salida(self, direccion):
         for s in self.salidas:

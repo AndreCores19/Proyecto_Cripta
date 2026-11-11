@@ -444,8 +444,8 @@ Report what you changed.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 3 only (T009–T012). Do not commit.
+- Uso: implementar la Fase 3 de tasks.md (T009 a T012) sin hacer commit
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

@@ -100,14 +100,14 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
 
 **Purpose**: the small model fields the search and the decision need ([data-model.md](./data-model.md)). No hunter behavior yet.
 
-- [ ] T009 [P] Add tests to `tests/test_puertas.py` — FR-008, FR-011:
+- [X] T009 [P] Add tests to `tests/test_puertas.py` — FR-008, FR-011:
   - `agregar_salida` sets `salida.origen` to the room and appends the exit to `salida.destino.entradas` (a two-way connection gives each room one incoming exit; a one-way exit gives the destination room an incoming exit and the origin room none);
   - a new `Sala` has `busq_marca == -1` and `busq_dist == 0`;
   - assigning `salida.cerrada` (True or False) adds 1 to `Salida.epoca_puertas`; reading it does not;
   - `Partida.abrir_puerta` bumps the counter, and `Partida.retroceder()` right after (the rewind writes `cerrada` back through the history) bumps it again.
-- [ ] T010 [P] Add tests to `tests/test_catalogo_cazador.py` (new file): `Enemigo(..., "cazador", sala, rango=300).rango == 300`; the default `rango` is 0; `es_cazador()` is True for `"cazador"` and False for `"errante"`, `"rastreador"` and `"guardián"` — FR-001
-- [ ] T011 In `model/sala_logica.py`: `Salida.origen` (set by `Sala.agregar_salida`), `Sala.entradas` (list, filled by `agregar_salida` with `salida.destino.entradas.append(salida)`), `Sala.busq_marca = -1`, `Sala.busq_dist = 0`, and `Salida.cerrada` as a property over `_cerrada` whose setter adds 1 to the class attribute `Salida.epoca_puertas` (starts at 0). In `model/enemigo_logica.py`: `Enemigo(..., suelta=None, rango=0)` and `es_cazador()` (`comportamiento == "cazador"`). Depends on T009, T010 — FR-001, FR-008, FR-011
-- [ ] T012 Run the whole suite (`python -m pytest`): the 115 tests of T002 plus the new ones are green. A failure in an old test means the `cerrada` property or `agregar_salida` change broke part-one behavior; fix it before going on. Also run `tests/estado_sin_cazadores.resumen(semilla)` for seeds 1, 2 and 3 and compare each with the block saved in `specs/002-hunter-enemy/estado-sin-cazadores-antes.txt` (T037 automates the same check later): they must be identical now, because Phase 3 touches `Salida` and `Sala` — FR-013, FR-014
+- [X] T010 [P] Add tests to `tests/test_catalogo_cazador.py` (new file): `Enemigo(..., "cazador", sala, rango=300).rango == 300`; the default `rango` is 0; `es_cazador()` is True for `"cazador"` and False for `"errante"`, `"rastreador"` and `"guardián"` — FR-001
+- [X] T011 In `model/sala_logica.py`: `Salida.origen` (set by `Sala.agregar_salida`), `Sala.entradas` (list, filled by `agregar_salida` with `salida.destino.entradas.append(salida)`), `Sala.busq_marca = -1`, `Sala.busq_dist = 0`, and `Salida.cerrada` as a property over `_cerrada` whose setter adds 1 to the class attribute `Salida.epoca_puertas` (starts at 0). In `model/enemigo_logica.py`: `Enemigo(..., suelta=None, rango=0)` and `es_cazador()` (`comportamiento == "cazador"`). Depends on T009, T010 — FR-001, FR-008, FR-011
+- [X] T012 Run the whole suite (`python -m pytest`): the 115 tests of T002 plus the new ones are green. A failure in an old test means the `cerrada` property or `agregar_salida` change broke part-one behavior; fix it before going on. Also run `tests/estado_sin_cazadores.resumen(semilla)` for seeds 1, 2 and 3 and compare each with the block saved in `specs/002-hunter-enemy/estado-sin-cazadores-antes.txt` (T037 automates the same check later): they must be identical now, because Phase 3 touches `Salida` and `Sala` — FR-013, FR-014
 
 **Checkpoint**: Phase 3 can be reviewed alone; no behavior changes in the game.
 
