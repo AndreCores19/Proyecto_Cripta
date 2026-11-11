@@ -6,6 +6,7 @@ from structures.historial import Historial
 from model.objeto_logica import PERGAMINO_RETROCESO
 from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
 from model.efectos_logica import Efectos
+from model.ruta_cazador import DecisorCazador
 
 RASTRO_VIGENCIA = 400
 
@@ -30,6 +31,7 @@ class Partida:
         self.bitacora = Bitacora()
         self.creador_objetos = None
         self.efectos = Efectos(self)
+        self.decisor_cazador = DecisorCazador("individual")
         jugador.inventario.historial = self.historial
         jugador.evento = self.agenda.programar(0, "accion", jugador)
         self._entrar_en_sala(jugador.sala)
@@ -331,6 +333,8 @@ class Partida:
             salida = self._decidir_errante(enemigo)
         elif enemigo.comportamiento == "rastreador":
             salida = self._decidir_rastreador(enemigo)
+        elif enemigo.comportamiento == "cazador":
+            salida = self._decidir_cazador(enemigo)
 
         if salida is not None:
             self.historial.asignar(enemigo, "sala", salida.destino)
@@ -345,6 +349,9 @@ class Partida:
 
     def _salidas_abiertas(self, sala):
         return [s for s in sala.salidas if not s.cerrada]
+
+    def _decidir_cazador(self, enemigo):
+        return self.decisor_cazador.decidir(self, enemigo)
 
     def _decidir_errante(self, enemigo):
         abiertas = self._salidas_abiertas(enemigo.sala)
