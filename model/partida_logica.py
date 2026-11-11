@@ -336,10 +336,12 @@ class Partida:
             self.historial.asignar(enemigo, "sala", salida.destino)
             self.bitacora.agregar(
                 f"t={self.reloj}: {enemigo.nombre} se mueve hacia {salida.direccion}")
+            #moverse cuesta lo que cuesta la salida cruzada
+            self._programar_movimiento(enemigo, salida)
         else:
             self.bitacora.agregar(f"t={self.reloj}: {enemigo.nombre} espera")
-        #Atacar, moverse y esperar cuesta 100
-        self._programar_siguiente(enemigo, COSTO_ESPERAR)
+            #atacar y esperar cuestan 100
+            self._programar_siguiente(enemigo, COSTO_ESPERAR)
 
     def _salidas_abiertas(self, sala):
         return [s for s in sala.salidas if not s.cerrada]

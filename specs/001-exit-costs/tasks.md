@@ -149,14 +149,14 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T015 [US2] Add to `tests/test_costos_salida.py`. Apply the isolated enemy setup in each case: player in another room, and the activation turn removed with `partida.agenda.cancelar(enemigo.evento)` — FR-007, FR-008, FR-016:
+- [x] T015 [US2] Add to `tests/test_costos_salida.py`. Apply the isolated enemy setup in each case: player in another room, and the activation turn removed with `partida.agenda.cancelar(enemigo.evento)` — FR-007, FR-008, FR-016:
   - US2-1: a wanderer with speed 100 in a room whose only open exit costs 200; the player is in a third room. Set `partida.reloj = T` and call `partida._actuar_enemigo(enemigo)` → the wanderer is in the destination room and `enemigo.evento.tiempo == T + 200` (FR-007, FR-016)
   - US2-2: a tracker in a room with two open exits (costs 250 and 40). Set the neighbouring rooms' `rastro` and `partida.reloj` so that both trails are within `RASTRO_VIGENCIA` and one is fresher. `partida._decidir_rastreador(enemigo)` returns the exit to the fresher trail, the same exit the part-one rule picks from that state, regardless of cost. Add a second case with equal trails: the tie goes to the lowest room id (FR-008)
   - US2-3: an enemy with speed 50, after the isolated setup, with `partida.reloj = T`: `partida._programar_movimiento(enemigo, salida)` on a cost-120 exit → `enemigo.evento.tiempo == T + 240` (FR-007). The docstring must state that the hunter spec must include an equivalent scenario using real hunter behaviour.
 
 ### Implementation
 
-- [ ] T016 [US2] In the enemy turn in `model/partida_logica.py` (the block after `_decidir_errante` / `_decidir_rastreador`), when `salida is not None`, call `self._programar_movimiento(enemigo, salida)`; otherwise keep `self._programar_siguiente(enemigo, COSTO_ESPERAR)`. Update the comment "Atacar, moverse y esperar cuesta 100". Do not touch `_decidir_errante` or `_decidir_rastreador` — FR-006, FR-007, FR-008, FR-016
+- [x] T016 [US2] In the enemy turn in `model/partida_logica.py` (the block after `_decidir_errante` / `_decidir_rastreador`), when `salida is not None`, call `self._programar_movimiento(enemigo, salida)`; otherwise keep `self._programar_siguiente(enemigo, COSTO_ESPERAR)`. Update the comment "Atacar, moverse y esperar cuesta 100". Do not touch `_decidir_errante` or `_decidir_rastreador` — FR-006, FR-007, FR-008, FR-016
 
 ---
 

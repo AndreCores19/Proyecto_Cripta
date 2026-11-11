@@ -155,3 +155,81 @@ def test_entrar_en_la_sala_de_salida_termina_en_t_sin_programar_siguiente_accion
     assert partida.terminada and partida.victoria
     assert partida.reloj == t
     assert llamadas == []
+
+
+# --- US2: los enemigos pagan el costo de la salida (FR-007, FR-008, FR-016) -----
+
+def _mundo_enemigo(tipo_comportamiento, costos, velocidad=100):
+    """Sala E (10) con una salida por cada costo hacia vecinas V1.., y el jugador en una sala aparte.
+
+    Preparación aislada: el jugador no está en la sala del enemigo ni en los destinos, y se
+    cancela el turno de activación del enemigo; solo queda la acción que programe el método probado.
+    """
+    origen = Sala(10, "Origen")
+    vecinas = []
+    for i, costo in enumerate(costos):
+        v = Sala(11 + i, f"V{i + 1}")
+        ida = Salida(f"d{i}", v, costo=costo)
+        vuelta = Salida(f"r{i}", origen, costo=costo)
+        origen.agregar_salida(ida)
+        v.agregar_salida(vuelta)
+        ida.enlazar(vuelta)
+        vecinas.append(v)
+    aparte = Sala(99, "Aparte")
+    jugador = Jugador(vida_max=HUGE, ataque=10, defensa=HUGE, velocidad=100,
+                      inventario_max=10, sala=aparte)
+    partida = Partida(jugador, semilla=1)
+    enemigo = Enemigo("e1", "rata", "Rata", HUGE, HUGE, 1, 0, velocidad, tipo_comportamiento, origen)
+    partida.activar_enemigo(enemigo)
+    partida.agenda.cancelar(enemigo.evento)
+    return partida, enemigo, origen, vecinas
+
+
+def test_errante_se_mueve_y_su_siguiente_accion_tarda_el_costo_de_la_salida():
+    """FR-007, FR-016 · US2-1"""
+    partida, enemigo, _, (destino,) = _mundo_enemigo("errante", [200])
+    partida.reloj = 1000
+    partida._actuar_enemigo(enemigo)
+    assert enemigo.sala is destino
+    assert enemigo.evento.tiempo == 1000 + 200
+
+
+def test_enemigo_sin_salida_espera_con_el_intervalo_de_la_parte_uno():
+    """FR-006, FR-007 · el enemigo que no se mueve sigue esperando COSTO_ESPERAR"""
+    partida, enemigo, origen, _ = _mundo_enemigo("errante", [])
+    partida.reloj = 50
+    partida._actuar_enemigo(enemigo)
+    assert enemigo.sala is origen
+    assert enemigo.evento.tiempo == 50 + 100
+
+
+def test_rastreador_elige_el_rastro_mas_fresco_sin_importar_el_costo():
+    """FR-008 · US2-2: costos 250 y 40; el rastro más fresco está tras la salida de 250."""
+    partida, enemigo, _, (lejos, cerca) = _mundo_enemigo("rastreador", [250, 40])
+    partida.reloj = 500
+    lejos.rastro = 450      # más fresco, salida cara
+    cerca.rastro = 300      # más viejo, salida barata
+    salida = partida._decidir_rastreador(enemigo)
+    assert salida.destino is lejos
+    assert salida.costo == 250
+
+
+def test_rastreador_con_rastros_iguales_desempata_por_id_de_sala_menor():
+    """FR-008 · US2-2 (empate): gana la sala vecina de menor id."""
+    partida, enemigo, _, (v1, v2) = _mundo_enemigo("rastreador", [40, 250])
+    partida.reloj = 500
+    v1.rastro = v2.rastro = 400
+    assert v1.id < v2.id
+    assert partida._decidir_rastreador(enemigo).destino is v1
+
+
+def test_enemigo_de_velocidad_50_en_salida_de_costo_120_tarda_240():
+    """FR-007 · US2-3.
+
+    La spec de cazadores debe incluir un escenario equivalente con el comportamiento real de
+    un cazador; aquí se prueba directamente _programar_movimiento.
+    """
+    partida, enemigo, origen, (destino,) = _mundo_enemigo("errante", [120], velocidad=50)
+    partida.reloj = 700
+    partida._programar_movimiento(enemigo, origen.salidas[0])
+    assert enemigo.evento.tiempo == 700 + 240
