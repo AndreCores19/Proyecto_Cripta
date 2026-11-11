@@ -1,4 +1,5 @@
 import gc
+import random
 import time
 
 from model.enemigo_logica import Enemigo
@@ -23,6 +24,25 @@ def armar_partida(num_salas, num_enemigos):
         salas[i + 1].agregar_salida(Salida("S", salas[i]))
     jugador = Jugador(vida_max=10**9, ataque=10, defensa=10**6, velocidad=100, inventario_max=10, sala=salas[0])
     partida = Partida(jugador, semilla=1)
+    for k in range(num_enemigos):
+        sala = salas[k % num_salas]
+        enemigo = Enemigo(f"e{k}", "x", f"Enemigo {k}", 50, 50, 5, 0, 100, "errante", sala)
+        partida.activar_enemigo(enemigo)
+    return partida
+
+
+COSTOS_SALIDA = (1, 10, 50, 100, 250, 500, 1000)
+
+
+def armar_partida_costos(num_salas, num_enemigos, semilla):
+    azar = random.Random(semilla)
+    salas = [Sala(i + 1, f"Sala {i + 1}") for i in range(num_salas)]
+    for i in range(num_salas - 1):
+        costo = azar.choice(COSTOS_SALIDA)  # el mismo costo en los dos lados de la puerta
+        salas[i].agregar_salida(Salida("N", salas[i + 1], costo=costo))
+        salas[i + 1].agregar_salida(Salida("S", salas[i], costo=costo))
+    jugador = Jugador(vida_max=10**9, ataque=10, defensa=10**6, velocidad=100, inventario_max=10, sala=salas[0])
+    partida = Partida(jugador, semilla=semilla)
     for k in range(num_enemigos):
         sala = salas[k % num_salas]
         enemigo = Enemigo(f"e{k}", "x", f"Enemigo {k}", 50, 50, 5, 0, 100, "errante", sala)

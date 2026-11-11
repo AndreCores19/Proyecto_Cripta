@@ -196,7 +196,7 @@ After that, the only pending action of that enemy is the one the method under te
 - [x] T022 [US4] Add `JuegoService.estado_vista(self)` in `service/juego_service.py`. It builds an `EstadoVistaDTO` from `self.partida`, following the "From" column in data-model.md: exits in room order with `salida.costo`; enemies where `enemigo.sala is sala`; `bitacora.obtener_todos()[-20:]`. It must only read state, never change it. Depends on T007 and T021 — FR-010
 - [x] T023 [US4] In `controller/controlador.py` `jugar`, replace `self.vista.mostrar_estado(partida)` with `self.vista.mostrar_estado(self.servicio.estado_vista())`. Depends on T022 — FR-010
 - [x] T024 [US4] In `view/vista_consola.py`, rewrite `mostrar_estado(self, estado)` to print only from the DTO, with the same lines as today, and exit lines as `f"  {s.direccion} -> {s.nombre_destino} ({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})"`. In `view/vista_silenciosa.py`, rename the `mostrar_estado` parameter to `estado`; it stays a no-op. Depends on T021 — FR-010
-  - Note: `pruebas_manuales/prueba_vista.py` was also updated as part of this task. It now builds a `JuegoService(partida, fabrica)` and calls `vista.mostrar_estado(servicio.estado_vista())` instead of passing `partida`.
+  - Note: `pruebas_manuales/prueba_vista.py` was also updated as part of this task. It now builds a `JuegoService(partida, fabrica)` and calls `vista.mostrar_estado(servicio.estado_vista())` instead of passing `partida`. It also no longer hardcodes `"cripta-01"`: the crypt id is read from `sys.argv[1]`, and a short usage message is printed (exit code 1) if it is missing.
 
 **Checkpoint**: `python -m pytest tests/test_vista_costos.py` is green.
 
@@ -296,12 +296,12 @@ After that, the only pending action of that enemy is the one the method under te
 
 ## Phase 10: Section 5.6 measurements
 
-- [ ] T040 [P] In `bench/bench_ciclo.py`, next to `armar_partida`, add `armar_partida_costos(num_salas, num_enemigos, semilla)`. It builds the same room chain with exit costs drawn from `random.Random(semilla)` over {1, 10, 50, 100, 250, 500, 1000}, with the same cost on both sides of each door. Depends on T007 — FR-014 (deterministic by seed, Constitution VI)
-- [ ] T041 Extend `bench/bench_agenda.py`. Measure only the part-one candidates: `AgendaHeap`, `AgendaListaSinOrdenar`, `AgendaListaOrdenada`. Depends on T016 and T040 — FR-003, FR-007, FR-014:
+- [X] T040 [P] In `bench/bench_ciclo.py`, next to `armar_partida`, add `armar_partida_costos(num_salas, num_enemigos, semilla)`. It builds the same room chain with exit costs drawn from `random.Random(semilla)` over {1, 10, 50, 100, 250, 500, 1000}, with the same cost on both sides of each door. Depends on T007 — FR-014 (deterministic by seed, Constitution VI)
+- [X] T041 Extend `bench/bench_agenda.py`. Measure only the part-one candidates: `AgendaHeap`, `AgendaListaSinOrdenar`, `AgendaListaOrdenada`. Depends on T016 and T040 — FR-003, FR-007, FR-014:
   - run `contar_operaciones` on `armar_partida_costos` with 300, 1000 and 3000 `errante` enemies
   - add a variable-increment version of `medir_ciclo`: increment = `intervalo(cost, speed)`, cost from the set above, speed in [50, 200]
   - print the fixed-increment and variable-increment results side by side
-- [ ] T042 Run `python -m bench.bench_agenda` and fill the §Measurements table in `specs/001-exit-costs/plan.md` from `bench-parte1.txt` (T002) and T041. Apply the decision rule: keep the heap if it is the fastest, or within 10% of the fastest, at every size ≥ 300. If the rule fails, open a separate commit reopening the agenda decision — FR-014
+- [X] T042 Run `python -m bench.bench_agenda` and fill the §Measurements table in `specs/001-exit-costs/plan.md` from `bench-parte1.txt` (T002) and T041. Apply the decision rule: keep the heap if it is the fastest, or within 10% of the fastest, at every size ≥ 300. If the rule fails, open a separate commit reopening the agenda decision — FR-014
 
 ---
 

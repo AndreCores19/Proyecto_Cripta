@@ -166,9 +166,13 @@ The part-one benchmark `bench/bench_agenda.py` is extended (measurement code onl
 
 | Measurement | Part one (fixed 100) | Part two (variable) | Decision |
 |---|---|---|---|
-| ops/action, 300 enemies | _to fill from `--bench`_ | _to fill_ | |
-| µs extract+schedule, n=3000 (heap / unsorted / sorted) | _to fill_ | _to fill_ | |
-| µs cancel+schedule, n=3000 (heap / unsorted / sorted) | _to fill_ | _to fill_ | |
+| ops/action, 300 enemies (programar = extraer; cancelar = reprogramar = 0) | 301.0 | 123.0 (1000 enemies: 1001.0 → 414.8; 3000: 3001.0 → 1237.4) | Fewer operations per action: expensive exits delay the enemies. Max pending events unchanged (300 / 1000 / 3000). |
+| µs extract+schedule, n=3000 (heap / unsorted / sorted) | 4.6 / 180.2 / 131.5 (`bench-parte1.txt`) | 7.1 / 538.4 / 294.2 (`bench-parte2.txt`, variable column) | Heap fastest. |
+| µs cancel+schedule, n=3000 (heap / unsorted / sorted) | 2.5 / 37.3 / 249.3 (`bench-parte1.txt`) | 7.4 / 118.9 / 555.0 (`bench-parte2.txt`) | Heap fastest. |
+
+Raw output of the run is in `bench-parte2.txt`. The machine was noisier than in part one (every column, including the fixed-increment control, is slower, and the heap's own numbers vary between runs by up to 2x), so compare the candidates within one run and not the absolute µs against part one.
+
+**Decision rule result: PASS.** In `bench-parte2.txt` the heap is the fastest at every size ≥ 300, in both increment models, with the cancel+schedule benchmark too. At n=300 the heap's variable-increment time (6.7 µs) is 3.6x faster than the best alternative (sorted list, 23.8 µs); the gap grows with size. Even at n=100 (outside the rule) the heap is first or tied (variable increment: heap 6.9 µs, sorted list 7.0 µs). The binary heap decision stays and `structures/agenda.py` is unchanged.
 
 ## Project Structure
 

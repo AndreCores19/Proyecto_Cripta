@@ -1,3 +1,5 @@
+import sys
+
 from adapters.cliente_http import ClienteHttp
 from adapters.almacen_fichas import AlmacenFichas
 from data.repositorio_cripta import RepositorioCripta
@@ -8,7 +10,12 @@ from service.juego_service import JuegoService
 from view.vista_consola import VistaConsola
 
 URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
-ID_CRIPTA = "cripta-01"
+
+if len(sys.argv) < 2:
+    print("Uso: python pruebas_manuales/prueba_vista.py <id_cripta>")
+    print("Ejemplo: python pruebas_manuales/prueba_vista.py cripta-01")
+    sys.exit(1)
+ID_CRIPTA = sys.argv[1]
 
 cliente = ClienteHttp(URL, timeout=10)
 repo_cripta = RepositorioCripta(cliente)

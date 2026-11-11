@@ -1,7 +1,8 @@
 import random
 import time
 
-from bench.bench_ciclo import armar_partida
+from bench.bench_ciclo import COSTOS_SALIDA, armar_partida, armar_partida_costos
+from model.tiempo_logica import intervalo
 from structures.agenda import AgendaEventos, Evento
 
 TAMANOS = (100, 300, 1000, 3000)
@@ -79,8 +80,11 @@ class AgendaHeap:
         self.agenda.cancelar(ev)
 
 
-def contar_operaciones(acciones=1000):
-    partida = armar_partida(100, 300)
+def contar_operaciones(acciones=1000, num_enemigos=300, variable=False):
+    if variable:
+        partida = armar_partida_costos(100, num_enemigos, 1)
+    else:
+        partida = armar_partida(100, num_enemigos)
     agenda = partida.agenda
     cuentas = {"programar": 0, "extraer": 0, "cancelar": 0, "reprogramar": 0}
     nombres = ("programar", "extraer", "cancelar", "reprogramar")
@@ -106,6 +110,18 @@ def medir_ciclo(clase, n, operaciones, azar):
     for _ in range(operaciones):
         ev = agenda.extraer()
         agenda.programar(ev.tiempo + azar.randint(1, 200))
+    return (time.perf_counter() - inicio) / operaciones * 1_000_000
+
+
+def medir_ciclo_variable(clase, n, operaciones, azar):
+    # incremento = intervalo(costo, velocidad), costo del conjunto de salidas, velocidad en [50, 200]
+    agenda = clase()
+    for _ in range(n):
+        agenda.programar(azar.randint(0, 1000))
+    inicio = time.perf_counter()
+    for _ in range(operaciones):
+        ev = agenda.extraer()
+        agenda.programar(ev.tiempo + intervalo(azar.choice(COSTOS_SALIDA), azar.randint(50, 200)))
     return (time.perf_counter() - inicio) / operaciones * 1_000_000
 
 
@@ -137,6 +153,23 @@ def ejecutar():
         for _, clase in candidatas:
             fila += f"{medir_ciclo(clase, n, OPERACIONES, random.Random(1)):>20.1f}"
         print(fila)
+
+    print("\n Extraer y programar: incremento fijo (randint 1..200) | variable (intervalo costo/velocidad):")
+    print(f"{'pendientes':>11}" + "".join(f"{nombre + ' fijo':>24}{nombre + ' var.':>24}" for nombre, _ in candidatas))
+    for n in TAMANOS:
+        fila = f"{n:>11}"
+        for _, clase in candidatas:
+            fila += f"{medir_ciclo(clase, n, OPERACIONES, random.Random(1)):>24.1f}"
+            fila += f"{medir_ciclo_variable(clase, n, OPERACIONES, random.Random(1)):>24.1f}"
+        print(fila)
+
+    print("\nOperaciones por acción con costos variables (100 salas, enemigos errantes):")
+    print(f"{'enemigos':>9} {'modelo':>9} {'programar':>10} {'extraer':>9} {'cancelar':>9} {'reprogr.':>9} {'máx.pend.':>10}")
+    for enemigos in (300, 1000, 3000):
+        for modelo, variable in (("fijo", False), ("variable", True)):
+            c, mx = contar_operaciones(1000, enemigos, variable)
+            print(f"{enemigos:>9} {modelo:>9} {c['programar']:>10.1f} {c['extraer']:>9.1f} "
+                  f"{c['cancelar']:>9.1f} {c['reprogramar']:>9.1f} {mx:>10}")
 
     print("\nCancelar un evento cualquiera y programar otro (microsegundos):")
     print(f"{'pendientes':>11}" + "".join(f"{nombre:>20}" for nombre, _ in candidatas))

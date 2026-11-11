@@ -322,8 +322,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 10 of tasks.md (T040 to T042). Build the seeded variable-cost crypt, extend the agenda benchmark with only the part-one candidates, run it, and fill the Measurements table in plan.md comparing with bench-parte1.txt. Apply the decision rule and tell me the result. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 10 de tasks.md (T040 a T042), construir la cripta con costos variables y semilla, extender el benchmark de agenda solo con los candidatos de parte uno, ejecutarlo y llenar la tabla de Mediciones en plan.md comparando con bench-parte1.txt, aplicar la regla de decisión y decirme el resultado, y marcar las tareas como hechas sin hacer commit
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
