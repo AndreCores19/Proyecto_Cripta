@@ -307,8 +307,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 7 of tasks.md (T025 and T026). Use fakes and no network. Write the T025 tests and run them; only change code if a test fails. For T026, check the save, log and catalog cache adapters and record the result in the module docstring of tests/test_version_cripta.py. At the end, run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 7 de tasks.md (T025 y T026), usando fakes y sin red, escribiendo las pruebas de T025 y ejecutándolas, solo cambiar código si una prueba falla, para T026 verificar los adaptadores de guardado, log y caché de catálogo y registrar el resultado en la cadena de documentación del módulo de tests/test_version_cripta.py, y al final ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

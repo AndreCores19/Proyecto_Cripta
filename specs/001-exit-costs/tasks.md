@@ -206,12 +206,12 @@ After that, the only pending action of that enemy is the one the method under te
 
 **Goal**: prove that the existing behaviour meets FR-011 and FR-012. No new invalidation mechanism.
 
-- [ ] T025 [P] [US5] Write tests in `tests/test_version_cripta.py`, using fakes and no network — FR-011, FR-012:
+- [X] T025 [P] [US5] Write tests in `tests/test_version_cripta.py`, using fakes and no network — FR-011, FR-012:
   - US5-1: a `RepositorioCripta` with a fake source whose `datos_cripta` and `pagina_esqueleto` return a one-page skeleton whose exits declare `costo` → `cargar_esqueleto` + `construir_salas` give rooms carrying those costs, and the fake records that the skeleton page was requested (FR-011)
   - US5-2: `validar_guardado` on a save whose header `version_cripta` differs returns the "otra cripta o versión" message. Call it as `Aplicacion.validar_guardado(fake_app, ruta)`, where `fake_app` has `repo_cripta.datos` and `repo_catalogo.version()`, so no real `Aplicacion` is built. Write the save with `GuardadoBinario().guardar(ruta, cabecera, [], [])` into `tmp_path`, with an empty `contenidos` list and no commands (FR-012)
   - US5-3: `Aplicacion._versiones_coinciden(fake_app, lector)` is False for a lector with a different `version_cripta` (FR-012)
   - US5-4 (repository level): `aplicacion.py` loads a save in `_sesion` → `_reiniciar_salas`, which calls `repo_cripta.construir_salas(self.dtos)` with the skeleton DTOs downloaded at start. Reproduce that step: build rooms from the same DTOs twice with `construir_salas`, as a load does. Check that the second build has the same costs from the DTOs, and that `validar_guardado` accepts a save (written with an empty `contenidos` list) whose versions match (FR-011, FR-012)
-- [ ] T026 [US5] Check that no code path writes exit costs into saves (`adapters/guardado_binario.py`), logs (`adapters/bitacora_partida.py`) or the catalog cache (`adapters/almacen_fichas.py`), and that `VERSION_FORMATO` is unchanged. Record the result in the module docstring of `tests/test_version_cripta.py` — FR-011, FR-012
+- [X] T026 [US5] Check that no code path writes exit costs into saves (`adapters/guardado_binario.py`), logs (`adapters/bitacora_partida.py`) or the catalog cache (`adapters/almacen_fichas.py`), and that `VERSION_FORMATO` is unchanged. Record the result in the module docstring of `tests/test_version_cripta.py` — FR-011, FR-012
 
 ---
 
