@@ -71,6 +71,7 @@ class RepositorioCripta:
                     cerrada=salida_dto.cerrada,
                     llave=salida_dto.llave,
                     cierre_automatico=salida_dto.cierre_automatico,
+                    costo=salida_dto.costo,
                 ))
         ## tercer ciclo enlaza las salidas opuestas
         for sala in creadas:
@@ -85,6 +86,15 @@ class RepositorioCripta:
                         f"Puerta inconsistente: la salida {salida.direccion} de la sala "
                         f"{sala.id} va a la sala {salida.destino.id}, pero la salida "
                         f"{otra.direccion} de esa sala va a la sala {otra.destino.id}"
+                    )
+                if (salida.costo_declarado is not None
+                        and otra.costo_declarado is not None
+                        and salida.costo_declarado != otra.costo_declarado):
+                    raise ValueError(
+                        f"Puerta inconsistente: la salida {salida.direccion} de la sala "
+                        f"{sala.id} cuesta {salida.costo_declarado}, pero la salida "
+                        f"{otra.direccion} de la sala {salida.destino.id} "
+                        f"cuesta {otra.costo_declarado}"
                     )
                 salida.enlazar(otra)
         self.salas = vector

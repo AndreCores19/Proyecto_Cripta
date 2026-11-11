@@ -277,8 +277,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 2 of tasks.md (T004 to T010). Write each test task before its implementation and run the tests as you go. At the end, run the Phase 2 checkpoint: python -m pytest tests/test_costos_datos.py tests/test_puertas.py. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 2 de tasks.md (T004 a T010), escribiendo cada prueba antes de su implementación y ejecutando las pruebas al final
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

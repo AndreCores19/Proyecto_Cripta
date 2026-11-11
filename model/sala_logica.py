@@ -1,11 +1,20 @@
+from model.tiempo_logica import COSTO_MOVER
+
+
 class Salida:
-    def __init__(self, direccion, destino, cerrada=False, llave=None, cierre_automatico=None):
+    def __init__(self, direccion, destino, cerrada=False, llave=None, cierre_automatico=None, costo=None):
         self.direccion = direccion
-        self.destino = destino  
+        self.destino = destino
         self.cerrada = cerrada
-        self.llave = llave                  
+        self.llave = llave
         self.cierre_automatico = cierre_automatico
+        self.costo_declarado = costo  #None si los datos no lo declaran
         self.opuesta = None  #la Salida gemela
+
+    @property
+    def costo(self):
+        #costo de cruzar la salida: el declarado o, si no hay, el de mover
+        return self.costo_declarado if self.costo_declarado is not None else COSTO_MOVER
 
     def enlazar(self, otra):
         #soluciona la relación entre dos salidas
@@ -17,10 +26,14 @@ class Salida:
         llave = self.llave if self.llave is not None else otra.llave
         cierre = (self.cierre_automatico if self.cierre_automatico is not None
                   else otra.cierre_automatico)
+        #el costo declarado en un solo lado vale para los dos (FR-005)
+        costo = (self.costo_declarado if self.costo_declarado is not None
+                 else otra.costo_declarado)
         for cara in (self, otra):
             cara.cerrada = cerrada
             cara.llave = llave
             cara.cierre_automatico = cierre
+            cara.costo_declarado = costo
 
 
 class Sala:

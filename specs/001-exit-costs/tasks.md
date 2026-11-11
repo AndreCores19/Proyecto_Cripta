@@ -83,10 +83,10 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T004 [P] Write tests in `tests/test_costos_datos.py` for `SalidaDTO.desde_json` — FR-001, FR-002:
+- [x] T004 [P] Write tests in `tests/test_costos_datos.py` for `SalidaDTO.desde_json` — FR-001, FR-002:
   - `{"sala": 2, "costo": 300}` gives `costo == 300`
   - `{"sala": 2}` gives `costo is None` (not 100)
-- [ ] T005 [P] Write tests in `tests/test_puertas.py` for `Salida`, using the linking table from data-model.md — FR-002, FR-005:
+- [x] T005 [P] Write tests in `tests/test_puertas.py` for `Salida`, using the linking table from data-model.md — FR-002, FR-005:
   - None/None → both `costo == 100`
   - x/None → both x
   - None/y → both y
@@ -96,14 +96,14 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Implementation
 
-- [ ] T006 [P] In `dto/salida_dto.py`, add `costo` to `SalidaDTO.__init__` (default `None`) and read it in `desde_json` with `datos.get("costo")`. "`None` = not declared. No range check (FR-001)" — FR-001, FR-002
-- [ ] T007 [P] In `model/sala_logica.py` — FR-002, FR-005:
+- [x] T006 [P] In `dto/salida_dto.py`, add `costo` to `SalidaDTO.__init__` (default `None`) and read it in `desde_json` with `datos.get("costo")`. "`None` = not declared. No range check (FR-001)" — FR-001, FR-002
+- [x] T007 [P] In `model/sala_logica.py` — FR-002, FR-005:
   - Add `Salida.__init__(..., costo=None)`, storing `self.costo_declarado`.
   - Add a read-only property `costo` returning `costo_declarado`, or `COSTO_MOVER` (imported from `model/tiempo_logica.py`) when it is `None`.
   - In `enlazar`, copy a non-`None` `costo_declarado` to the side whose value is `None`, the same way `llave` is shared.
-- [ ] T008 In the second loop of `construir_salas` in `data/repositorio_cripta.py`, pass `costo=salida_dto.costo` when creating each `Salida`. Depends on T006 and T007 — FR-001, FR-011
-- [ ] T009 In the third loop of `construir_salas` in `data/repositorio_cripta.py`, before `salida.enlazar(otra)`: if `salida.costo_declarado` and `otra.costo_declarado` are both not `None` and differ, raise `ValueError` starting with "Puerta inconsistente:" that names both rooms, both directions and both costs. Use the same message style as the existing check. Depends on T008 — FR-013
-- [ ] T010 Add to `tests/test_costos_datos.py`, building rooms with `RepositorioCripta.construir_salas` from `SalaDTO`s. Depends on T009 — FR-005, FR-013:
+- [x] T008 In the second loop of `construir_salas` in `data/repositorio_cripta.py`, pass `costo=salida_dto.costo` when creating each `Salida`. Depends on T006 and T007 — FR-001, FR-011
+- [x] T009 In the third loop of `construir_salas` in `data/repositorio_cripta.py`, before `salida.enlazar(otra)`: if `salida.costo_declarado` and `otra.costo_declarado` are both not `None` and differ, raise `ValueError` starting with "Puerta inconsistente:" that names both rooms, both directions and both costs. Use the same message style as the existing check. Depends on T008 — FR-013
+- [x] T010 Add to `tests/test_costos_datos.py`, building rooms with `RepositorioCripta.construir_salas` from `SalaDTO`s. Depends on T009 — FR-005, FR-013:
   - A→B declares 300 and B→A declares nothing → both exits cost 300 (US1-7 at load)
   - sides declare 100 and 200 → `ValueError` matching "Puerta inconsistente" (US1-6)
   - the existing room-mismatch inconsistent door still raises
