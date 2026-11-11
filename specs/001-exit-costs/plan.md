@@ -192,43 +192,43 @@ specs/001-exit-costs/
 ### Source Code (repository root)
 
 ```text
-dto/salida_dto.py              # + costo (None when not declared)                          (Andrea)
-dto/estado_vista_dto.py        # new: EstadoVistaDTO and its parts (room view)              (Andrea)
-dto/inventario_vista_dto.py    # new: InventarioVistaDTO, ObjetoInventarioDTO              (Andrea)
-dto/resumen_final_dto.py       # new: ResumenFinalDTO (end of game + score)                 (Andrea)
-data/repositorio_cripta.py     # pass costo to Salida; extend inconsistent-door check      (Andrea)
+dto/salida_dto.py              # + costo (None when not declared)
+dto/estado_vista_dto.py        # new: EstadoVistaDTO and its parts (room view)
+dto/inventario_vista_dto.py    # new: InventarioVistaDTO, ObjetoInventarioDTO
+dto/resumen_final_dto.py       # new: ResumenFinalDTO (end of game + score)
+data/repositorio_cripta.py     # pass costo to Salida; extend inconsistent-door check
 service/juego_service.py       # + estado_vista, resumen_final, inventario_vista, objetos_en_sala,
                                #   enemigos_en_sala, terminada, semilla; atacar(id_enemigo);
-                               #   vista_ordenada returns DTOs                             (Andrea)
+                               #   vista_ordenada returns DTOs
 controller/controlador.py      # no Partida/Sala/Enemigo/Objeto access; only service DTOs;
-                               #   vista may be None (replay), messages go to avisar       (Andrea)
-view/vista_consola.py          # every method prints from DTOs; exit lines show costo      (Andrea)
-view/vista_replay.py           # DELETED                                                   (Andrea)
-view/vista_silenciosa.py       # standalone (no longer inherits VistaReplay), DTO params, no-ops (Andrea)
-adapters/salida_replay.py      # new: imprimir_final_replay(resumen), imprimir_reporte(...) (Andrea)
+                               #   vista may be None (replay), messages go to avisar
+view/vista_consola.py          # every method prints from DTOs; exit lines show costo
+view/vista_replay.py           # DELETED
+view/vista_silenciosa.py       # standalone (no longer inherits VistaReplay), DTO params, no-ops
+adapters/salida_replay.py      # new: imprimir_final_replay(resumen), imprimir_reporte(...)
 aplicacion.py                  # reproducir: no view class, Controlador(..., None, ..., avisar=print),
                                #   imprimir_final_replay / imprimir_reporte; _reejecutar uses
                                #   servicio.terminada(); guardar_partida(semilla, …),
-                               #   registrar_puntaje(resumen)                              (Andrea)
-model/sala_logica.py           # Salida.costo_declarado, Salida.costo, enlazar shares cost (Emily)
-model/partida_logica.py        # _programar_movimiento; player and enemy moves use it      (Emily)
+                               #   registrar_puntaje(resumen)
+model/sala_logica.py           # Salida.costo_declarado, Salida.costo, enlazar shares cost
+model/partida_logica.py        # _programar_movimiento; player and enemy moves use it
 model/tiempo_logica.py         # unchanged (intervalo, nuevo_tiempo_por_velocidad, COSTO_MOVER)
 model/efectos_logica.py        # unchanged
 structures/agenda.py           # unchanged unless §Measurements says otherwise
-bench/bench_ciclo.py           # seeded variable-cost crypt builder                        (Emily)
-bench/bench_agenda.py          # variable-cost load for the part-one candidates             (Emily)
-tests/test_costos_datos.py     # new (Andrea): DTO, repository linking, inconsistent-cost door
-tests/test_vista_costos.py     # new (Andrea): estado_vista DTO contents + room view output (US4)
-tests/test_frontera_servicio.py # new (Andrea): every service→controller/view crossing is a DTO/plain value;
+bench/bench_ciclo.py           # seeded variable-cost crypt builder
+bench/bench_agenda.py          # variable-cost load for the part-one candidates
+tests/test_costos_datos.py     # new: DTO, repository linking, inconsistent-cost door
+tests/test_vista_costos.py     # new: estado_vista DTO contents + room view output (US4)
+tests/test_frontera_servicio.py # new: every service→controller/view crossing is a DTO/plain value;
                                #   output of mostrar_final/inventario unchanged; atacar by id
-tests/test_service.py          # updated (Andrea): atacar(id_enemigo)
-tests/test_version_cripta.py   # new (Andrea): fresh skeleton, old-version save/log rejected (US5)
-tests/test_replay_costos.py    # new (Andrea): record + replay on a crypt with costs (FR-014)
-tests/test_salida_replay.py    # new (Andrea): replay output equals the captured VistaReplay text;
+tests/test_service.py          # updated: atacar(id_enemigo)
+tests/test_version_cripta.py   # new: fresh skeleton, old-version save/log rejected (US5)
+tests/test_replay_costos.py    # new: record + replay on a crypt with costs (FR-014)
+tests/test_salida_replay.py    # new: replay output equals the captured VistaReplay text;
                                #   no view/ class is instantiated during reproducir
 specs/001-exit-costs/salida-parte1/ # captured part-one output of the views and VistaReplay (golden files)
-tests/test_costos_salida.py    # new (Emily): move durations, FR-016 order, enemies, speed changes (US1–US3)
-tests/test_puertas.py          # + (Emily): Salida.costo sharing rules in enlazar
+tests/test_costos_salida.py    # new: move durations, FR-016 order, enemies, speed changes (US1–US3)
+tests/test_puertas.py          # +: Salida.costo sharing rules in enlazar
 ```
 
 **Structure Decision**: existing single-project layered layout. This feature adds three DTO modules, one output-function module in `adapters/` and new test files, and removes `view/vista_replay.py`. The only new directory is the golden-output folder under `specs/`.

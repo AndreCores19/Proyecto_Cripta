@@ -243,13 +243,23 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-tasks Regenerate tasks.md from the updated plan. Keep the same owners and keep T001 and T002 as done. Also:
+- Add Andrea's tasks for the replay design: capture the golden output of the current views and VistaReplay into specs/001-exit-costs/salida-parte1/ before any view change, create adapters/salida_replay.py, let the controller accept vista=None with avisar, change reproducir, delete VistaReplay, make VistaSilenciosa standalone, and add tests/test_salida_replay.py.
+- C3: every task must cite at least one FR; T028, T030 and T031 cite FR-010 and FR-014.
+- I6: move the mostrar_final assertion from T019 into the boundary tests, so the US4 checkpoint can be green on its own.
+- U9: in T024, use an empty contenidos list when writing the save.
+- U10: in T039, name the log path as tmp_path / f"partida_{id}_{semilla}.log".
+- Uso: cambios en tasks.md para reflejar el plan actualizado, con dueños, pruebas y cambios de código, incluyendo las tareas de Andrea para el diseño del replay y la eliminación de VistaReplay, y citando los FR correspondientes
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-tasks Regenerate tasks.md from the updated plan. Every task of this feature is owned by Emily: she owns this spec end to end and implements it with the agent. Remove the Andrea/Emily split and the per-owner parallel chains. Keep T001 and T002 as done. Also:
+- Add the tasks for the replay design: capture the golden output of the current views and VistaReplay into specs/001-exit-costs/salida-parte1/ before any view change, create adapters/salida_replay.py, let the controller accept vista=None with avisar, change reproducir, delete VistaReplay, make VistaSilenciosa standalone, and add tests/test_salida_replay.py.
+- C3: every task must cite at least one FR; the boundary tasks cite FR-010 and FR-014.
+- I6: move the mostrar_final assertion from T019 into the boundary tests, so the US4 checkpoint can be green on its own.
+- U9: in T024, use an empty contenidos list when writing the save.
+- U10: in T039, name the log path as tmp_path / f"partida_{id}_{semilla}.log".
+- Uso: estructurar tasks.md para reflejar el plan actualizado, con todas las tareas de esta característica a mi cargo, incluyendo las tareas para el diseño del replay y la eliminación de VistaReplay, y citando los FR correspondientes
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
