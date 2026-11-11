@@ -11,10 +11,10 @@ class VistaSilenciosa(VistaReplay):
     def mostrar_mensaje(self, texto):
         pass
 
-    def mostrar_inventario(self, partida):
+    def mostrar_inventario(self, inv):
         pass
 
-    def mostrar_final(self, partida):
+    def mostrar_final(self, resumen):
         pass
 
     def mostrar_inventario_ordenado(self, objetos, criterio):

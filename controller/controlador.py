@@ -21,24 +21,19 @@ class Controlador:
         self.ruta_carga = None
 
     def jugar(self):
-        partida = self.servicio.partida
-        while self.activo and not partida.terminada:
+        while self.activo and not self.servicio.terminada():
             self.vista.mostrar_estado(self.servicio.estado_vista())
             texto = self.vista.pedir_comando()
             self.ejecutar(texto)
         if self.ruta_carga is None:
-            self.vista.mostrar_final(partida)
-            if (partida.victoria or partida.terminada) and self.persistencia is not None:
-                puntajes = self.persistencia.registrar_puntaje(partida)
+            resumen = self.servicio.resumen_final()
+            self.vista.mostrar_final(resumen)
+            if (resumen.victoria or resumen.terminada) and self.persistencia is not None:
+                puntajes = self.persistencia.registrar_puntaje(resumen)
                 self.vista.mostrar_puntajes(puntajes)
 
     def _enemigos_en_sala(self):
-        partida = self.servicio.partida
-        resultado = []
-        for enemigo in partida.enemigos:
-            if enemigo.sala is partida.jugador.sala and enemigo.esta_vivo():
-                resultado.append(enemigo)
-        return resultado
+        return self.servicio.enemigos_en_sala()
 
     def _avisar_si_falla(self, resultado, mensaje):
         if not resultado:
@@ -81,7 +76,7 @@ class Controlador:
             self.vista.mostrar_mensaje("Comando no reconocido.")
 
     def _cmd_recoger(self, palabras):
-        objetos = self.servicio.partida.jugador.sala.objetos
+        objetos = self.servicio.objetos_en_sala()
         if len(palabras) > 1:
             try:
                 id_instancia = int(palabras[1])
@@ -115,12 +110,12 @@ class Controlador:
             objetos = self.servicio.vista_ordenada(criterio)
             self.vista.mostrar_inventario_ordenado(objetos, criterio)
             return
-        self.vista.mostrar_inventario(self.servicio.partida)
+        self.vista.mostrar_inventario(self.servicio.inventario_vista())
 
     def _cmd_atacar(self, palabras):
-        objetivo = self._elegir_enemigo(palabras)
-        if objetivo is not None:
-            self._avisar_si_falla(self.servicio.atacar(objetivo), "No se pudo atacar.")
+        id_enemigo = self._elegir_enemigo(palabras)
+        if id_enemigo is not None:
+            self._avisar_si_falla(self.servicio.atacar(id_enemigo), "No se pudo atacar.")
 
     def _elegir_enemigo(self, palabras):
         enemigos = self._enemigos_en_sala()
@@ -130,11 +125,11 @@ class Controlador:
         if len(palabras) > 1:
             for enemigo in enemigos:
                 if str(enemigo.id_enemigo).lower() == palabras[1]:
-                    return enemigo
+                    return enemigo.id_enemigo
             self.vista.mostrar_mensaje("Ese enemigo no está en la sala.")
             return None
         if len(enemigos) == 1:
-            return enemigos[0]
+            return enemigos[0].id_enemigo
         self.vista.mostrar_mensaje("Hay varios enemigos: usa atacar <id>.")
         return None
 
@@ -153,7 +148,7 @@ class Controlador:
             return
         nombre = palabras[1] if len(palabras) > 1 else "partida"
         ruta = self.persistencia.guardar_partida(
-            self.servicio.partida, self.comandos, nombre)
+            self.servicio.semilla(), self.comandos, nombre)
         self.vista.mostrar_mensaje(f"Partida guardada en {ruta}")
 
     def _cmd_cargar(self, palabras):

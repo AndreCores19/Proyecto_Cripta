@@ -312,8 +312,8 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 8 of tasks.md (T027 to T033). Write the tests first and run them, then implement until they pass. The end-of-game and inventory output must match the golden files from T003. At the end, check that no "servicio.partida" remains outside service/ and run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 8 de tasks.md (T027 a T033), escribiendo las pruebas primero y ejecutándolas, luego implementando hasta que pasen, asegurando que la salida de fin de juego e inventario coincida con los archivos dorados de T003, y al final verificar que no quede ningún "servicio.partida" fuera de service/ y ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

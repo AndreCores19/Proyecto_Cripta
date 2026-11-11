@@ -71,7 +71,7 @@ class Aplicacion:
     def _reejecutar(self, controlador, vista, comandos):
         controlador.vista = VistaSilenciosa()
         for comando in comandos:
-            if controlador.servicio.partida.terminada:
+            if controlador.servicio.terminada():
                 break
             controlador.ejecutar(comando)
         controlador.vista = vista
@@ -126,19 +126,19 @@ class Aplicacion:
             self.repo_catalogo.aciertos_memoria + self.repo_catalogo.aciertos_disco,
             self.repo_catalogo.fallos)
 
-    def guardar_partida(self, partida, comandos, nombre):
+    def guardar_partida(self, semilla, comandos, nombre):
         ruta = self.ruta_guardado(nombre)
         ruta.parent.mkdir(exist_ok=True)
-        cabecera = CabeceraGuardado(self.repo_cripta.datos.id_cripta, self.repo_cripta.datos.version, self.repo_catalogo.version(), partida.semilla)
+        cabecera = CabeceraGuardado(self.repo_cripta.datos.id_cripta, self.repo_cripta.datos.version, self.repo_catalogo.version(), semilla)
         GuardadoBinario().guardar(ruta, cabecera, self.repo_cripta.contenidos, comandos)
         return ruta
 
     def ruta_guardado(self, nombre):
         return Path("saves") / f"{nombre}.sav"
 
-    def registrar_puntaje(self, partida):
+    def registrar_puntaje(self, resumen):
         datos = self.repo_cripta.datos
         tabla = TablaPuntajes("saves/puntajes.txt")
-        tabla.registrar(Puntaje(partida.jugador.nombre, datos.id_cripta, datos.version, partida.acciones_jugador,
-                                partida.enemigos_derrotados, partida.reloj,partida.victoria))
+        tabla.registrar(Puntaje(resumen.nombre_jugador, datos.id_cripta, datos.version, resumen.acciones,
+                                resumen.enemigos_derrotados, resumen.reloj, resumen.victoria))
         return tabla.ordenados()

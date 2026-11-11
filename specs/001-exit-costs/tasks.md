@@ -221,7 +221,7 @@ After that, the only pending action of that enemy is the one the method under te
 
 ### Tests
 
-- [ ] T027 [P] Write `tests/test_frontera_servicio.py`, using `armar_estado_fijo` and `cargar_golden` from `tests/estado_fijo.py`. Depends on T003 — FR-010, FR-014:
+- [x] T027 [P] Write `tests/test_frontera_servicio.py`, using `armar_estado_fijo` and `cargar_golden` from `tests/estado_fijo.py`. Depends on T003 — FR-010, FR-014:
   - Each of `estado_vista`, `resumen_final`, `inventario_vista`, `vista_ordenada(c)` (for `peso`, `valor`, `nombre`), `objetos_en_sala` and `enemigos_en_sala` returns no instance of a class defined in `model/`. Walk DTO attributes and lists recursively and check each value's `type(x).__module__` does not start with `model.`
   - `terminada()` returns a bool and `semilla()` an int
   - `enemigos_en_sala()` lists only living enemies in the player's room, in `partida.enemigos` order
@@ -232,16 +232,16 @@ After that, the only pending action of that enemy is the one the method under te
     - `VistaConsola().mostrar_final(servicio.resumen_final())` equals `final_consola_{victoria,muerte,salida}.txt` for the three `final` values
     - `mostrar_inventario(servicio.inventario_vista())` equals `inventario.txt`
     - `mostrar_inventario_ordenado(servicio.vista_ordenada(c), c)` equals `inventario_{c}.txt`
-- [ ] T028 [P] Update `tests/test_service.py` `test_servicio_esperar_y_atacar` to call `servicio.atacar("r1")` instead of `servicio.atacar(rata)` — FR-006
+- [x] T028 [P] Update `tests/test_service.py` `test_servicio_esperar_y_atacar` to call `servicio.atacar("r1")` instead of `servicio.atacar(rata)` — FR-006
 
 ### Implementation
 
-- [ ] T029 [P] Create `dto/resumen_final_dto.py` (`ResumenFinalDTO`) and `dto/inventario_vista_dto.py` (`InventarioVistaDTO`, `ObjetoInventarioDTO`), with exactly the fields in data-model.md "Other service boundary DTOs". Use plain classes and lists, and import nothing from `model/` — FR-010, FR-014
-- [ ] T030 In `service/juego_service.py`, add the methods below, as in data-model.md "Lists and plain values". Depends on T021 and T029 — FR-006, FR-010, FR-014:
+- [x] T029 [P] Create `dto/resumen_final_dto.py` (`ResumenFinalDTO`) and `dto/inventario_vista_dto.py` (`InventarioVistaDTO`, `ObjetoInventarioDTO`), with exactly the fields in data-model.md "Other service boundary DTOs". Use plain classes and lists, and import nothing from `model/` — FR-010, FR-014
+- [x] T030 In `service/juego_service.py`, add the methods below, as in data-model.md "Lists and plain values". Depends on T021 and T029 — FR-006, FR-010, FR-014:
   - `resumen_final()`, `inventario_vista()`, `objetos_en_sala()`, `enemigos_en_sala()`, `terminada()` and `semilla()`
   - change `vista_ordenada(criterio)` to return a list of `ObjetoInventarioDTO` in the order of `inventario.vista_ordenada`
   - change `atacar(enemigo)` to `atacar(id_enemigo)`: resolve it as the first enemy in `partida.enemigos` with `str(e.id_enemigo).lower() == str(id_enemigo).lower()`, `e.sala is jugador.sala` and `e.esta_vivo()`. Return False if there is none; otherwise call `partida.atacar(e)` and `actualizar_fichas()` as today
-- [ ] T031 In `controller/controlador.py`, remove every read of the game model. Depends on T023 and T030 — FR-010, FR-014:
+- [x] T031 In `controller/controlador.py`, remove every read of the game model. Depends on T023 and T030 — FR-010, FR-014:
   - `jugar`: loop on `self.servicio.terminada()`; then `resumen = self.servicio.resumen_final()`, `self.vista.mostrar_final(resumen)` and `self.persistencia.registrar_puntaje(resumen)` when `resumen.victoria or resumen.terminada`
   - `_cmd_recoger`: use `self.servicio.objetos_en_sala()`
   - `_enemigos_en_sala` / `_elegir_enemigo`: use `self.servicio.enemigos_en_sala()` and return the chosen `id_enemigo`; `_cmd_atacar` calls `self.servicio.atacar(id_enemigo)`
@@ -249,8 +249,8 @@ After that, the only pending action of that enemy is the one the method under te
   - `_cmd_guardar`: `self.persistencia.guardar_partida(self.servicio.semilla(), self.comandos, nombre)`
   
   No `self.servicio.partida` may remain.
-- [ ] T032 In `view/vista_consola.py`, make `mostrar_final(resumen)` print all of `resumen.bitacora` (the last 20). Make `mostrar_inventario(inv)` use the `>` marker from `actual` and ` (equipado)` from `equipado`, and make `mostrar_inventario_ordenado(objetos, criterio)` use the DTO fields, with the same text as the golden files. In `view/vista_silenciosa.py`, rename the parameters to `resumen` / `inv`; the methods stay no-ops. Depends on T029 — FR-010, FR-014
-- [ ] T033 In `aplicacion.py`, outside `reproducir` (handled in Phase 9), only talk to the game through the service after it is built. Depends on T030 — FR-012, FR-014:
+- [x] T032 In `view/vista_consola.py`, make `mostrar_final(resumen)` print all of `resumen.bitacora` (the last 20). Make `mostrar_inventario(inv)` use the `>` marker from `actual` and ` (equipado)` from `equipado`, and make `mostrar_inventario_ordenado(objetos, criterio)` use the DTO fields, with the same text as the golden files. In `view/vista_silenciosa.py`, rename the parameters to `resumen` / `inv`; the methods stay no-ops. Depends on T029 — FR-010, FR-014
+- [x] T033 In `aplicacion.py`, outside `reproducir` (handled in Phase 9), only talk to the game through the service after it is built. Depends on T030 — FR-012, FR-014:
   - `_reejecutar`: `controlador.servicio.terminada()`
   - `guardar_partida(self, semilla, comandos, nombre)` uses `semilla`
   - `registrar_puntaje(self, resumen)` builds `Puntaje(resumen.nombre_jugador, datos.id_cripta, datos.version, resumen.acciones, resumen.enemigos_derrotados, resumen.reloj, resumen.victoria)`

@@ -34,14 +34,14 @@ class VistaConsola:
             print(f"  {mensaje}")
         print("-" * 40)
 
-    def mostrar_final(self, partida):
+    def mostrar_final(self, resumen):
         print("-" * 40)
-        for mensaje in partida.bitacora.obtener_todos()[-20:]:
+        for mensaje in resumen.bitacora:
             print(f"  {mensaje}")
-        print(f"Tiempo final: {partida.reloj}")
-        if partida.victoria:
+        print(f"Tiempo final: {resumen.reloj}")
+        if resumen.victoria:
             print("¡Victoria! Escapaste de la cripta.")
-        elif partida.terminada:
+        elif resumen.terminada:
             print("Has muerto.")
         else:
             print("Saliste de la partida.")
@@ -53,19 +53,15 @@ class VistaConsola:
     def pedir_comando(self):
         return input("> ")
 
-    def mostrar_inventario(self, partida):
-        inv = partida.jugador.inventario
+    def mostrar_inventario(self, inv):
         print(f"Inventario ({inv.tamano}/{inv.capacidad_max}):")
         if inv.tamano == 0:
             print("  (vacío)")
             return
-        nodo = inv.cabeza
-        while nodo is not None:
-            objeto = nodo.objeto
-            marca = ">" if nodo is inv.actual else " "
+        for objeto in inv.objetos:
+            marca = ">" if objeto.actual else " "
             equipo = " (equipado)" if objeto.equipado else ""
             print(f" {marca} [{objeto.id_instancia}] {objeto.nombre}{equipo} (peso {objeto.peso}, valor {objeto.valor})")
-            nodo = nodo.siguiente
 
     def mostrar_inventario_ordenado(self, objetos, criterio):
         print(f"Inventario ordenado por {criterio}:")

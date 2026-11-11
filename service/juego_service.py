@@ -1,6 +1,8 @@
 from model.objeto_logica import PERGAMINO_RETROCESO
 from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDTO,
                                   EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
+from dto.inventario_vista_dto import InventarioVistaDTO, ObjetoInventarioDTO
+from dto.resumen_final_dto import ResumenFinalDTO
 
 
 class JuegoService:
@@ -40,8 +42,17 @@ class JuegoService:
         self.actualizar_fichas()
         return resultado
 
-    def atacar(self, enemigo):
-        resultado = self.partida.atacar(enemigo)
+    def atacar(self, id_enemigo):
+        jugador = self.partida.jugador
+        objetivo = None
+        for e in self.partida.enemigos:
+            if (str(e.id_enemigo).lower() == str(id_enemigo).lower()
+                    and e.sala is jugador.sala and e.esta_vivo()):
+                objetivo = e
+                break
+        if objetivo is None:
+            return False
+        resultado = self.partida.atacar(objetivo)
         self.actualizar_fichas()
         return resultado
 
@@ -91,7 +102,44 @@ class JuegoService:
         self.fabrica.marcar_en_uso(self._ids_en_uso())
 
     def vista_ordenada(self, criterio):
-        return self.partida.jugador.inventario.vista_ordenada(criterio)
+        inv = self.partida.jugador.inventario
+        return [self._objeto_inventario(o, False) for o in inv.vista_ordenada(criterio)]
+
+    @staticmethod
+    def _objeto_inventario(objeto, actual):
+        return ObjetoInventarioDTO(objeto.id_instancia, objeto.nombre, objeto.peso,
+                                   objeto.valor, bool(objeto.equipado), actual)
+
+    def inventario_vista(self):
+        inv = self.partida.jugador.inventario
+        objetos = []
+        nodo = inv.cabeza
+        while nodo is not None:
+            objetos.append(self._objeto_inventario(nodo.objeto, nodo is inv.actual))
+            nodo = nodo.siguiente
+        return InventarioVistaDTO(inv.tamano, inv.capacidad_max, objetos)
+
+    def resumen_final(self):
+        p = self.partida
+        return ResumenFinalDTO(p.jugador.nombre, p.reloj, p.victoria, p.terminada,
+                               p.acciones_jugador, p.enemigos_derrotados,
+                               list(p.bitacora.obtener_todos()[-20:]))
+
+    def objetos_en_sala(self):
+        return [ObjetoVistaDTO(o.id_instancia, o.nombre)
+                for o in self.partida.jugador.sala.objetos]
+
+    def enemigos_en_sala(self):
+        sala = self.partida.jugador.sala
+        return [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
+                                [ef.tipo for ef in e.efectos])
+                for e in self.partida.enemigos if e.sala is sala and e.esta_vivo()]
+
+    def terminada(self):
+        return self.partida.terminada
+
+    def semilla(self):
+        return self.partida.semilla
 
     def estado_vista(self):
         #Solo lee el estado; nunca lo cambia

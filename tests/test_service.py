@@ -73,7 +73,7 @@ def test_servicio_esperar_y_atacar():
     antes = partida.reloj
     assert servicio.esperar() is True
     assert partida.reloj > antes
-    assert servicio.atacar(rata) is True
+    assert servicio.atacar("r1") is True
     assert partida.enemigos_derrotados == 1
 
 
