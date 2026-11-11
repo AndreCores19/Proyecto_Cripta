@@ -263,6 +263,60 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: Fix tasks.md and research.md per the fourth analysis:
+- U11: in T003 and T034, AppFalsa.fabrica.nueva_partida returns a freshly built game from armar_estado_fijo() on every call, and each reproducir call uses a new AppFalsa.
+- U12: in T039, remove the VistaReplay import from tests/capturar_salida_parte1.py and replace its body with a message and sys.exit(1).
+- I7: define the fake fabrica inside tests/estado_fijo.py instead of importing it from tests/test_service.py.
+- I8: in research.md, move R6 back before R7.
+- Uso: arreglar tasks.md y research.md según el cuarto análisis, con cambios en T003, T034, T039 y la definición de la fábrica falsa
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 10 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt:
 - Uso: 
 

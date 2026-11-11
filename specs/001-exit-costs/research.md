@@ -30,6 +30,12 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
 - **Decision**: no new mechanism.
 - **Rationale**: the skeleton is not persisted. It is re-read on every start through `pagina_esqueleto`, so costs are always fresh. Saves (`validar_guardado`) and logs (`_versiones_coinciden`) compare `version_cripta`, and part-two crypts have new versions. The catalog cache is keyed by the catalog version and holds no exits. Offline recordings store the raw skeleton JSON, so newly recorded crypts include `costo`.
 
+## R6. Agenda under variable costs
+
+- **Decision**: keep the binary heap, pending the §Measurements of plan.md.
+- **Rationale**: heap operations are O(log n) whatever the intervals are. Section 5.6 asks only to repeat the part-one comparison under the new load, so no new candidate is introduced.
+- **Alternatives**: unsorted list (O(n) extract) and sorted list (O(n) insert), which were already measured and rejected in part one; they are re-measured with variable move costs and many actors.
+
 ## R7. DTOs across the whole service boundary (analysis C1)
 
 - **Decision**: the service returns DTOs or plain values for everything outside the model:
@@ -59,9 +65,3 @@ No NEEDS CLARIFICATION remained after `/speckit-clarify`. These notes record the
   - (b) Collect controller messages in a list and print them at the end. Rejected: the text would be the same, but the messages would no longer appear while the replay runs.
   - (c) Let the controller print directly. Rejected: the controller would take on view work.
   - (d) Keep `VistaSilenciosa` inheriting from `VistaReplay`. Rejected: that keeps `VistaReplay` alive only for inheritance, and `VistaSilenciosa` already overrides every method it uses.
-
-## R6. Agenda under variable costs
-
-- **Decision**: keep the binary heap, pending the §Measurements of plan.md.
-- **Rationale**: heap operations are O(log n) whatever the intervals are. Section 5.6 asks only to repeat the part-one comparison under the new load, so no new candidate is introduced.
-- **Alternatives**: unsorted list (O(n) extract) and sorted list (O(n) insert), which were already measured and rejected in part one; they are re-measured with variable move costs and many actors.

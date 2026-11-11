@@ -27,7 +27,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 | File | Covers |
 |---|---|
-| `tests/estado_fijo.py` (new helper, not a test module) | fixed game states, `AppFalsa`, `LectorFalso`, `cargar_golden(nombre)` |
+| `tests/estado_fijo.py` (new helper, not a test module) | `FabricaFalsa`, fixed game states, `AppFalsa`, `LectorFalso`, `cargar_golden(nombre)`; imports nothing from other test modules |
 | `tests/test_costos_datos.py` (new) | DTO reading, repository linking, inconsistent-door cost (US1-6, US1-7 at load time) |
 | `tests/test_vista_costos.py` (new) | `EstadoVistaDTO`, `estado_vista()`, room view output vs golden (US4) |
 | `tests/test_frontera_servicio.py` (new) | every service → controller/view/persistence crossing ([contracts/service-boundary.md](./contracts/service-boundary.md)) |
@@ -57,10 +57,11 @@ After that, the only pending action of that enemy is the one the method under te
 - [x] T001 Commit `specs/001-exit-costs/spec.md` and the plan artifacts before any code change, per Constitution VII. Done — all FRs
 - [x] T002 Run `python -m bench.bench_agenda` on the unchanged code and save the output to `specs/001-exit-costs/bench-parte1.txt` as the part-one baseline. Done in commit `08f9100` — FR-014
 - [ ] T003 Golden output of the part-one views, captured **before any change to `view/`, `controller/`, `service/` or `aplicacion.py`** — FR-010, FR-014:
-  - Create `tests/estado_fijo.py` (a helper, not a test module) containing:
-    - `armar_estado_fijo(final=None)`: builds a `JuegoService` with a fixed seed, in the same way as `armar_servicio()` in `tests/test_service.py`. The state has two linked rooms (one open exit, one closed with a key), one enemy with an effect in the player's room, one armed trap, two objects in the room, three objects in the inventory (one equipped, so `actual` is set), and at least 25 log lines. `final` is `None`, `"victoria"`, `"muerte"` or `"salida"` and sets `partida.victoria` / `partida.terminada` to match. Returns `(servicio, partida)`.
+  - Create `tests/estado_fijo.py` (a helper, not a test module). It imports nothing from other test modules and contains:
+    - `FabricaFalsa`, defined here (same behaviour as the one in `tests/test_service.py`, but not imported from it): `poblar_sala(sala)` records the room id, `marcar_en_uso(ids)` records the ids, and `nueva_partida(semilla)` returns `armar_estado_fijo()[1]`, a **freshly built** game on every call.
+    - `armar_estado_fijo(final=None)`: builds a new `JuegoService` with a fixed seed and a new `FabricaFalsa`, following the pattern of `armar_servicio()` in `tests/test_service.py`. Every call builds new rooms, actors and game; nothing is shared between calls. The state has two linked rooms (one open exit, one closed with a key), one enemy with an effect in the player's room, one armed trap, two objects in the room, three objects in the inventory (one equipped, so `actual` is set), and at least 25 log lines. `final` is `None`, `"victoria"`, `"muerte"` or `"salida"` and sets `partida.victoria` / `partida.terminada` to match. Returns `(servicio, partida)`.
     - `LectorFalso(semilla, comandos, version_cripta, version_catalogo)`.
-    - `AppFalsa`, with the attributes `reproducir` reads (`fabrica` with `nueva_partida(semilla)` returning the fixed `Partida` plus `poblar_sala` / `marcar_en_uso` no-ops, `repo_cripta.datos.version`, `repo_catalogo.version()` and its hit/miss counters, `cliente.solicitudes` and `cliente.presupuesto`). Set `_versiones_coinciden = Aplicacion._versiones_coinciden` and `_reportar = Aplicacion._reportar`.
+    - `AppFalsa(version_cripta, version_catalogo)`, with the attributes `reproducir` reads: `fabrica`, a new `FabricaFalsa` whose `nueva_partida` builds a fresh game from `armar_estado_fijo()` on every call; `repo_cripta.datos.version`; `repo_catalogo.version()` and its hit/miss counters; `cliente.solicitudes` and `cliente.presupuesto`. Set `_versiones_coinciden = Aplicacion._versiones_coinciden` and `_reportar = Aplicacion._reportar`. Every `reproducir` call MUST use a new `AppFalsa`; never reuse one between calls.
     - `cargar_golden(nombre)`: reads `specs/001-exit-costs/salida-parte1/<nombre>`.
   - Create `tests/capturar_salida_parte1.py` (run once with `python -m tests.capturar_salida_parte1`). It redirects stdout and writes these files to `specs/001-exit-costs/salida-parte1/`:
     - `estado.txt`: `VistaConsola().mostrar_estado(partida)`
@@ -69,8 +70,9 @@ After that, the only pending action of that enemy is the one the method under te
     - `inventario_{peso,valor,nombre}.txt`: `VistaConsola().mostrar_inventario_ordenado(servicio.vista_ordenada(c), c)`
     - `final_replay_{victoria,muerte,salida}.txt`: `VistaReplay().mostrar_final(partida)`
     - `reporte_replay.txt` and `reporte_replay_sin_presupuesto.txt`: `VistaReplay().mostrar_reporte(12, 50, 7, 3)` and `(12, None, 0, 0)`
-    - `replay_completo.txt`: `Aplicacion.reproducir(AppFalsa(...), LectorFalso(1, ["w", "d", "esperar", "zz"], v, v))`, with matching versions. The commands include one blocked move and one unknown command, so controller messages are printed.
-    - `replay_version.txt`: the same call with a different `version_cripta`
+    - `replay_completo.txt`: `Aplicacion.reproducir(AppFalsa(v, v), LectorFalso(1, ["w", "d", "esperar", "zz"], v, v))`, with matching versions and a new `AppFalsa`. The commands include one blocked move and one unknown command, so controller messages are printed.
+    - `replay_version.txt`: the same call with another new `AppFalsa(v, v)` and a lector whose `version_cripta` differs
+    - Each capture of the views uses its own `armar_estado_fijo(...)` call, so no capture sees a game changed by another.
   - Commit `tests/estado_fijo.py`, `tests/capturar_salida_parte1.py` and the golden files in one commit before T021.
 
 ---
@@ -267,7 +269,7 @@ After that, the only pending action of that enemy is the one the method under te
 - [ ] T034 [P] Write `tests/test_salida_replay.py`, using `tests/estado_fijo.py`. Depends on T003 — FR-012, FR-014:
   - `imprimir_final_replay(servicio.resumen_final())` output equals `final_replay_{victoria,muerte,salida}.txt` for the three `final` values
   - `imprimir_reporte(12, 50, 7, 3)` and `imprimir_reporte(12, None, 0, 0)` equal `reporte_replay.txt` and `reporte_replay_sin_presupuesto.txt`
-  - Monkeypatch `VistaConsola.__init__` and `VistaSilenciosa.__init__` to raise `AssertionError("vista instanciada en --replay")`. Then run `Aplicacion.reproducir(AppFalsa(...), LectorFalso(1, ["w", "d", "esperar", "zz"], v, v))` and compare the captured output with `replay_completo.txt`; do the same with a different version and `replay_version.txt` (FR-012)
+  - Monkeypatch `VistaConsola.__init__` and `VistaSilenciosa.__init__` to raise `AssertionError("vista instanciada en --replay")`. Then run `Aplicacion.reproducir(AppFalsa(v, v), LectorFalso(1, ["w", "d", "esperar", "zz"], v, v))` and compare the captured output with `replay_completo.txt`. Then run it again with **another new** `AppFalsa(v, v)` and a lector with a different `version_cripta`, and compare with `replay_version.txt`. Never reuse an `AppFalsa` between `reproducir` calls; its `fabrica.nueva_partida` builds a fresh game from `armar_estado_fijo()` each time (FR-012)
   - `importlib.util.find_spec("view.vista_replay") is None`, and `VistaSilenciosa.__mro__ == (VistaSilenciosa, object)`
 
 ### Implementation
@@ -285,7 +287,7 @@ After that, the only pending action of that enemy is the one the method under te
   - Then call `imprimir_final_replay(servicio.resumen_final())` and `imprimir_reporte(self.cliente.solicitudes, self.cliente.presupuesto, self.repo_catalogo.aciertos_memoria + self.repo_catalogo.aciertos_disco, self.repo_catalogo.fallos)`.
   - Remove `from view.vista_replay import VistaReplay`; `_reportar(vista)` stays for interactive mode.
 - [ ] T038 Make `view/vista_silenciosa.py` standalone: remove `from view.vista_replay import VistaReplay` and the inheritance. Keep `mostrar_estado`, `pedir_comando`, `mostrar_mensaje`, `mostrar_inventario`, `mostrar_final` and `mostrar_inventario_ordenado` as no-ops with DTO parameter names. Depends on T032 (same file) — FR-014
-- [ ] T039 Delete `view/vista_replay.py` after checking that `grep -rn "vista_replay\|VistaReplay" --include=*.py .` finds no references outside `tests/capturar_salida_parte1.py`. That script is kept as the record of how the golden files were made: change it to exit with a message saying it only runs on the part-one code. Depends on T037 and T038 — FR-014
+- [ ] T039 Delete `view/vista_replay.py` after checking that `grep -rn "vista_replay\|VistaReplay" --include=*.py .` finds no references outside `tests/capturar_salida_parte1.py`. That script is kept as the record of how the golden files were made (its full part-one version stays in Git history from T003). Remove its `from view.vista_replay import VistaReplay` import and replace its whole body with `import sys`, a `print` saying the golden files were captured from the part-one code in commit <T003 hash> and can no longer be regenerated, and `sys.exit(1)`. Then check that `grep` finds no `vista_replay`/`VistaReplay` references at all. Depends on T037 and T038 — FR-014
 
 **Checkpoint**: `python -m pytest tests/test_salida_replay.py` is green, and `python main.py --replay <log>` prints the same text as before.
 
@@ -317,7 +319,7 @@ After that, the only pending action of that enemy is the one the method under te
 - [ ] T045 FR-014 determinism: in `tests/test_costos_salida.py`, the same seed and actions on rooms with mixed costs, run twice, give identical final state. Same file as T044, so not parallel; do it after T044 — FR-014
 - [ ] T046 [P] G2: write `tests/test_replay_costos.py` — FR-014:
   - Define a helper `armar_salas(semilla)` that builds a fresh set of rooms with mixed exit costs (and the same enemies) from `random.Random(semilla)`. Call it once for the recording and once for the replay, with the same seed, so the replay never reuses rooms the recorded game changed.
-  - Recording: build a service on `armar_salas(7)`, with the fake fabrica from `tests/test_service.py`. Run a fixed command list through `Controlador.ejecutar` with `VistaSilenciosa` and a `BitacoraPartida(tmp_path)` opened with `abrir(id_cripta, version, version, semilla)`. Close the log.
+  - Recording: build a service on `armar_salas(7)`, with `FabricaFalsa` from `tests/estado_fijo.py`. Run a fixed command list through `Controlador.ejecutar` with `VistaSilenciosa` and a `BitacoraPartida(tmp_path)` opened with `abrir(id_cripta, version, version, semilla)`. Close the log.
   - Replay: read the log with `LectorBitacora(tmp_path / f"partida_{id_cripta}_{semilla}.log")` and `leer()`. Build a new service on `armar_salas(7)` with `Partida(…, semilla=lector.semilla)`, and replay `lector.comandos` through `Controlador(servicio, None, None, None).ejecutar`, as `Aplicacion.reproducir` does after T037.
   - Compare `resumen_final()` (clock, victory, actions) and `estado_vista()` (room, player HP, enemies in the room) between the two runs.
   
