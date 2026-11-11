@@ -233,3 +233,59 @@ def test_enemigo_de_velocidad_50_en_salida_de_costo_120_tarda_240():
     partida.reloj = 700
     partida._programar_movimiento(enemigo, origen.salidas[0])
     assert enemigo.evento.tiempo == 700 + 240
+
+
+# --- US3: cambio de velocidad con una acción de movimiento pendiente (FR-009) ---
+
+def _movimiento_pendiente(costo, velocidad, t_mover, t_cambio, nueva):
+    """Enemigo aislado que programa un movimiento en t_mover y cambia de velocidad en t_cambio."""
+    partida, enemigo, origen, _ = _mundo_enemigo("errante", [costo], velocidad=velocidad)
+    partida.reloj = t_mover
+    partida._programar_movimiento(enemigo, origen.salidas[0])
+    ev = enemigo.evento
+    inicial = ev.tiempo
+    partida.reloj = t_cambio
+    partida.efectos.aplicar_velocidad(enemigo, nueva - velocidad, 10 ** 6)
+    return inicial, ev
+
+
+def test_acelerar_a_mitad_de_un_movimiento_acorta_el_resto():
+    """FR-009 · US3-1: velocidad 100, costo 500 (evento en 500); en 100 pasa a 200 → 300."""
+    inicial, ev = _movimiento_pendiente(500, 100, 0, 100, 200)
+    assert inicial == 500
+    assert ev.tiempo == 300
+
+
+def test_frenar_a_mitad_de_un_movimiento_alarga_el_resto():
+    """FR-009 · US3-2: velocidad 200, costo 2000 (evento en 1000); en 900 pasa a 50 → 1300."""
+    inicial, ev = _movimiento_pendiente(2000, 200, 0, 900, 50)
+    assert inicial == 1000
+    assert ev.tiempo == 1300
+
+
+def test_el_resto_de_un_movimiento_nunca_baja_de_1():
+    """FR-006, FR-009 · US3-3: velocidad 10, costo 1, programado en 91 (evento en 101); en 100 pasa a 1000 → 101."""
+    inicial, ev = _movimiento_pendiente(1, 10, 91, 100, 1000)
+    assert inicial == 101
+    assert ev.tiempo == 101
+
+
+def test_el_fin_de_un_efecto_de_velocidad_reescala_la_siguiente_accion_del_jugador():
+    """FR-009 · efecto +100 (100→200) hasta t=100; el jugador se mueve (costo 600) a velocidad 200."""
+    partida, _, _ = _mundo(costo_ida=600, velocidad=100)
+    partida.efectos.aplicar_velocidad(partida.jugador, +100, 100)
+    original = partida._programar_siguiente
+    programado = []
+
+    def anotar(actor, costo):
+        original(actor, costo)
+        if actor is partida.jugador:
+            programado.append(actor.evento.tiempo)
+
+    partida._programar_siguiente = anotar
+    assert partida.mover("E") is True
+    fin_rapido = programado[0]
+    assert fin_rapido == 300                       # 600 * 100 // 200
+    esperado = 100 + max(1, (fin_rapido - 100) * 200 // 100)
+    assert partida.jugador.evento.tiempo == esperado == 500
+    assert partida.jugador.velocidad == 100

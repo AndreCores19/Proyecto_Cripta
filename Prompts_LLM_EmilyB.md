@@ -287,13 +287,13 @@ Record these corrections in the Clarifications section.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 4 of tasks.md (T015 and T016). Write the tests first and run them, then implement until they pass. At the end, run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 4 de tasks.md (T015 y T016), escribiendo las pruebas primero y ejecutándolas, luego implementando hasta que pasen, y al final ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Implement only Phase 5 of tasks.md (T017 and T018). Write the T017 tests and run them. Only change model/efectos_logica.py if a test fails, without touching nuevo_tiempo_por_velocidad. At the end, run the full suite. Mark the tasks as done. Do not commit.
+- Uso: implementar la Fase 5 de tasks.md (T017 y T018), escribiendo las pruebas de T017 y ejecutándolas, solo cambiar model/efectos_logica.py si una prueba falla, sin tocar nuevo_tiempo_por_velocidad, y al final ejecutar la suite completa
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

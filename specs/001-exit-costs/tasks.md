@@ -164,7 +164,7 @@ After that, the only pending action of that enemy is the one the method under te
 
 **Goal**: confirm that the existing rescaling (`EfectosLogica._cambiar_velocidad` → `nuevo_tiempo_por_velocidad` → `agenda.reprogramar`) applies to the next action scheduled by a move. No production code change is expected.
 
-- [ ] T017 [US3] Add to `tests/test_costos_salida.py`, following plan.md "Timing semantics". Use an **enemy**, so the pending event can be inspected without advancing to it — FR-009 (US3-3 also FR-006):
+- [x] T017 [US3] Add to `tests/test_costos_salida.py`, following plan.md "Timing semantics". Use an **enemy**, so the pending event can be inspected without advancing to it — FR-009 (US3-3 also FR-006):
   - Setup for each case:
     1. Apply the isolated enemy setup (player in another room, activation turn cancelled).
     2. Set `partida.reloj` to the move time (0 unless stated) and call `partida._programar_movimiento(enemigo, salida)` on an exit with the given cost; keep `ev = enemigo.evento`.
@@ -173,7 +173,7 @@ After that, the only pending action of that enemy is the one the method under te
   - US3-2: speed 200, cost 2000 (event at 1000); at reloj 900 change to 50 → `ev.tiempo == 1300`
   - US3-3: speed 10, cost 1, scheduled at reloj 91 (event at 101); at reloj 100 change to 1000 → `ev.tiempo == 101` (remaining = max(1, 1×10//1000) = 1)
   - One player-level case: at reloj 0, before moving, apply a speed effect with `aplicar_velocidad(jugador, +100, 100)`. The effect ends at t=100, while the player waits for their next action. Check that the player's next action ends at `100 + max(1, (end − 100) × 200 // 100)`, where `end` is the time scheduled at the faster speed.
-- [ ] T018 [US3] If any T017 test fails, fix it in `model/efectos_logica.py` without changing `nuevo_tiempo_por_velocidad` in `model/tiempo_logica.py`. Otherwise mark this task done with no change — FR-009
+- [x] T018 [US3] If any T017 test fails, fix it in `model/efectos_logica.py` without changing `nuevo_tiempo_por_velocidad` in `model/tiempo_logica.py`. Otherwise mark this task done with no change — FR-009
 
 ---
 
