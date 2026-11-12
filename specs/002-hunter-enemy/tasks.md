@@ -195,13 +195,13 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
 
 **Independent Test**: the same game with rooms empty or fully populated, and a service run with a fake factory.
 
-- [ ] T034 [P] [US4] Write `tests/test_cazador_conocimiento.py` — FR-008, FR-010:
+- [X] T034 [P] [US4] Write `tests/test_cazador_conocimiento.py` — FR-008, FR-010:
   - US4-1 (`FR-008`): the hunter's route crosses rooms with `rastro is None` (never visited by the player); the hunter moves along it. Docstring `FR-008 · US4-1`;
   - US4-2 (`FR-010`): the same crypt twice, once with every room having objects, traps and inactive enemies (content "downloaded") and once with empty rooms (`objetos`, `trampas`, `inactivos` all empty): the decision is the same in both, for each mode. Docstring `FR-010 · US4-2`;
   - US4-3 (`FR-010, FR-014`, SC-004): the same seeded game (crypt, seed and 200 actions) run twice, once with content in every room and once with none: the sequence of bitácora lines that mention the hunters and the final state are identical. Docstring `FR-010, FR-014 · US4-3`;
   - US4-4 (`FR-008`): build the rooms through `RepositorioCripta.construir_salas` from fake `SalaDTO`/`SalidaDTO` objects with `costo` (as `tests/test_costos_datos.py` does), no network; a hunter on those rooms takes the route that uses those costs. Docstring `FR-008 · US4-4`;
   - Constitution V (`FR-010`): with `JuegoService` and the `FabricaFalsa` of `tests/estado_fijo.py` on a crypt with a hunter far from the player, the hunter's moves never add its destination room to `fabrica.pobladas`; only the player's moves do.
-- [ ] T035 [US4] Run the tests. If one fails, find the read of room content or `rastro` in `model/ruta_cazador.py` or in the `cazador` branch of `Partida` and remove it. Then run the whole suite — FR-010
+- [X] T035 [US4] Run the tests. If one fails, find the read of room content or `rastro` in `model/ruta_cazador.py` or in the `cazador` branch of `Partida` and remove it. Then run the whole suite — FR-010
 
 **Checkpoint**: Phase 7 is tests plus, at most, a removal.
 

@@ -480,3 +480,53 @@ If any decision is no longer compared, restore the comparison. To keep it fast, 
 - Prompt: Remove the sentence "Turns the agenda runs by itself inside partida.mover are not compared" from T029, since it no longer describes the test. Change nothing else. Do not commit.
 - Uso: quitar la frase "Turns the agenda runs by itself inside partida.mover are not compared" de T029, ya que ya no describe la prueba, sin cambiar nada más, y sin hacer commit
 
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-implement Phase 7 only (T034–T035). Do not commit.
+- Uso: implementar la Fase 7 de tasks.md (T034 a T035) sin hacer commit
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
+### 11 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt:
+- Uso: 
+
