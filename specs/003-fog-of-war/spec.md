@@ -18,10 +18,14 @@
 
 ### Session 2026-11-12
 
-- Q: When a step meets more than one reason to stop at once, which single reason is shown? → A: The first that applies in the order of FR-022: arrival, enemies in the room, damage, end of the game, no route.
+- Q: When a step meets more than one reason to stop at once, which single reason is shown? → A: The first that applies in the order of FR-022 (revised on 2026-11-12, see the next entry).
+- Q: If a step ends with the player in the destination room but dead or having just won, which reason is shown? → A: The end of the game comes first. The order of FR-022 is: end of the game, arrival, enemies in the room, damage, no route, scroll.
+- Q: Does the trip also stop when an enemy walks into the player's room during the step? → A: Yes. The trip stops whenever, after a step, there are living enemies in the player's room, whether the player entered their room or they arrived during the step.
+- Q: The console runs a whole trip in one command; how is the scenario "a scroll during a trip" treated? → A: The console cannot interrupt a trip. "During a trip" means between two steps and is tested at step level, driving the steps one at a time; in play, a scroll read after a trip reverts only its last step. The reason "rolled back by a scroll" stays for the step-level case.
 - Q: Is a trip stopped by the rollback scroll given its own stop reason? → A: Yes. The trip stops with its own reason (rolled back by a scroll), added to the reasons of FR-022 and shown to the player.
 - Q: How does the player name the room in "ir a"? → A: By its id only, as shown in the known map.
 - Q: Does the 5 ms limit of FR-026 apply to every computation or to a percentile? → A: To the 99th percentile of the measured computations; the maximum is reported for information and is not a limit (same convention as spec 002).
+- Q: Does the 5 ms limit of FR-026 cover only the route computation of a step, or the whole step? → A: Only the route computation. The time of the whole step (route, move and event cycle) is reported for information and is not a limit; the event cycle keeps its own 20 ms limit.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -180,9 +184,10 @@ sleeping enemies, and the player is damaged, and check that each trip stops for 
 4. **Given** a room with active enemies, **When** the player enters it during a trip, **Then** the trip stops. *(FR-022)*
 5. **Given** a trap, an enemy or an effect (such as poison) that damages the player during a step or between two steps, **When** the damage is taken, **Then** the trip stops with that reason shown. *(FR-022, FR-023)*
 6. **Given** a step that ends the game (the player reaches the exit and wins, or dies), **When** the step finishes, **Then** the trip stops and no further step is taken, with that reason shown. *(FR-022, FR-023)*
-7. **Given** a step that arrives at the destination in a room with enemies, or a step in which the player dies, **When** the step finishes, **Then** the reason shown is the first that applies in the order of FR-022 (arrival, then enemies in the room, then damage, then end of the game). *(FR-022, FR-023)*
+7. **Given** a step that arrives at the destination in a room with enemies, or a step in which the player dies, **When** the step finishes, **Then** the reason shown is the first that applies in the order of FR-022 (end of the game, then arrival, then enemies in the room, then damage): a death in a trap in the destination room is reported as the end of the game, not as an arrival. *(FR-022, FR-023)*
 8. **Given** a trip whose next step has no known route, **When** the route is recomputed, **Then** the trip stops with that reason shown. *(FR-022, FR-023)*
 9. **Given** a trip during which the clock events change the state of the doors, **When** the next step is about to start, **Then** the route used is the one computed with the knowledge at that moment. *(FR-020)*
+10. **Given** a trip in which an enemy (for example a hunter) walks into the player's room during the clock events of a step, **When** the step finishes, **Then** the trip stops with the reason "enemies in the room", even though the player entered a room that had no enemies. *(FR-022, FR-023)*
 
 ---
 
@@ -199,7 +204,7 @@ state and that no further step is taken.
 
 **Acceptance Scenarios**:
 
-1. **Given** a trip in progress, **When** the player reads a scroll, **Then** only the last step is reverted, the trip does not continue and it stops with the reason "rolled back by a scroll". *(FR-022, FR-023, FR-025)*
+1. **Given** a trip driven one step at a time, with a scroll read between two steps (the console cannot interrupt a running trip), **When** the player reads the scroll, **Then** only the last step is reverted, the trip does not continue and it stops with the reason "rolled back by a scroll". *(FR-022, FR-023, FR-025)*
 2. **Given** a trip whose last step explored new rooms, **When** the scroll reverts that step, **Then** those rooms and the door observations of that step return to their previous state. *(FR-013, FR-025)*
 3. **Given** a trip that has ended, **When** the player reads a scroll, **Then** it reverts the last step of the trip and nothing else. *(FR-025)*
 
@@ -213,11 +218,11 @@ reference crypt.
 **Why this priority**: The behavior is correct without it, but a slow step would make the command
 unusable.
 
-**Independent Test**: Measure one step of "ir a" with the full known map of the reference crypt.
+**Independent Test**: Measure the route computation of one step of "ir a" with the full known map of the reference crypt.
 
 **Acceptance Scenarios**:
 
-1. **Given** the full known map of the reference crypt, **When** one step of "ir a" is computed, **Then** the 99th percentile of the measured computations is at most 5 ms, and the maximum is also reported. *(FR-026)*
+1. **Given** the full known map of the reference crypt, **When** the route of one step of "ir a" is computed, **Then** the 99th percentile of the measured computations is at most 5 ms, and the maximum is also reported; the time of the whole step is reported too, for information. *(FR-026)*
 2. **Given** the benchmark is run twice with the same seed, **When** the synthetic crypts are compared, **Then** they are identical. *(FR-027)*
 
 ---
@@ -262,11 +267,11 @@ unusable.
 - **FR-019**: Each step of the trip MUST be a complete player action: it MUST consume time according to the cost of the exit crossed and the player's speed (spec 001), and the clock events MUST happen normally between steps.
 - **FR-020**: The route MUST be recomputed before every step, with the knowledge at that moment, including door observations made during previous steps.
 - **FR-021**: "ir a" MUST NOT open doors, even if the player has the key.
-- **FR-022**: The trip MUST stop when: the player reaches the destination; the player enters a room containing enemies, active or asleep; the player takes damage; or the game ends (victory or death); or no known route exists any more; or the player reads a rollback scroll (FR-025). A recomputation that finds no route MUST stop the trip without consuming extra time. When a step meets more than one of these reasons at once, the view MUST show only the first that applies in the order given here (arrival, enemies in the room, damage, end of the game, no route, scroll).
+- **FR-022**: The trip MUST stop when: the player reaches the destination; after a step there are living enemies in the player's room, active or asleep (whether the player entered their room or they arrived during the step); the player takes damage; or the game ends (victory or death); or no known route exists any more; or the player reads a rollback scroll (FR-025). A recomputation that finds no route MUST stop the trip without consuming extra time. When a step meets more than one of these reasons at once, the view MUST show only the first that applies in the order: end of the game, arrival, enemies in the room, damage, no route, scroll.
 - **FR-023**: The view MUST show the reason why the trip stopped.
 - **FR-024**: In the game log each step of the trip MUST be recorded as an individual move, and the "ir a" order MUST also be recorded as a comment. A rejected order (FR-016) MUST be recorded as a comment too, with no move.
-- **FR-025**: The rollback scroll MUST revert only the last step of the trip, and the trip MUST NOT continue after it: it stops with its own reason, rolled back by a scroll (FR-022, FR-023).
-- **FR-026**: Computing one step of "ir a" with the full known map of the reference crypt MUST take at most 5 ms at the 99th percentile of the measured computations, measured locally and without network or rendering; the maximum MUST also be reported, for information, and is not a limit. The reference crypt is the one defined in spec 002 FR-017.
+- **FR-025**: The rollback scroll MUST revert only the last step of the trip, and the trip MUST NOT continue after it (a trip cannot be interrupted from the console, so this applies between two steps; a scroll read after a trip reverts only its last step): it stops with its own reason, rolled back by a scroll (FR-022, FR-023).
+- **FR-026**: Computing the route of one step of "ir a" with the full known map of the reference crypt MUST take at most 5 ms at the 99th percentile of the measured computations, measured locally and without network or rendering; the maximum MUST also be reported, for information, and is not a limit. The time of the whole step (route, move and event cycle) MUST also be reported, for information; it is not a limit, since the event cycle has its own limit (spec 002 FR-017). The reference crypt is the one defined in spec 002 FR-017.
 - **FR-027**: Any synthetic crypt used to measure FR-026 MUST be deterministic by seed: the same seed gives the same crypt.
 
 ### Key Entities
@@ -276,7 +281,7 @@ unusable.
 - **Remembered door state**: Whether a door was open or closed at its last observation, or unobserved if it never was; it may differ from the real state.
 - **Torch**: An item that, while lit, makes entering a room also explore its neighbors.
 - **Trip ("ir a")**: A sequence of ordinary player moves toward an explored destination, recomputed before every step and stopped by the conditions of FR-022.
-- **Stop reason**: The cause shown to the player when a trip ends (arrival, enemies in the room, damage, end of the game, no known route, rolled back by a scroll).
+- **Stop reason**: The cause shown to the player when a trip ends (end of the game, arrival, enemies in the room, damage, no known route, rolled back by a scroll).
 - **Crypt skeleton**: The crypt structure downloaded in full at the start (spec 001); infrastructure, not knowledge.
 
 ## Success Criteria *(mandatory)*
@@ -289,7 +294,7 @@ unusable.
 - **SC-004**: An order of "ir a" toward an unexplored room consumes no time in 100% of cases.
 - **SC-005**: Saving and loading a game gives identical knowledge in 100% of runs, and reading a scroll restores the knowledge to the state before the reverted action in 100% of runs, including after entries made with the torch lit.
 - **SC-006**: Running the same crypt, seed and actions twice produces identical knowledge and identical game state in 100% of runs.
-- **SC-007**: Computing one step of "ir a" with the full known map of the reference crypt takes at most 5 ms at the 99th percentile of the measured computations, and the maximum is reported.
+- **SC-007**: Computing the route of one step of "ir a" with the full known map of the reference crypt takes at most 5 ms at the 99th percentile of the measured computations, and the maximum is reported.
 - **SC-008**: Every trip that stops reports one of the reasons of FR-022 in the view in 100% of cases.
 - **SC-009**: The lit torch never activates an enemy or a trap of a room that it only explores: 0 occurrences.
 
