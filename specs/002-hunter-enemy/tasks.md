@@ -234,13 +234,13 @@ Afterwards the hunter's only pending action is the one that call scheduled, so `
 
 **Independent Test**: `estado_vista()` and `VistaConsola.mostrar_estado` on a fixed state.
 
-- [ ] T042 [P] [US6] Write `tests/test_vista_cazador.py` — FR-016:
+- [X] T042 [P] [US6] Write `tests/test_vista_cazador.py` — FR-016:
   - US6-1: a room with a hunter and a wanderer, built with `armar_estado_fijo()` from `tests/estado_fijo.py` plus two `Enemigo` objects added to `partida.enemigos` in the player's room: `servicio.estado_vista().enemigos` has `cazador == True` for the hunter and `False` for the wanderer; `VistaConsola().mostrar_estado(estado)` prints `  Lobo (cazador) [id] (Vida: v/vm)` for the hunter and the part-one line for the wanderer (capture with `capsys`). Docstring `FR-016 · US6-1`;
   - US6-2: with only a wanderer and a tracker in the room, the printed text equals `cargar_golden("estado.txt")`-style output of the same state without any `(cazador)`; the existing `tests/test_vista_costos.py` golden tests stay unchanged and green. Docstring `FR-016, FR-013 · US6-2`;
   - `EnemigoVistaDTO("Rata", "r1", 5, 10, [])` still works (default `cazador=False`);
   - `enemigos_en_sala()` also fills the field; the view never receives an `Enemigo` (the `EstadoVistaDTO` has no model reference).
-- [ ] T043 [US6] In `dto/estado_vista_dto.py` add `cazador=False` to `EnemigoVistaDTO`. In `service/juego_service.py` pass `e.es_cazador()` in `estado_vista` and `enemigos_en_sala`. In `view/vista_consola.py` print `(cazador)` right after the name for a hunter (see [contracts/room-view-hunter.md](./contracts/room-view-hunter.md)); other enemies print exactly as before. `view/vista_silenciosa.py` is unchanged. Depends on T042 — FR-016
-- [ ] T044 [US6] Run `python -m pytest tests/test_vista_cazador.py tests/test_vista_costos.py tests/test_frontera_servicio.py -v` and the whole suite; all green (the part-one golden files did not change) — FR-016, FR-013
+- [X] T043 [US6] In `dto/estado_vista_dto.py` add `cazador=False` to `EnemigoVistaDTO`. In `service/juego_service.py` pass `e.es_cazador()` in `estado_vista` and `enemigos_en_sala`. In `view/vista_consola.py` print `(cazador)` right after the name for a hunter (see [contracts/room-view-hunter.md](./contracts/room-view-hunter.md)); other enemies print exactly as before. `view/vista_silenciosa.py` is unchanged. Depends on T042 — FR-016
+- [X] T044 [US6] Run `python -m pytest tests/test_vista_cazador.py tests/test_vista_costos.py tests/test_frontera_servicio.py -v` and the whole suite; all green (the part-one golden files did not change) — FR-016, FR-013
 
 **Checkpoint**: Phase 9 can be reviewed alone: three small production files plus one test file.
 

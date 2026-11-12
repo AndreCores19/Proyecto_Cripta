@@ -132,7 +132,7 @@ class JuegoService:
     def enemigos_en_sala(self):
         sala = self.partida.jugador.sala
         return [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
-                                [ef.tipo for ef in e.efectos])
+                                [ef.tipo for ef in e.efectos], e.es_cazador())
                 for e in self.partida.enemigos if e.sala is sala and e.esta_vivo()]
 
     def terminada(self):
@@ -155,7 +155,7 @@ class JuegoService:
         salidas = [SalidaVistaDTO(s.direccion, s.destino.nombre, s.cerrada, s.costo)
                    for s in sala.salidas]
         enemigos = [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
-                                    [ef.tipo for ef in e.efectos])
+                                    [ef.tipo for ef in e.efectos], e.es_cazador())
                     for e in partida.enemigos if e.sala is sala]
         trampas = [TrampaVistaDTO(t.nombre, t.dano, t.armada) for t in sala.trampas]
         objetos = [ObjetoVistaDTO(o.id_instancia, o.nombre) for o in sala.objetos]

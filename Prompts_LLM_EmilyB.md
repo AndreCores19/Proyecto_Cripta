@@ -492,8 +492,8 @@ If any decision is no longer compared, restore the comparison. To keep it fast, 
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 9 only (T042–T044). Do not commit.
+- Uso: implementar la Fase 9 de tasks.md (T042 a T044) sin hacer commit
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude

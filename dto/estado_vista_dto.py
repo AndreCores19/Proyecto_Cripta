@@ -23,12 +23,13 @@ class SalidaVistaDTO:
 
 
 class EnemigoVistaDTO:
-    def __init__(self, nombre, id_enemigo, vida, vida_max, efectos):
+    def __init__(self, nombre, id_enemigo, vida, vida_max, efectos, cazador=False):
         self.nombre = nombre
         self.id_enemigo = id_enemigo
         self.vida = vida
         self.vida_max = vida_max
         self.efectos = efectos
+        self.cazador = cazador
 
 
 class TrampaVistaDTO:

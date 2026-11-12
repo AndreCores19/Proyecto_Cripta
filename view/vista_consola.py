@@ -17,7 +17,8 @@ class VistaConsola:
                   f"({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})")
         print("Enemigos en la sala:")
         for enemigo in estado.enemigos:
-            linea = (f"  {enemigo.nombre} [{enemigo.id_enemigo}] "
+            marca = " (cazador)" if enemigo.cazador else ""
+            linea = (f"  {enemigo.nombre}{marca} [{enemigo.id_enemigo}] "
                      f"(Vida: {enemigo.vida}/{enemigo.vida_max})")
             if enemigo.efectos:
                 linea += f" [{', '.join(enemigo.efectos)}]"
