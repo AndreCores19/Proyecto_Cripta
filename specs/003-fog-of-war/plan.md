@@ -84,7 +84,7 @@ and synthetic crypts of 500 to 1000 rooms to show the trend.
 
 | Item | Status | Notes |
 |---|---|---|
-| `spec.md` committed before implementation | PENDING | The spec and its clarifications must be committed first (Constitution VII). |
+| `spec.md` committed before implementation | PASS | Commits `0773eaf` and `64b8c88`. A spec correction goes in its own commit first (Constitution VII). |
 | Every task cites its FR | PENDING | Enforced when `tasks.md` is generated. |
 | Every scenario has a test citing its FR | PENDING | Mapping in [quickstart.md](./quickstart.md). |
 
@@ -156,6 +156,11 @@ player is already in `destino`, or `(None, None)` when no known route exists.
 
 1. New stamp from `Busqueda.nueva_estampa()` (rule A of spec 002: one stamp counter for every search
    that uses the room fields, so the hunters' cached search is detected as stale and recomputed).
+   The stamp is the very first step, before any early return, so even a search that finds no route (or
+   an order whose player is already in `destino`) invalidates the hunters' cached search. The object keeps
+   one `MonticuloMinimo` and calls `vaciar()` on it before every search: the search stops as soon as the
+   player's room is extracted, so entries are left over (`Busqueda.calcular` instead creates a local
+   heap per call).
    Mark `destino` with distance 0 and insert it in the heap.
 2. Extract `(d, sala)`. If `sala is jugador.sala`, stop: its distance is final. Skip a stale entry.
 3. For each incoming exit `x` of `sala` (`Sala.entradas`) with `x.origen.conocimiento == EXPLORADA`
