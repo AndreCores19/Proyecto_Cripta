@@ -454,8 +454,8 @@ Report what you changed.
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 5 only (T023–T027). Do not commit.
+- Uso: implementar la Fase 5 de tasks.md (T023 a T027) sin hacer commit
 
 ### 10 de Noviembre, 2026
 - Herramienta: Claude

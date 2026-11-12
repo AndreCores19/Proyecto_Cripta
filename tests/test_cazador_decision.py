@@ -5,7 +5,7 @@ from model.jugador_logica import Jugador
 from model.partida_logica import Partida
 from model.ruta_cazador import Busqueda, DecisorCazador
 from model.sala_logica import Sala, Salida
-from tests.mapas_cazador import cadena
+from tests.mapas_cazador import cadena, grilla
 
 
 def preparar(sala_jugador, sala_cazador, rango, velocidad=100, reloj=1000):
@@ -201,3 +201,68 @@ def test_decisor_rechaza_limite_menor_que_el_rango():
     partida, h = preparar(salas[2], salas[0], 300)
     with pytest.raises(RuntimeError):
         DecisorCazador().decidir(partida, h, limite_forzado=100)
+
+
+# ---- Historia 2: desempate por id de sala ---------------------------------
+
+def _costo(sala, destino, nuevo):
+    for s in sala.salidas:
+        if s.destino is destino:
+            s.costo_declarado = nuevo
+
+
+def test_us2_1_empate_de_ruta_gana_el_id_menor():
+    """FR-007 · US2-1: u(5)→B(7) 100 + 200 y u(5)→D(3) 200 + 100: ambos d = 300, gana D."""
+    u, b, d, p = Sala(5, "u"), Sala(7, "B"), Sala(3, "D"), Sala(9, "P")
+    _unir(u, "E", b, "O", 100)
+    _unir(u, "S", d, "N", 200)
+    _unir(b, "S", p, "N", 200)
+    _unir(d, "E", p, "O", 100)
+    partida, h = preparar(p, u, 400)
+    partida._actuar_enemigo(h)
+    assert h.sala is d
+
+
+def test_us2_2_gana_el_vecino_de_menor_costo_total_aunque_tenga_id_mayor():
+    """FR-007 · US2-2: el vecino de id 1 suma 400 y el de id 7 suma 300 (= d): va a la sala 7."""
+    u, n1, n7, p = Sala(5, "u"), Sala(1, "N1"), Sala(7, "N7"), Sala(9, "P")
+    _unir(u, "E", n1, "O", 100)
+    _unir(u, "S", n7, "N", 100)
+    _unir(n1, "S", p, "N", 300)
+    _unir(n7, "E", p, "O", 200)
+    partida, h = preparar(p, u, 400)
+    partida._actuar_enemigo(h)
+    assert h.sala is n7
+
+
+def test_us2_3_grilla_gana_el_vecino_de_menor_id():
+    """FR-007 · US2-3: en grillas con dos vecinos en rutas de costo d gana la sala 2; con un costo menor, el único vecino."""
+    salas, _ = grilla(3, 3, 100)
+    partida, h = preparar(salas[8], salas[0], 1000)
+    partida._actuar_enemigo(h)
+    assert h.sala is salas[1]
+
+    salas, _ = grilla(4, 4, 100)
+    partida, h = preparar(salas[15], salas[0], 1000)
+    partida._actuar_enemigo(h)
+    assert h.sala is salas[1]
+
+    salas, _ = grilla(4, 4, 100)
+    _costo(salas[0], salas[4], 50)  # solo la sala 5 queda en una ruta más barata
+    partida, h = preparar(salas[15], salas[0], 1000)
+    partida._actuar_enemigo(h)
+    assert h.sala is salas[4]
+
+
+@pytest.mark.parametrize("invertir", [False, True])
+def test_us2_dos_salidas_al_mismo_vecino_gana_la_direccion_menor(invertir):
+    """FR-007, FR-014 · supuestos: N y E llevan al mismo vecino con el mismo costo; gana E, sea cual sea el orden."""
+    a, b = Sala(1, "A"), Sala(2, "B")
+    n, e = Salida("N", b, costo=100), Salida("E", b, costo=100)
+    for s in ((e, n) if invertir else (n, e)):
+        a.agregar_salida(s)
+    b.agregar_salida(Salida("S", a, costo=100))
+    partida, h = preparar(b, a, 1000)
+    assert partida.decisor_cazador.decidir(partida, h) is e
+    partida._actuar_enemigo(h)
+    assert h.sala is b
