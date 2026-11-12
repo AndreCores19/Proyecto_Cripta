@@ -19,12 +19,35 @@ SEGUIDO = 1       #un cambio de puerta por acción del jugador
 CASI_NUNCA = 500  #un cambio de puerta cada 500 acciones del jugador
 NUCLEO = 30       #salas de la zona que el escalado deja idéntica
 
-NORMAL = {"acciones": 3000, "salas": 100, "muchos": (1, 10, 30, 100), "rangos": (200, 5000),
-          "salas_rango": (100, 1000), "cazadores_rango": 10, "cazadores_modos": 30,
-          "escalado": (100, 1000), "repeticiones": 2000}
-PEQUENO = {"acciones": 20, "salas": 30, "muchos": (1, 3), "rangos": (200, 5000),
-           "salas_rango": (30, 60), "cazadores_rango": 3, "cazadores_modos": 4,
-           "escalado": (40, 80), "repeticiones": 20}
+
+
+class Config:
+    """Tamaños de una corrida del benchmark."""
+
+    def __init__(self, acciones, salas, muchos, rangos, salas_rango, cazadores_rango,
+                 cazadores_modos, escalado, repeticiones):
+        self.acciones = acciones
+        self.salas = salas
+        self.muchos = muchos
+        self.rangos = rangos
+        self.salas_rango = salas_rango
+        self.cazadores_rango = cazadores_rango
+        self.cazadores_modos = cazadores_modos
+        self.escalado = escalado
+        self.repeticiones = repeticiones
+
+
+class Resultado:
+    """Lo que devuelve una ejecución: us por acción, búsquedas hechas y decisiones registradas."""
+
+    def __init__(self, us, busquedas, decisiones):
+        self.us = us
+        self.busquedas = busquedas
+        self.decisiones = decisiones
+
+
+NORMAL = Config(3000, 100, (1, 10, 30, 100), (200, 5000), (100, 1000), 10, 30, (100, 1000), 2000)
+PEQUENO = Config(20, 30, (1, 3), (200, 5000), (30, 60), 3, 4, (40, 80), 20)
 
 
 def _direccion_libre(sala):
@@ -128,9 +151,7 @@ def ejecucion(modo, semilla, num_salas, num_cazadores, rango, acciones, cambio_c
             _cambiar_puerta(partida, salas, azar)
         _accion_jugador(partida, azar, k)
     segundos = time.perf_counter() - inicio
-    return {"us": segundos / acciones * 1_000_000,
-            "busquedas": Busqueda.busquedas - busquedas,
-            "decisiones": decisiones}
+    return Resultado(segundos / acciones * 1_000_000, Busqueda.busquedas - busquedas, decisiones)
 
 
 def verificar_equivalencia(semilla, num_salas, num_cazadores, rango, acciones, cambio_cada, modos=MODOS):
@@ -138,7 +159,7 @@ def verificar_equivalencia(semilla, num_salas, num_cazadores, rango, acciones, c
     base = None
     for modo in modos:
         decisiones = ejecucion(modo, semilla, num_salas, num_cazadores, rango, acciones,
-                               cambio_cada, registrar=True)["decisiones"]
+                               cambio_cada, registrar=True).decisiones
         if base is None:
             base, modo_base = decisiones, modo
         elif decisiones != base:
@@ -148,7 +169,14 @@ def verificar_equivalencia(semilla, num_salas, num_cazadores, rango, acciones, c
 
 def _medir(modo, num_salas, num_cazadores, rango, acciones, cambio_cada):
     r = ejecucion(modo, SEMILLA, num_salas, num_cazadores, rango, acciones, cambio_cada)
-    return r["us"], r["busquedas"]
+    return r.us, r.busquedas
+
+
+def _buscar(medidas, nombre, modo):
+    for situacion, m, par in medidas:
+        if situacion == nombre and m == modo:
+            return par
+    raise ValueError((nombre, modo))
 
 
 def _celda(par):
@@ -212,45 +240,45 @@ def escalado(salas_chicas, salas_grandes, rango, semilla, repeticiones=2000):
 
 def ejecutar(pequeno=False):
     cfg = PEQUENO if pequeno else NORMAL
-    acciones = cfg["acciones"]
-    salas = cfg["salas"]
+    acciones = cfg.acciones
+    salas = cfg.salas
     print(f"Benchmarks del cazador ({acciones} acciones del jugador por celda, semilla {SEMILLA})")
 
     print("\n1. un cazador contra muchos (modo compartido, puertas casi nunca cambian)")
-    for n in cfg["muchos"]:
+    for n in cfg.muchos:
         print(f"   {n:>4} cazadores {_celda(_medir('compartido', salas, n, None, acciones, CASI_NUNCA))}")
 
     print("\n2. rango chico contra rango grande (modo compartido, puertas casi nunca cambian)")
-    for total in cfg["salas_rango"]:
-        for rango in cfg["rangos"]:
-            par = _medir("compartido", total, cfg["cazadores_rango"], rango, acciones, CASI_NUNCA)
+    for total in cfg.salas_rango:
+        for rango in cfg.rangos:
+            par = _medir("compartido", total, cfg.cazadores_rango, rango, acciones, CASI_NUNCA)
             print(f"   {total:>5} salas, rango {rango:>5} {_celda(par)}")
 
-    n = cfg["cazadores_modos"]
+    n = cfg.cazadores_modos
     print(f"\n(antes de medir: los tres modos deciden igual con {n} cazadores)")
     comprobadas = min(acciones, 1000)
     for cambio in (SEGUIDO, CASI_NUNCA):
         verificar_equivalencia(SEMILLA, salas, n, None, comprobadas, cambio)
-    medidas = {}
+    medidas = []  #(situación de las puertas, modo, (us por acción, búsquedas))
     for nombre, cambio in (("puertas cambian seguido", SEGUIDO), ("puertas casi nunca cambian", CASI_NUNCA)):
         for modo in MODOS:
-            medidas[(nombre, modo)] = _medir(modo, salas, n, None, acciones, cambio)
+            medidas.append((nombre, modo, _medir(modo, salas, n, None, acciones, cambio)))
 
     print(f"\n3. una búsqueda por cazador contra compartida ({n} cazadores, {salas} salas)")
     for nombre in ("puertas cambian seguido", "puertas casi nunca cambian"):
         for modo in MODOS:
-            print(f"   {nombre:<28} {modo:<22} {_celda(medidas[(nombre, modo)])}")
+            print(f"   {nombre:<28} {modo:<22} {_celda(_buscar(medidas, nombre, modo))}")
 
     print("\n4. reusar contra recalcular (compartido contra compartido_sin_reuso)")
     for nombre in ("puertas cambian seguido", "puertas casi nunca cambian"):
-        reusa = medidas[(nombre, "compartido")]
-        recalcula = medidas[(nombre, "compartido_sin_reuso")]
+        reusa = _buscar(medidas, nombre, "compartido")
+        recalcula = _buscar(medidas, nombre, "compartido_sin_reuso")
         print(f"   {nombre:<28} reusar {reusa[0]:>10.1f} us {reusa[1]:>8} busq.   "
               f"recalcular {recalcula[0]:>10.1f} us {recalcula[1]:>8} busq.   "
               f"razón {recalcula[0] / reusa[0]:.2f}")
 
-    chicas, grandes = cfg["escalado"]
-    t_chica, t_grande, razon = escalado(chicas, grandes, 200, SEMILLA, cfg["repeticiones"])
+    chicas, grandes = cfg.escalado
+    t_chica, t_grande, razon = escalado(chicas, grandes, 200, SEMILLA, cfg.repeticiones)
     print(f"\n5. escalado con el tamaño de la cripta (rango 200, misma región)")
     print(f"   {chicas:>5} salas {t_chica:>10.1f} us por decisión")
     print(f"   {grandes:>5} salas {t_grande:>10.1f} us por decisión")

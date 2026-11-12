@@ -507,13 +507,13 @@ If any decision is no longer compared, restore the comparison. To keep it fast, 
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 11 only (T056–T060). Do not commit.
+- Uso: implementar la Fase 11 de tasks.md (T056 a T060) sin hacer commit
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Replace the dict and the dict comprehension in bench/bench_agenda.py with lists, keeping the same output. Do not rerun the benchmarks. Run the tests that cover bench_agenda and report. Do not commit.
+- Uso: cambiar el dict y la comprensión de dict en bench/bench_agenda.py por listas, manteniendo la misma salida, sin volver a ejecutar los benchmarks, ejecutar las pruebas que cubren bench_agenda y reportar, sin hacer commit
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude

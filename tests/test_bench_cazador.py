@@ -75,7 +75,7 @@ def test_us7_3_imprime_las_cuatro_comparaciones(capsys):
 
 def test_us7_4_los_tres_modos_deciden_igual_y_el_benchmark_falla_si_no(monkeypatch):
     """FR-019, FR-011 · US7-4 · SC-009"""
-    listas = [bench_cazador.ejecucion(m, 3, 30, 6, 400, 60, 1, registrar=True)["decisiones"]
+    listas = [bench_cazador.ejecucion(m, 3, 30, 6, 400, 60, 1, registrar=True).decisiones
               for m in bench_cazador.MODOS]
     assert listas[0] and listas[0] == listas[1] == listas[2]
     assert bench_cazador.verificar_equivalencia(3, 30, 6, 400, 60, 1) == listas[0]

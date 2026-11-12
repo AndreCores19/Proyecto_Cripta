@@ -94,22 +94,26 @@ def contar_operaciones_cazadores(acciones, num_enemigos, num_cazadores):
     return _contar(armar_partida_cazadores(100, num_enemigos, num_cazadores, 1), acciones)
 
 
+#orden de las cuentas que devuelve _contar
+OPERACIONES_AGENDA = ("programar", "extraer", "cancelar", "reprogramar")
+
+
 def _contar(partida, acciones):
+    """Devuelve ([programar, extraer, cancelar, reprogramar] por acción, máximo de pendientes)."""
     agenda = partida.agenda
-    cuentas = {"programar": 0, "extraer": 0, "cancelar": 0, "reprogramar": 0}
-    nombres = ("programar", "extraer", "cancelar", "reprogramar")
-    for nombre in nombres:
+    cuentas = [0] * len(OPERACIONES_AGENDA)
+    for i, nombre in enumerate(OPERACIONES_AGENDA):
         original = getattr(agenda, nombre)
 
-        def envuelta(*args, _n=nombre, _f=original, **kw):
-            cuentas[_n] += 1
+        def envuelta(*args, _i=i, _f=original, **kw):
+            cuentas[_i] += 1
             return _f(*args, **kw)
         setattr(agenda, nombre, envuelta)
     maximo = 0
     for _ in range(acciones):
         partida.esperar_jugador()
         maximo = max(maximo, len(agenda))
-    return {n: cuentas[n] / acciones for n in nombres}, maximo
+    return [c / acciones for c in cuentas], maximo
 
 
 def medir_ciclo(clase, n, operaciones, azar):
@@ -150,8 +154,8 @@ def ejecutar():
     print(" Agenda de eventos ")
     por_ciclo, maximo = contar_operaciones()
     print("Operaciones reales por acción del jugador (100 salas, 300 enemigos):")
-    for nombre in ("programar", "extraer", "cancelar", "reprogramar"):
-        print(f"    {nombre:<12} {por_ciclo[nombre]:8.1f}")
+    for nombre, cuenta in zip(OPERACIONES_AGENDA, por_ciclo):
+        print(f"    {nombre:<12} {cuenta:8.1f}")
     print(f"    eventos pendientes a la vez (máximo): {maximo}")
 
     candidatas = (("heap", AgendaHeap), ("lista sin ordenar", AgendaListaSinOrdenar),
@@ -178,16 +182,16 @@ def ejecutar():
     for enemigos in (300, 1000, 3000):
         for modelo, variable in (("fijo", False), ("variable", True)):
             c, mx = contar_operaciones(1000, enemigos, variable)
-            print(f"{enemigos:>9} {modelo:>9} {c['programar']:>10.1f} {c['extraer']:>9.1f} "
-                  f"{c['cancelar']:>9.1f} {c['reprogramar']:>9.1f} {mx:>10}")
+            print(f"{enemigos:>9} {modelo:>9} {c[0]:>10.1f} {c[1]:>9.1f} "
+                  f"{c[2]:>9.1f} {c[3]:>9.1f} {mx:>10}")
 
     print("\nOperaciones por acción con cazadores (100 salas, costos variables):")
     print(f"{'enemigos':>9} {'cazadores':>10} {'programar':>10} {'extraer':>9} {'cancelar':>9} {'reprogr.':>9} {'máx.pend.':>10}")
     for enemigos in (300, 1000, 3000):
         for cazadores in (30, enemigos // 10):
             c, mx = contar_operaciones_cazadores(1000, enemigos, cazadores)
-            print(f"{enemigos:>9} {cazadores:>10} {c['programar']:>10.1f} {c['extraer']:>9.1f} "
-                  f"{c['cancelar']:>9.1f} {c['reprogramar']:>9.1f} {mx:>10}")
+            print(f"{enemigos:>9} {cazadores:>10} {c[0]:>10.1f} {c[1]:>9.1f} "
+                  f"{c[2]:>9.1f} {c[3]:>9.1f} {mx:>10}")
 
     print("\nCancelar un evento cualquiera y programar otro (microsegundos):")
     print(f"{'pendientes':>11}" + "".join(f"{nombre:>20}" for nombre, _ in candidatas))
