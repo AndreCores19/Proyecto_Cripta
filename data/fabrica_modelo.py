@@ -62,7 +62,8 @@ class FabricaModelo:
             velocidad=ficha.velocidad,
             comportamiento=ficha.comportamiento,
             sala=sala,
-            suelta=ficha.suelta
+            suelta=ficha.suelta,
+            rango=getattr(ficha, "rango", 0) or 0
         )
         enemigo.regeneracion = getattr(ficha, "regeneracion", 0) or 0  # solo si la ficha lo trae
         return enemigo

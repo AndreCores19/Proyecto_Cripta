@@ -6,7 +6,7 @@ class FichaDTO:
 
 
 class FichaEnemigoDTO(FichaDTO):
-    def __init__(self, id_ficha, nombre, clase, vida_max, ataque, defensa, velocidad, comportamiento, suelta, regeneracion=0):
+    def __init__(self, id_ficha, nombre, clase, vida_max, ataque, defensa, velocidad, comportamiento, suelta, regeneracion=0, rango=None):
         super().__init__(id_ficha, nombre, clase)
         self.vida_max = vida_max
         self.ataque = ataque
@@ -15,6 +15,7 @@ class FichaEnemigoDTO(FichaDTO):
         self.comportamiento = comportamiento
         self.suelta = list(suelta) if suelta is not None else []
         self.regeneracion = regeneracion or 0  #si la ficha no lo trae, no se regenera
+        self.rango = rango if rango is not None else 0  #solo importa a los cazadores; sin chequeo de tipo ni rango
 
     @classmethod
     def desde_json(cls, datos):
@@ -28,7 +29,8 @@ class FichaEnemigoDTO(FichaDTO):
             velocidad=datos['velocidad'],
             comportamiento=datos['comportamiento'],
             suelta=datos.get('suelta', []),
-            regeneracion=datos.get('regeneracion', 0)
+            regeneracion=datos.get('regeneracion', 0),
+            rango=datos.get('rango')
         )
 
 class FichaObjetoDTO(FichaDTO):

@@ -266,3 +266,27 @@ def test_us2_dos_salidas_al_mismo_vecino_gana_la_direccion_menor(invertir):
     assert partida.decisor_cazador.decidir(partida, h) is e
     partida._actuar_enemigo(h)
     assert h.sala is b
+
+
+# ---- Historia 5: un cazador sin activar no hace nada ------------------------
+
+def test_us5_4_cazador_inactivo_no_actua_hasta_que_el_jugador_entra():
+    """FR-022 · US5-4"""
+    salas, _ = cadena([100, 100, 100])
+    jugador = Jugador(vida_max=10**6, ataque=10, defensa=10**6, velocidad=100,
+                      inventario_max=10, sala=salas[0])
+    partida = Partida(jugador, semilla=1)
+    h = Enemigo(1, "cazador", "Cazador", 10, 10, 5, 0, 100, "cazador", salas[2], rango=1000)
+    salas[2].inactivos.append(h)
+    vida = jugador.vida
+    for _ in range(10):
+        partida.esperar_jugador()
+    assert h.sala is salas[2] and h.evento is None
+    assert h not in partida.enemigos and jugador.vida == vida
+    assert not any("Cazador" in linea for linea in partida.bitacora.obtener_todos())
+    assert partida.mover("E") and partida.mover("E")
+    assert h in partida.enemigos and h.evento is not None and h.evento.pos >= 0
+    partida.agenda.cancelar(h.evento)
+    partida._actuar_enemigo(h)
+    assert any("ataca" in linea for linea in partida.bitacora.obtener_todos())
+    assert h.sala is salas[2] and jugador.vida < vida
