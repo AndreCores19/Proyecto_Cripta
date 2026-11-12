@@ -20,10 +20,10 @@ id as shown by the known-map view (compared like enemy ids: text, case-insensiti
 
 | `motivo` | Meaning | Time consumed by the stop itself |
 |---|---|---|
+| `fin_partida` | The step ended the game (victory or death), even in the destination room | none |
 | `llegada` | The player is in the destination (also when already there at the start) | none |
-| `enemigos` | The player entered a room with enemies, active or asleep | none |
+| `enemigos` | After the step there are living enemies in the player's room, active or asleep, whoever arrived there | none |
 | `dano` | The player lost life during the step | none |
-| `fin_partida` | The step ended the game (victory or death) | none |
 | `sin_ruta` | No known route exists before a step | none |
 | `retroceso` | A scroll was read; the trip does not continue (FR-022, FR-025) | none |
 

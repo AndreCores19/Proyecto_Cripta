@@ -175,13 +175,17 @@ V_k + E_k) over that region.
 
 `Viaje(partida, destino, mover)` receives the service's move function (so the step also downloads the
 room content, exactly as `w/a/s/d` do). `paso()` returns `None` while the trip goes on, or a stop
-reason. Reasons: `LLEGADA`, `ENEMIGOS`, `DANO`, `FIN_PARTIDA`, `SIN_RUTA`, `RETROCESO`.
+reason. Reasons, in the order of FR-022: `FIN_PARTIDA`, `LLEGADA`, `ENEMIGOS`, `DANO`, `SIN_RUTA`, `RETROCESO`.
+
+The console cannot interrupt a running trip (clarification 2026-11-12): the rewind check below exists for
+the step-level case, where a test or a future interface drives the steps one at a time and reads a scroll
+between two of them.
 
 Per step: (1) if the rewind counter changed since the trip began, stop `RETROCESO` (FR-025); (2) if
 the player is in `destino`, stop `LLEGADA`; (3) compute the route; if none, stop `SIN_RUTA` with no
 time consumed; (4) record the player's life, call `mover(direccion)`; (5) after it, check in order:
-game ended, life lower than before, alive enemies in the room, player in `destino`.
-When several hold, the first in the order of FR-022 is reported (clarification 2026-11-12).
+game ended, player in `destino`, alive enemies in the room (whoever arrived there, clarification 2026-11-12), life lower than before.
+When several hold, the first in this order, which is the order of FR-022, is reported (clarification 2026-11-12).
 
 `JuegoService.ir_a(id_sala)` rejects an unexplored room, builds the `Viaje`, loops `paso()` until a
 reason comes out and returns a `ViajeResultadoDTO(motivo, pasos, direcciones)`.
@@ -298,7 +302,7 @@ Found while planning; the plan did not decide them (Constitution VIII). All four
 1. **Order of stop reasons.** Resolved (clarification 2026-11-12): the first that applies in the order of FR-022.
 2. **Stop by a scroll.** Resolved (clarification 2026-11-12): its own reason, `RETROCESO`, last in the order of FR-022.
 3. **How the destination is named.** Resolved (clarification 2026-11-12): by id only, as shown in the known map.
-4. **Verdict of FR-026.** Resolved (clarification 2026-11-12): 99th percentile ≤ 5 ms, maximum printed.
+4. **Verdict of FR-026.** Resolved (clarification 2026-11-12): 99th percentile of the route computation ≤ 5 ms, maximum printed; the whole step is reported for information only.
 
 ## Complexity Tracking
 
