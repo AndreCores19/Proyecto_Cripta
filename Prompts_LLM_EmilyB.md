@@ -452,28 +452,31 @@ Report what you changed.
 - Prompt: /speckit-implement Phase 4 only (T013–T022). Do not commit.
 - Uso: implementar la Fase 4 de tasks.md (T013 a T022) sin hacer commit
 
-### 10 de Noviembre, 2026
+### 11 de Noviembre, 2026
 - Herramienta: Claude
 - Prompt: /speckit-implement Phase 5 only (T023–T027). Do not commit.
 - Uso: implementar la Fase 5 de tasks.md (T023 a T027) sin hacer commit
 
-### 10 de Noviembre, 2026
+### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 6 only (T028–T033). Do not commit.
+- Uso: implementar la Fase 6 de tasks.md (T028 a T033) sin hacer commit
 
-### 10 de Noviembre, 2026
+### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Before anything else, report:
+1. The result of the 200-seed run of T033: how many seeds passed and failed, and the exact failure if any.
+2. Exactly what you changed in T029 when you "removed the oracle recomputation per hunter". In every step, for all three modes, is every hunter's decision still compared with the independent oracle?
+If any decision is no longer compared, restore the comparison. To keep it fast, compute the oracle distances once per step from the player's room (all hunters share the same target) and check every hunter against that result. Show the diff of tests/ for T029. Do not commit.
+- Uso: hacer un informe sobre la ejecución de T033 con 200 semillas, y detallar los cambios en T029 al eliminar la recomputación del oráculo por cazador, asegurando que todas las decisiones de los cazadores se comparen con el oráculo independiente, y mostrar el diff de tests/ para T029, sin hacer commit
 
-### 10 de Noviembre, 2026
+### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Keep the change: the test cancels the hunter's event after _actuar_enemigo. Update the wording of T029 in tasks.md so it matches the test: oracle distances computed once per step, and the hunter's own event cancelled after each call so it only acts in the test's step. Add one line saying that agenda-driven hunter turns are covered by the mode-determinism test and T031, which require all three modes to give the same decisions. Change nothing else. Do not commit. When the 200-seed run finishes, report the result.
+- Uso: revisar la redacción de T029 en tasks.md para que coincida con la prueba, indicando que las distancias del oráculo se calculan una vez por paso y que el evento del propio cazador se cancela después de cada llamada, y agregar una línea diciendo que los turnos de cazador impulsados por la agenda están cubiertos por la prueba de determinismo de modo y T031, sin cambiar nada más, y al finalizar la ejecución con 200 semillas, informar el resultado
 
-### 10 de Noviembre, 2026
+### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: Remove the sentence "Turns the agenda runs by itself inside partida.mover are not compared" from T029, since it no longer describes the test. Change nothing else. Do not commit.
+- Uso: quitar la frase "Turns the agenda runs by itself inside partida.mover are not compared" de T029, ya que ya no describe la prueba, sin cambiar nada más, y sin hacer commit
 

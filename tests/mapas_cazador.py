@@ -109,15 +109,22 @@ def distancias_referencia(salas, sala_jugador):
 
 
 def _indice(salas, sala):
+    k = sala.id - 1  #atajo: en estas criptas el id es la posición + 1
+    if 0 <= k < len(salas) and salas[k] is sala:
+        return k
     for i, s in enumerate(salas):
         if s is sala:
             return i
     raise ValueError("sala fuera de la cripta")
 
 
-def decision_referencia(salas, sala_jugador, cazador):
-    """Salida que debe tomar el cazador según el oráculo, o None."""
-    dist = distancias_referencia(salas, sala_jugador)
+def decision_referencia(salas, sala_jugador, cazador, dist=None):
+    """Salida que debe tomar el cazador según el oráculo, o None.
+
+    `dist` permite reutilizar las distancias de un mismo estado (las calcula el oráculo si falta).
+    """
+    if dist is None:
+        dist = distancias_referencia(salas, sala_jugador)
     d = dist[_indice(salas, cazador.sala)]
     if d == INFINITO or d > cazador.rango:
         return None

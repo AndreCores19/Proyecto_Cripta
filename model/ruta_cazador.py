@@ -1,3 +1,4 @@
+from model.sala_logica import Salida
 from structures.monticulo import MonticuloMinimo
 
 
@@ -53,18 +54,58 @@ class Busqueda:
         return None
 
 
+MODOS = ("individual", "compartido_sin_reuso", "compartido")
+
+
 class DecisorCazador:
-    """Decide la salida de un cazador. Por ahora solo el modo "individual"."""
+    """Decide la salida de un cazador.
+
+    individual: una búsqueda por turno con el rango del cazador.
+    compartido_sin_reuso: una búsqueda por turno con el mayor rango entre los cazadores vivos.
+    compartido: igual, pero reutiliza la búsqueda mientras el estado no cambie.
+    """
 
     def __init__(self, modo="individual"):
+        if modo not in MODOS:
+            raise ValueError(f"modo de decisor desconocido: {modo}")
         self.modo = modo
         self.busqueda = Busqueda()
+        #búsqueda guardada (solo modo compartido)
+        self.sala_jugador = None
+        self.epoca = -1
+        self.limite = -1
+        self.estampa = -1
+
+    def _limite(self, partida, cazador):
+        limite = cazador.rango
+        if self.modo == "individual":
+            return limite
+        for e in partida.enemigos:
+            if e.es_cazador() and e.esta_vivo() and e.rango > limite:
+                limite = e.rango
+        return limite
+
+    def _cache_valida(self, partida, cazador):
+        return (partida.jugador.sala is self.sala_jugador
+                and Salida.epoca_puertas == self.epoca
+                and cazador.rango <= self.limite
+                and Busqueda.ultima_estampa == self.estampa)
+
+    def _estampa(self, partida, cazador, limite):
+        if self.modo != "compartido":
+            return self.busqueda.calcular(partida.jugador.sala, limite)
+        if not self._cache_valida(partida, cazador):
+            self.estampa = self.busqueda.calcular(partida.jugador.sala, limite)
+            self.sala_jugador = partida.jugador.sala
+            self.epoca = Salida.epoca_puertas
+            self.limite = limite
+        return self.estampa
 
     def decidir(self, partida, cazador, limite_forzado=None):
-        limite = limite_forzado if limite_forzado is not None else cazador.rango
+        limite = limite_forzado if limite_forzado is not None else self._limite(partida, cazador)
         if limite < cazador.rango:
             raise RuntimeError("el límite de la búsqueda es menor que el rango del cazador")
-        estampa = self.busqueda.calcular(partida.jugador.sala, limite)
+        estampa = self._estampa(partida, cazador, limite)
         d = self.busqueda.distancia(cazador.sala, estampa)
         if d is None or d > cazador.rango:
             return None
