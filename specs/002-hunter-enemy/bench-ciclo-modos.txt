@@ -1,0 +1,27 @@
+--- modo individual ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.342     1.087     3.076   cumple
+                grande    100       100      2.238     6.550    82.795   cumple
+               extremo    100       300      8.928    15.163    32.820   cumple
+             cazadores    100       300      4.954     9.477    27.839   cumple
+ cazadores_rango_total    100       300      5.120    10.633    21.333   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- modo compartido_sin_reuso ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.766     1.646     3.263   cumple
+                grande    100       100      2.883     5.214     8.396   cumple
+               extremo    100       300      9.338    15.945    38.424   cumple
+             cazadores    100       300      7.231    13.420   109.338   cumple
+ cazadores_rango_total    100       300      5.598    14.378    26.255   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- modo compartido ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.807     1.934     3.050   cumple
+                grande    100       100      2.637     4.989     6.945   cumple
+               extremo    100       300      9.076    15.868    56.714   cumple
+             cazadores    100       300      6.480    11.941    16.813   cumple
+ cazadores_rango_total    100       300      4.939     9.623    47.332   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)

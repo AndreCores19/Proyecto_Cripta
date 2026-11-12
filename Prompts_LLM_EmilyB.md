@@ -497,13 +497,13 @@ If any decision is no longer compared, restore the comparison. To keep it fast, 
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 10 only (T045–T055). Do not commit.
+- Uso: implementar la Fase 10 de tasks.md (T045 a T055) sin hacer commit
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: The per-mode event-cycle comparison in bench-ciclo-modos.txt came from a scratchpad script that is not in the repo. Make it reproducible from the repo: add a way to run bench_ciclo for every mode (for example, python -m bench.bench_ciclo --modos) and make --bench include it. Document the command in quickstart.md next to bench-ciclo-modos.txt. Do not rerun the benchmarks and do not change any measured number. Do not commit.
+- Uso: hacer que la comparación de ciclo de eventos por modo en bench-ciclo-modos.txt sea reproducible desde el repositorio, agregando una forma de ejecutar bench_ciclo para cada modo y haciendo que --bench lo incluya, y documentar el comando en quickstart.md junto a bench-ciclo-modos.txt, sin volver a ejecutar los benchmarks ni cambiar ningún número medido, y sin hacer commit.0
 
 ### 11 de Noviembre, 2026
 - Herramienta: Claude

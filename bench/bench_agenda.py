@@ -1,7 +1,8 @@
 import random
 import time
 
-from bench.bench_ciclo import COSTOS_SALIDA, armar_partida, armar_partida_costos
+from bench.bench_ciclo import (COSTOS_SALIDA, armar_partida, armar_partida_cazadores,
+                               armar_partida_costos)
 from model.tiempo_logica import intervalo
 from structures.agenda import AgendaEventos, Evento
 
@@ -85,6 +86,15 @@ def contar_operaciones(acciones=1000, num_enemigos=300, variable=False):
         partida = armar_partida_costos(100, num_enemigos, 1)
     else:
         partida = armar_partida(100, num_enemigos)
+    return _contar(partida, acciones)
+
+
+def contar_operaciones_cazadores(acciones, num_enemigos, num_cazadores):
+    """Igual que contar_operaciones, con `num_cazadores` cazadores y costos variables (sección 5.6)."""
+    return _contar(armar_partida_cazadores(100, num_enemigos, num_cazadores, 1), acciones)
+
+
+def _contar(partida, acciones):
     agenda = partida.agenda
     cuentas = {"programar": 0, "extraer": 0, "cancelar": 0, "reprogramar": 0}
     nombres = ("programar", "extraer", "cancelar", "reprogramar")
@@ -169,6 +179,14 @@ def ejecutar():
         for modelo, variable in (("fijo", False), ("variable", True)):
             c, mx = contar_operaciones(1000, enemigos, variable)
             print(f"{enemigos:>9} {modelo:>9} {c['programar']:>10.1f} {c['extraer']:>9.1f} "
+                  f"{c['cancelar']:>9.1f} {c['reprogramar']:>9.1f} {mx:>10}")
+
+    print("\nOperaciones por acción con cazadores (100 salas, costos variables):")
+    print(f"{'enemigos':>9} {'cazadores':>10} {'programar':>10} {'extraer':>9} {'cancelar':>9} {'reprogr.':>9} {'máx.pend.':>10}")
+    for enemigos in (300, 1000, 3000):
+        for cazadores in (30, enemigos // 10):
+            c, mx = contar_operaciones_cazadores(1000, enemigos, cazadores)
+            print(f"{enemigos:>9} {cazadores:>10} {c['programar']:>10.1f} {c['extraer']:>9.1f} "
                   f"{c['cancelar']:>9.1f} {c['reprogramar']:>9.1f} {mx:>10}")
 
     print("\nCancelar un evento cualquiera y programar otro (microsegundos):")

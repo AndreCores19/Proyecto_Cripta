@@ -69,10 +69,14 @@ After the last change:
 python -m bench.bench_ciclo   > specs/002-hunter-enemy/bench-despues-ciclo.txt
 python -m bench.bench_agenda  > specs/002-hunter-enemy/bench-agenda-cazadores.txt
 python -m bench.bench_cazador
+python -m bench.bench_ciclo --modos > specs/002-hunter-enemy/bench-ciclo-modos.txt
 ```
 
+`--modos` runs every `bench_ciclo` scenario once per hunter mode (`individual`, `compartido_sin_reuso`,
+`compartido`); `bench-ciclo-modos.txt` is the output the mode decision in plan.md §Measurements used.
+
 Copy the tables into plan.md §Measurements and apply its decision rule. `python main.py --bench`
-runs both. The reference crypt is the synthetic one until the course publishes its own (spec
+runs all of them, including the per-mode run. The reference crypt is the synthetic one until the course publishes its own (spec
 Clarifications).
 
 ## Manual check

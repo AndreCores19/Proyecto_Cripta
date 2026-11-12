@@ -1,0 +1,27 @@
+--- corrida 1 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.372     1.121     2.587   cumple
+                grande    100       100      1.752     4.813   102.622   cumple
+               extremo    100       300      8.723    14.972    93.335   cumple
+             cazadores    100       300      6.175    10.730    16.111   cumple
+ cazadores_rango_total    100       300      4.472     8.671    23.334   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- corrida 2 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.287     0.811     1.415   cumple
+                grande    100       100      1.574     4.723     5.956   cumple
+               extremo    100       300      8.437    14.915    17.071   cumple
+             cazadores    100       300      6.145    12.065    16.571   cumple
+ cazadores_rango_total    100       300      4.626     9.021    50.335   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- corrida 3 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.288     0.799     1.847   cumple
+                grande    100       100      1.644     4.102     6.352   cumple
+               extremo    100       300      4.668    13.729    63.010   cumple
+             cazadores    100       300      2.013     4.181     7.664   cumple
+ cazadores_rango_total    100       300      1.633     3.472    10.310   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)

@@ -270,16 +270,20 @@ rest of the crypt added around it). Output: µs per decision in each, and their 
 
 | Measurement | Result | Decision |
 |---|---|---|
-| p99 event cycle, 30 hunters, 100 rooms | *pending (task)* | |
-| p99 event cycle, 30 hunters whose `rango` reaches the whole crypt | *pending* | |
-| one hunter vs many | *pending* | |
-| small vs large `rango` | *pending* | |
-| per hunter vs shared, doors often / almost never | *pending* | |
-| reuse vs recompute, doors often / almost never | *pending* | |
-| decision time ratio, 1000 vs 100 rooms, same region | *pending* | |
-| agenda under 30 hunters, variable costs: ops per action, max pending (300 / 1000 / 3000 enemies) | *pending* | |
-| agenda candidates under the new load, µs per extract + schedule at n = 300, 1000, 3000 (heap / unsorted / sorted) | *pending* | heap kept if the rule passes |
-| event cycle before vs after, no hunters (`normal`, `grande`, `extremo`) | *pending* | |
+| p99 event cycle, 30 hunters, 100 rooms | `compartido` (default): p99 10.7 / 12.1 / 4.2 ms in three runs; worst cycle 16.1 / 16.6 / 7.7 ms (`bench-despues-ciclo.txt`). By mode, one run each: `individual` 9.5, `compartido_sin_reuso` 13.4, `compartido` 11.9 ms (`bench-ciclo-modos.txt`) | passes p99 <= 20 ms in every mode |
+| p99 event cycle, 30 hunters whose `rango` reaches the whole crypt | `compartido`: p99 8.7 / 9.0 / 3.5 ms; worst 23.3 / 50.3 / 10.3 ms. By mode: `individual` 10.6, `compartido_sin_reuso` 14.4, `compartido` 9.6 ms | passes p99 <= 20 ms in every mode; the worst cycle goes above 20 ms in some runs, which the p99 criterion allows (it is printed as information) |
+| one hunter vs many | `compartido`, 3000 actions, doors almost fixed: 1 hunter 39.5 us per action, 10 hunters 273.7, 30 hunters 672.5, 100 hunters 3211.4. Searches stay at 751 in every row | cost grows with the number of hunters (each one takes a turn per action), not with the number of searches |
+| small vs large `rango` | `compartido`, 10 hunters: 100 rooms, rango 200 = 177 us, rango 5000 = 334 us; 1000 rooms, rango 200 = 196 us, rango 5000 = 2569 us | a large `rango` costs more only when the region it reaches is large, as the bounded search predicts |
+| per hunter vs shared, doors often / almost never | us per action (searches), doors often: `individual` 1820 (74147), `compartido_sin_reuso` 5031 (74147), `compartido` 1028 (2964). Doors almost never: `individual` 9043 (84482), `compartido_sin_reuso` 17050 (84482), `compartido` 836 (751) | `compartido` is the fastest in both rows |
+| reuse vs recompute, doors often / almost never | `compartido_sin_reuso` / `compartido`: 4.90x slower with doors changing every action, 20.39x slower with doors changing every 500 actions | reuse wins in both rows |
+| decision time ratio, 1000 vs 100 rooms, same region | 81.9 us (100 rooms) and 117.9 us (1000 rooms): ratio 1.44, with the same region of rooms in both crypts (checked) | passes ratio <= 2 (SC-008) |
+| agenda under 30 hunters, variable costs: ops per action, max pending (300 / 1000 / 3000 enemies) | `programar` = `extraer` per action: 300 enemies, 30 hunters: 142.1 (max pending 300); 1000: 435.7 with 30 hunters and 475.4 with 100; 3000: 1260.7 with 30 and 1412.2 with 300. Wanderers only, variable costs: 123.0 / 414.8 / 1237.4. `cancelar` and `reprogramar`: 0.0 in every row | hunters add 2% to 15% operations per action (15% at 300 enemies, 2% at 3000); the shape of the load does not change (one pending event per actor) |
+| agenda candidates under the new load, us per extract + schedule at n = 300, 1000, 3000 (heap / unsorted / sorted) | variable-increment model, three runs: heap 5.6-9.3 / 7.5-13.2 / 6.7-14.2; unsorted list 32-44 / 90-147 / 325-462; sorted list 24-37 / 79-114 / 212-377 (`bench-agenda-cazadores.txt`) | heap kept: it is the fastest at every size >= 300 in the three runs, so the rule passes |
+| event cycle before vs after, no hunters (`normal`, `grande`, `extremo`) | Saved files, best of 3 average: `normal` 0.235 -> 0.287 ms, `grande` 0.848 -> 1.574, `extremo` 2.962 -> 4.668 (more than 10% slower: investigation trigger). Same-session A/B, old code (commit 8b95c51) against new code, interleaved, best of 3: `normal` 0.199 vs 0.163 ms, `grande` 0.744 vs 0.726, `extremo` 4.545 vs 4.266 | the gap in the saved files came from the machine, not from the code: in the A/B the new code is not slower. Part-one criterion p99 <= 20 ms holds in all runs. No action needed |
+
+**Decisions**: (a) default hunter mode: `compartido`. It is the fastest in both rows of comparisons 3 and 4,
+both hunters scenarios pass p99 <= 20 ms and the ratio is 1.44 <= 2. `individual` and
+`compartido_sin_reuso` stay in the code. (b) agenda (section 5.6): keep the binary heap.
 
 ## Project Structure
 

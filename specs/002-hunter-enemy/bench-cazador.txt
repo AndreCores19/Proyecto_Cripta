@@ -1,0 +1,32 @@
+Benchmarks del cazador (3000 acciones del jugador por celda, semilla 1)
+
+1. un cazador contra muchos (modo compartido, puertas casi nunca cambian)
+      1 cazadores       39.5 us      729 busq.
+     10 cazadores      273.7 us      751 busq.
+     30 cazadores      672.5 us      751 busq.
+    100 cazadores     3211.4 us      751 busq.
+
+2. rango chico contra rango grande (modo compartido, puertas casi nunca cambian)
+     100 salas, rango   200      177.1 us      751 busq.
+     100 salas, rango  5000      333.5 us      751 busq.
+    1000 salas, rango   200      195.7 us      751 busq.
+    1000 salas, rango  5000     2569.4 us      751 busq.
+
+(antes de medir: los tres modos deciden igual con 30 cazadores)
+
+3. una búsqueda por cazador contra compartida (30 cazadores, 100 salas)
+   puertas cambian seguido      individual                 1820.3 us    74147 busq.
+   puertas cambian seguido      compartido_sin_reuso       5030.9 us    74147 busq.
+   puertas cambian seguido      compartido                 1027.6 us     2964 busq.
+   puertas casi nunca cambian   individual                 9042.6 us    84482 busq.
+   puertas casi nunca cambian   compartido_sin_reuso      17050.1 us    84482 busq.
+   puertas casi nunca cambian   compartido                  836.1 us      751 busq.
+
+4. reusar contra recalcular (compartido contra compartido_sin_reuso)
+   puertas cambian seguido      reusar     1027.6 us     2964 busq.   recalcular     5030.9 us    74147 busq.   razón 4.90
+   puertas casi nunca cambian   reusar      836.1 us      751 busq.   recalcular    17050.1 us    84482 busq.   razón 20.39
+
+5. escalado con el tamaño de la cripta (rango 200, misma región)
+     100 salas       81.9 us por decisión
+    1000 salas      117.9 us por decisión
+   razón 1.44

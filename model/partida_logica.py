@@ -31,7 +31,7 @@ class Partida:
         self.bitacora = Bitacora()
         self.creador_objetos = None
         self.efectos = Efectos(self)
-        self.decisor_cazador = DecisorCazador("individual")
+        self.decisor_cazador = DecisorCazador("compartido")
         jugador.inventario.historial = self.historial
         jugador.evento = self.agenda.programar(0, "accion", jugador)
         self._entrar_en_sala(jugador.sala)
