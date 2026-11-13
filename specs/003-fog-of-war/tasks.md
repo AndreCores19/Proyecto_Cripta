@@ -56,7 +56,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 - [X] T001 Check that `specs/003-fog-of-war/spec.md` and the plan artifacts are committed (commits `0773eaf` and `73cc881`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/` or `main.py` (Constitution VII) — all FRs
 - [X] T002 Run `python -m pytest` on the unchanged code and note the result. It is the "all green before" reference for Phase 3 and Phase 12 — FR-014
-- [ ] T003 [P] Run `python -m bench.bench_ciclo` three times on the unchanged code and save all three outputs, separated by a line `--- corrida N ---`, to `specs/003-fog-of-war/bench-antes-ciclo.txt`. Do not edit the output — FR-026
+- [X] T003 [P] Run `python -m bench.bench_ciclo` three times on the unchanged code and save all three outputs, separated by a line `--- corrida N ---`, to `specs/003-fog-of-war/bench-antes-ciclo.txt`. Do not edit the output — FR-026
 - [ ] T004 [P] Capture the state of seeded games before any change — FR-014 (SC-006):
   - Create `tests/capturar_estado_niebla.py` (like `tests/capturar_estado_sin_cazadores.py`): it uses `resumen(semilla)` from `tests/estado_sin_cazadores.py` and writes the summaries for seeds 1, 2 and 3 to `specs/003-fog-of-war/estado-antes.txt`. Run it now, on the unchanged code.
 
