@@ -15,7 +15,7 @@ from model.enemigo_logica import Enemigo
 from model.jugador_logica import Jugador
 from model.objeto_logica import Objeto
 from model.partida_logica import Partida
-from model.sala_logica import Sala, Salida
+from model.sala_logica import ABIERTA, CERRADA, EXPLORADA, Sala, Salida
 from model.trampa_logica import Trampa
 from service.juego_service import JuegoService
 
@@ -93,6 +93,14 @@ def armar_estado_fijo(final=None):
 
     partida = Partida(jugador, semilla=SEMILLA_FIJA)
     partida.efectos.aplicar_velocidad(rata, -50, 10 ** 6)
+
+    # Niebla de guerra (spec 003): el estado fijo está todo explorado, así la vista
+    # de la parte uno no cambia. (No se importa explorar_todo de tests/mapas_niebla.py:
+    # ese módulo importa este.) Asignación directa: es preparación de la prueba.
+    for sala in (entrada, pasillo):
+        sala.conocimiento = EXPLORADA
+        for salida in sala.salidas:
+            salida.memoria = CERRADA if salida.cerrada else ABIERTA
 
     # Al menos 25 líneas de bitácora (la bitácora guarda las últimas 20).
     for i in range(1, 26):

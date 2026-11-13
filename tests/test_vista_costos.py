@@ -5,7 +5,7 @@ from controller.controlador import Controlador
 from dto.estado_vista_dto import EstadoVistaDTO
 from model.jugador_logica import Jugador
 from model.partida_logica import Partida
-from model.sala_logica import Sala, Salida
+from model.sala_logica import EXPLORADA, Sala, Salida
 from service.juego_service import JuegoService
 from tests.estado_fijo import FabricaFalsa, armar_estado_fijo, cargar_golden
 from view.vista_consola import VistaConsola
@@ -27,7 +27,10 @@ def _servicio_con_costos():
     jugador = Jugador(vida_max=HUGE, ataque=1, defensa=1, velocidad=100,
                       inventario_max=10, sala=a)
     jugador.nombre = "Ana"
-    return JuegoService(Partida(jugador, semilla=1), FabricaFalsa())
+    partida = Partida(jugador, semilla=1)
+    for sala in (a, n, s, e):
+        sala.conocimiento = EXPLORADA      # niebla (spec 003): esta prueba mira los nombres de los vecinos
+    return JuegoService(partida, FabricaFalsa())
 
 
 def test_estado_vista_trae_el_costo_resuelto_de_cada_salida():
