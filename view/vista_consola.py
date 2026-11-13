@@ -13,7 +13,8 @@ class VistaConsola:
 
         print("Salidas:")
         for s in estado.salidas:
-            print(f"  {s.direccion} -> {s.nombre_destino} "
+            destino = s.nombre_destino if s.nombre_destino is not None else "sin explorar"
+            print(f"  {s.direccion} -> {destino} "
                   f"({'cerrada' if s.cerrada else 'abierta'}, costo {s.costo})")
         print("Enemigos en la sala:")
         for enemigo in estado.enemigos:

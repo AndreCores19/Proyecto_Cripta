@@ -1,4 +1,5 @@
 from model.objeto_logica import PERGAMINO_RETROCESO
+from model.sala_logica import EXPLORADA
 from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDTO,
                                   EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
 from dto.inventario_vista_dto import InventarioVistaDTO, ObjetoInventarioDTO
@@ -152,7 +153,9 @@ class JuegoService:
             inv.arma_equipada.nombre if inv.arma_equipada is not None else None,
             inv.armadura_equipada.nombre if inv.armadura_equipada is not None else None,
             [e.tipo for e in j.efectos])
-        salidas = [SalidaVistaDTO(s.direccion, s.destino.nombre, s.cerrada, s.costo)
+        salidas = [SalidaVistaDTO(s.direccion,
+                                s.destino.nombre if s.destino.conocimiento == EXPLORADA else None,
+                                s.cerrada, s.costo)
                    for s in sala.salidas]
         enemigos = [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
                                     [ef.tipo for ef in e.efectos], e.es_cazador())

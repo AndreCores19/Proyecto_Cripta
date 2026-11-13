@@ -17,7 +17,7 @@ class JugadorVistaDTO:
 class SalidaVistaDTO:
     def __init__(self, direccion, nombre_destino, cerrada, costo):
         self.direccion = direccion
-        self.nombre_destino = nombre_destino
+        self.nombre_destino = nombre_destino    # None si la sala destino no está explorada (FR-004)
         self.cerrada = cerrada
         self.costo = costo              # int ya resuelto: declarado o 100
 
