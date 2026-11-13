@@ -7,6 +7,7 @@ from model.objeto_logica import PERGAMINO_RETROCESO
 from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
 from model.efectos_logica import Efectos
 from model.ruta_cazador import DecisorCazador
+from model.sala_logica import AVISTADA, DESCONOCIDA, EXPLORADA
 
 RASTRO_VIGENCIA = 400
 
@@ -32,9 +33,11 @@ class Partida:
         self.creador_objetos = None
         self.efectos = Efectos(self)
         self.decisor_cazador = DecisorCazador("compartido")
+        self.conocidas = []                      #salas con conocimiento > 0, en orden de descubrimiento
         jugador.inventario.historial = self.historial
         jugador.evento = self.agenda.programar(0, "accion", jugador)
         self._entrar_en_sala(jugador.sala)
+        self._explorar(jugador.sala)             #fuera de todo marco del historial: nunca se deshace
         self.avanzar_hasta_jugador()
 
     #historial
@@ -167,6 +170,20 @@ class Partida:
             self.activar_enemigo(e)
         self.historial.asignar(sala, "inactivos", [])
 
+    #conocimiento del jugador (niebla de guerra)
+    def _subir(self, sala, nivel):
+        if nivel > sala.conocimiento:
+            antes = sala.conocimiento
+            self.historial.asignar(sala, "conocimiento", nivel)
+            if antes == DESCONOCIDA:
+                self.historial.lista_agregar(self.conocidas, sala)
+
+    def _explorar(self, sala):
+        self._subir(sala, EXPLORADA)
+        for salida in sala.salidas:
+            if salida.destino.conocimiento < AVISTADA:
+                self._subir(salida.destino, AVISTADA)
+
     def _refrescar_rastro(self):
         self.historial.asignar(self.jugador.sala, "rastro", self.reloj)
 
@@ -187,6 +204,7 @@ class Partida:
             self._sumar_accion()
             self.historial.asignar(self.jugador, "sala", salida.destino)
             self._entrar_en_sala(salida.destino)
+            self._explorar(salida.destino)
             if self.efectos.activar_trampas(salida.destino):
                 return True                      #el jugador se murió en una trampa
             if self._hay_victoria():

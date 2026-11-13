@@ -1,5 +1,5 @@
-from tests.mapas_cazador import cadena
-from tests.mapas_niebla import explorar_todo, partida_en, ruta_referencia
+from tests.mapas_cazador import cadena, grilla
+from tests.mapas_niebla import explorar_todo, partida_en, ruta_referencia, servicio_en
 
 
 def test_oraculo_cadena_250_y_primera_salida():
@@ -58,3 +58,66 @@ def test_oraculo_no_usa_salas_sin_explorar_ni_puertas_sin_observar():
     pares[1][0].memoria = pares[1][1].memoria = 1
     salas[2].conocimiento = 1
     assert ruta_referencia(salas, partida, salas[2]) == (None, None)
+
+
+# --- Estados de conocimiento (T007) ---------------------------------------
+
+DESCONOCIDA, AVISTADA, EXPLORADA = 0, 1, 2
+
+
+def _estados(salas):
+    return [s.conocimiento for s in salas]
+
+
+def _comprobar_conocidas(partida, salas):
+    """`conocidas` tiene exactamente las salas con conocimiento > 0 y sin repetir."""
+    con_nivel = [s for s in salas if s.conocimiento > 0]
+    assert len(partida.conocidas) == len(con_nivel)
+    for s in con_nivel:
+        assert sum(1 for c in partida.conocidas if c is s) == 1
+
+
+def test_inicio_sala_explorada_destinos_avistados_resto_desconocido():
+    """FR-001, FR-002, FR-003, FR-004 · US1-1"""
+    salas, _ = cadena([100, 100, 100])
+    partida = partida_en(salas, salas[0])
+    assert partida.reloj == 0
+    assert _estados(salas) == [EXPLORADA, AVISTADA, DESCONOCIDA, DESCONOCIDA]
+    _comprobar_conocidas(partida, salas)
+
+
+def test_entrar_en_sala_avistada_la_explora_y_avista_sus_destinos():
+    """FR-001, FR-003, FR-004 · US1-2 (los destinos ya explorados no bajan de nivel)"""
+    salas, _ = grilla(2, 2, 100)          # ids 1 2 / 3 4
+    partida = partida_en(salas, salas[0])
+    assert _estados(salas) == [EXPLORADA, AVISTADA, AVISTADA, DESCONOCIDA]
+    assert servicio_en(partida).mover("E") is True
+    assert _estados(salas) == [EXPLORADA, EXPLORADA, AVISTADA, AVISTADA]
+    _comprobar_conocidas(partida, salas)
+
+
+def test_reentrar_conserva_el_estado():
+    """FR-001 · US1-7"""
+    salas, _ = cadena([100, 100, 100])
+    partida = partida_en(salas, salas[0])
+    servicio = servicio_en(partida)
+    assert servicio.mover("E") is True
+    antes = _estados(salas)
+    assert servicio.mover("O") is True
+    assert servicio.mover("E") is True
+    assert _estados(salas) == antes == [EXPLORADA, EXPLORADA, AVISTADA, DESCONOCIDA]
+    _comprobar_conocidas(partida, salas)
+
+
+def test_conocidas_en_orden_de_descubrimiento():
+    """FR-005, FR-013 · `conocidas` lista las salas con nivel > 0 en el orden en que se descubren"""
+    salas, _ = cadena([100, 100, 100])
+    partida = partida_en(salas, salas[0])
+    assert [s.id for s in partida.conocidas] == [1, 2]
+    servicio = servicio_en(partida)
+    servicio.mover("E")
+    assert [s.id for s in partida.conocidas] == [1, 2, 3]
+    servicio.mover("E")
+    assert [s.id for s in partida.conocidas] == [1, 2, 3, 4]
+    servicio.mover("O")
+    assert [s.id for s in partida.conocidas] == [1, 2, 3, 4]
