@@ -1,5 +1,15 @@
 from model.tiempo_logica import COSTO_MOVER
 
+#conocimiento que el jugador tiene de una sala (Sala.conocimiento)
+DESCONOCIDA = 0
+AVISTADA = 1
+EXPLORADA = 2
+
+#estado de una puerta según la última observación (Salida.memoria)
+NO_OBSERVADA = 0
+ABIERTA = 1
+CERRADA = 2
+
 
 class Salida:
     #contador de cambios de puertas: sube con cada asignación de `cerrada`
@@ -14,6 +24,9 @@ class Salida:
         self.costo_declarado = costo  #None si los datos no lo declaran
         self.opuesta = None  #la Salida gemela
         self.origen = None   #la Sala de la que sale (la fija Sala.agregar_salida)
+        #0 nunca observada, 1 abierta, 2 cerrada, según la última observación;
+        #no toca epoca_puertas: no es el estado real de la puerta
+        self.memoria = NO_OBSERVADA
 
     @property
     def cerrada(self):
@@ -61,6 +74,8 @@ class Sala:
         self.entradas = []       #salidas de otras salas que llegan aquí
         self.busq_marca = -1     #estampa de la última búsqueda del cazador
         self.busq_dist = 0       #distancia hallada en esa búsqueda
+        #0 desconocida, 1 avistada, 2 explorada
+        self.conocimiento = DESCONOCIDA
 
     def agregar_salida(self, salida):
         self.salidas.append(salida)

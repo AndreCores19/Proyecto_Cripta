@@ -69,7 +69,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 **Purpose**: the two fields of the data model and the shared test helper. Blocks every story.
 
 - [X] T005 Write `tests/mapas_niebla.py` as described in "Common fixtures" (`partida_en`, `servicio_en`, `explorar_todo`, `ruta_referencia`). Add a first self-check in `tests/test_niebla_estados.py`: the oracle gives `d` 250 and the first exit toward B for a chain with costs 100 and 150 with every room explored and every door open, and `(None, None)` when the exit of the middle room is closed — FR-017, FR-018
-- [ ] T006 In `model/sala_logica.py` add the module constants `DESCONOCIDA = 0`, `AVISTADA = 1`, `EXPLORADA = 2` and `NO_OBSERVADA = 0`, `ABIERTA = 1`, `CERRADA = 2`; add `Sala.conocimiento` (int, initial `DESCONOCIDA`: "`0` unknown, `1` sighted, `2` explored") and `Salida.memoria` (int, initial `NO_OBSERVADA`: "`0` never observed, `1` open, `2` closed, as of the last observation"). `Salida.enlazar` leaves `memoria` untouched (both faces start at 0). Neither field may touch `Salida.epoca_puertas`. Run `python -m pytest`; all green — FR-001, FR-006, FR-007
+- [X] T006 In `model/sala_logica.py` add the module constants `DESCONOCIDA = 0`, `AVISTADA = 1`, `EXPLORADA = 2` and `NO_OBSERVADA = 0`, `ABIERTA = 1`, `CERRADA = 2`; add `Sala.conocimiento` (int, initial `DESCONOCIDA`: "`0` unknown, `1` sighted, `2` explored") and `Salida.memoria` (int, initial `NO_OBSERVADA`: "`0` never observed, `1` open, `2` closed, as of the last observation"). `Salida.enlazar` leaves `memoria` untouched (both faces start at 0). Neither field may touch `Salida.epoca_puertas`. Run `python -m pytest`; all green — FR-001, FR-006, FR-007
 
 **Checkpoint**: fields exist, suite green, helper written.
 
