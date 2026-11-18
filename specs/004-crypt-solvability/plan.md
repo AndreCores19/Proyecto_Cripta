@@ -13,8 +13,9 @@ set of keys the player holds at the same time: reaching a room makes the keys lo
 as far as it can with the keys already taken, the lowest-id obtainable key is taken, the closed exits
 that were waiting for it are released, and the region grows again. Every room is entered once, every
 exit is looked at once from its origin, every key goes in and out of the heap once, so the cost is
-`O(V + E log K + K log K)`, never one full pass per key. The order in which the keys leave the heap is
-the order of keys (FR-009, FR-011) and does not depend on how the service lists rooms or keys (FR-010).
+`O((V + E) log V + K log K)` (the `log V` is finding a room's position in the sorted room vector), never one
+full pass per key; it is still near-linear and the benchmark shows it with operation counters. The order in which the keys leave the heap is
+the order of keys (FR-009, FR-011) and does not depend on how the service lists the keys and the exits of each room (FR-010); the rooms are taken sorted by id, as in part one.
 
 What the pass leaves behind answers the report of a non-solvable crypt (FR-012): the keys never taken
 (a), the closed exits that were left waiting, which are exactly the blocked frontier (b), where each
@@ -107,7 +108,7 @@ rooms and 4 to 2 000 chained keys to show the trend.
 | FR-002, FR-003 | data + adapters | `ClienteHttp.llaves(id)` calls `GET /criptas/{id}/llaves` through the same `_get` as every other request. The answer gives, per key, `id`, `sala` and, when an enemy carries it, `enemigo`; the room already is the enemy's initial room, so the pass needs nothing else (R1). |
 | FR-004 | data + adapters | The call goes through `_get`, which counts the request and refuses past the budget. `--offline` counts nothing, as for every offline call. |
 | FR-005 | data | `RepositorioLlaves.cargar` reads `cache/llaves/<id>.json`; if its stored version equals the crypt version it returns that, otherwise it queries and overwrites the file (R2). |
-| FR-006 | adapters | `ClienteOffline.llaves(id)` reads `<id>/llaves.json`; `grabar_offline.py` records it for every crypt (R3). |
+| FR-006 | adapters | `ClienteOffline.llaves(id)` reads `<id>/llaves.json`; `grabar_offline.py` records it for every crypt and, only when the crypt listing succeeded, was not empty and every crypt was recorded without error, removes the crypt folders the service does not list (R3). |
 | FR-007, FR-008 | model | The pass of §The pass implements the assumptions; solvable is decided by the last step (exit key taken and an exit door of that key leading to the exit room). |
 | FR-009, FR-010, FR-011 | model | Order = order in which keys leave the heap; heap key = key id as text (R4). |
 | FR-012 | model | (a)–(c) fall out of the pass; (d) is the guard sweep (R5). |
@@ -130,7 +131,9 @@ binary-search vector, which only needs `<` and `==`) so a door's key id is found
    heap with its id as priority; for every exit whose destination is not reached: if the exit is open,
    or its key is already taken, reach and enqueue the destination; otherwise append the exit to the
    `pendientes` of its key (a closed exit whose key id is not in the key list, or with no key, goes to a
-   separate list of *exits nobody can open*, see "Points for the spec").
+   separate list of *exits nobody can open*; a key id named by such an exit, or the exit key, that the key list
+   does not give gets a never-obtainable entry with no room, so that the report can list it with location
+   unknown, FR-012).
 3. If the heap is empty, stop. Otherwise take the **lowest-id key**, mark it taken, append its id to the
    order, release its `pendientes` (reach and enqueue each destination not yet reached) and go to 2.
 4. **Decide**: solvable iff the exit key was taken and some exit that requires it leads to the exit room
@@ -142,8 +145,11 @@ one is taken, so "at the same moment" means "in the heap together". Every key le
 open the doors on its way, which is FR-009.
 
 Cost: each room is enqueued once; each exit is examined from its origin once and, if it waited, released
-once; each closed exit costs one `O(log K)` search of its key; each key is inserted and extracted once
-(`O(K log K)`). Total `O(V + E log K + K log K)`.
+once; each destination room is found in the sorted room vector (`O(log V)`, the cost of a binary search) and each
+closed exit costs one `O(log K)` search of its key; each key is inserted and extracted once (`O(K log K)`).
+Total `O((V + E) log V + K log K)`: still near-linear (the `log V` of a binary search, no pass per key). The
+benchmark shows the near-linear growth with operation counters (rooms entered and exits examined stay at most
+`V` and `E` however many keys there are) and with the time ratios.
 
 ### What the pass leaves, and the report (FR-012)
 
@@ -164,7 +170,10 @@ After step 3 stops:
   order, marking keys with the starting key id, finds every cycle once (each key is in at most one). A cycle is
   reported as the list of its keys starting at the lowest id, each with its room, the guard key and the
   frontier door of that link. A key with no label (its room cannot be reached even ignoring locks) has no
-  guard and is in no cycle. Cost `O(V_U + E_U + K)` where `U` is the part of the crypt the pass left.
+  guard and is in no cycle. The doors of the exits nobody can open (no key, or a key the list does not give)
+  start no flood, so the rooms behind them have no guard either. When several frontier keys reach the same
+  region the lowest key id is the reported guard: that is what FR-012 (d) says. Cost `O(V_U + E_U + K)`
+  where `U` is the part of the crypt the pass left.
 
 All of it is read from the one pass and one sweep; there is no pass per key (FR-013). The exit-key-behind-its-own-door
 case of the spec (scenario US3-1) is the cycle of length one.
@@ -182,13 +191,15 @@ case of the spec (scenario US3-1) is the cycle of length one.
   prints the same lines, so the game and `--verificar` show the same text (contract
   [reporte-verificacion.md](./contracts/reporte-verificacion.md)).
 - `aplicacion.py` — `Aplicacion.jugar(ruta_carga, forzar)` verifies before asking for the name and before any
-  session; `verificar_cripta(url, id_cripta, cliente)` builds only the crypt repository, the key repository and
-  the service (no catalog, no view).
+  session, **with `self.repo_cripta` and `self.cliente`**: the skeleton that `Aplicacion.__init__` already
+  downloaded is reused (no second download) and the key query goes through the same client, so it shares the
+  request counter and the budget (FR-004). `verificar_cripta(url, id_cripta, cliente)` builds only the crypt
+  repository (one skeleton download), the key repository and the service (no catalog, no view).
 - `main.py` — options `--verificar CRIPTA` and `--forzar`; `--bench` runs `bench_solvabilidad`.
 
 ### Complexity (engine)
 
-- Verification: `O(V + E log K + K log K)` time, `O(V + E + K)` space.
+- Verification: `O((V + E) log V + K log K)` time, `O(V + E + K)` space.
 - Report: the guard sweep adds `O(V_U + E_U)`; sorting the frontier and the lists adds `O(F log F + K log K)`.
 - Cache: one file read per run (`O(K)`), one request per crypt version.
 
@@ -206,11 +217,14 @@ measurement.
 
 **2. Linear growth against the naive alternative (FR-019, FR-021, SC-006)** — synthetic crypts of
 chained keys: key `i` is in the region that key `i-1` opens, so obtaining a key opens a new region.
-Sizes: 100, 1 000, 10 000 and 100 000 rooms with one key per 50 rooms (2, 20, 200 and 2 000 keys); for
-each size the benchmark measures the verification and the naive alternative (the same crypt, one full
-reachability pass from scratch after every key taken; same order of keys, checked equal). It prints both
-times and the ratios between consecutive sizes. Evidence of linear growth: when the size grows by a factor
-`f`, the verification time grows by about `f` and the naive time by about `f²`.
+Sizes: 100, 1 000, 10 000 and 100 000 rooms with one key per 50 rooms (2, 20, 200 and 2 000 keys). The
+verification is measured at every size; the naive alternative (the same crypt, one full reachability pass from
+scratch after every key taken; same order of keys, checked equal) only up to **10 000 rooms and 200 keys**: at
+100 000 rooms and 2 000 keys it would need about 2×10⁸ room visits, many minutes in Python. The whole benchmark
+must finish in about a minute. It prints both
+times (the naive one where it is measured) and the ratios between consecutive sizes. Evidence of near-linear
+growth: when the size grows by a factor `f`, the verification time grows by about `f` (a little more, from the
+`log V`) and the naive time by about `f²`, and the operation counters stay within `V` and `E`.
 
 **3. Determinism (FR-020)**: the same seed gives the same crypt (a test compares two builds).
 
@@ -281,7 +295,8 @@ Found while planning; the plan did not decide them (Constitution VIII). All ten 
    reported as unobtainable with location unknown (FR-012).
 3. **Several cycles.** Resolved (clarification 2026-11-17): every cycle is reported, each starting at its
    lowest key id, sorted by that id (FR-012). Where several frontier keys reach the same locked room, the guard
-   is the lowest key id (R5), a fixed tie-break (Constitution II); this is an algorithm choice of the plan.
+   is the lowest key id (R5), a fixed tie-break (Constitution II); FR-012 (d) was reworded on 2026-11-17 to say
+   exactly this.
 4. **Which keys the order lists.** Resolved (clarification 2026-11-17): every key the player can obtain
    (FR-009).
 5. **"The same pass."** Resolved (clarification 2026-11-17): the pass plus one linear sweep over only the

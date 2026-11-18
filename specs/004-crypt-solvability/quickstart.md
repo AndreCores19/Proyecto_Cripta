@@ -33,7 +33,7 @@ the report is shown and the game starts.
 | US1-3 | the player's knowledge changes nothing (the same verdict with a fresh game and a played one) | FR-001 |
 | US2-1 | chained keys: every key after the keys that open its way, checked against the oracle | FR-008, FR-009 |
 | US2-2 / mandatory 3 | several valid orders: two runs give the same order, lowest id first | FR-010, FR-011 |
-| US2-3 | rooms and keys listed in another order give the same order | FR-010 |
+| US2-3 | keys and exits of the rooms listed in another order give the same order | FR-010 |
 | US3-1 / mandatory 1 | exit key behind the only door it opens: not solvable, a cycle of length one | FR-012 |
 | US3-2 | report lists exactly the unobtainable keys, frontier doors and locations | FR-012 |
 | US3-3 | chain of keys: the concrete cycle, the same in two runs | FR-012, FR-010 |

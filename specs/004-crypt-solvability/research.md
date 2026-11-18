@@ -37,7 +37,9 @@ stale files behind.
 
 **Decision**: `grabar_offline.py` records `offline/<id>/llaves.json` for each crypt (one extra request on that
 crypt's own client, within its budget); `ClienteOffline.llaves(id)` reads it and, like every offline call,
-counts no request.
+counts no request. After recording, the crypt folders of the package that the service did not list (today
+`cripta-01`) are removed, **only if** the crypt listing succeeded, was not empty, and every listed crypt was
+recorded without error; otherwise nothing is deleted.
 
 **Rationale**: `ClienteOffline` is meant to answer exactly like `ClienteHttp`, from recorded files; the
 model and the services do not know which one they have (spec clarification 2026-11-17, FR-006). A missing
@@ -69,7 +71,8 @@ FR-011.
 **Decision**: (a)–(c) come straight from the state the pass leaves (keys not taken, exits still waiting,
 key records). (d): one flood over the rooms the pass did not reach, ignoring locks, starting from the
 frontier doors grouped by key in increasing key id, labelling each room with the first (lowest) key that
-reaches it; the guard of an unobtainable key is the label of its room; cycles are found by following guards.
+reaches it; the guard of an unobtainable key is the label of its room; cycles are found by following guards. Doors of
+exits nobody can open (no key, or a key the list does not give) start no flood.
 
 **Rationale**: Every route from the reached region to a room not reached starts with a frontier door, so "the
 keys that guard a room" are among the frontier keys that can reach it; taking the lowest one makes the guard
@@ -77,7 +80,11 @@ unique and the result independent of listing order (Constitution II). Each room 
 labelled by a lower key is not entered by a higher one: whatever is behind it is reachable from the lower
 key too), so the sweep is linear in the part of the crypt the pass left, whatever the number of keys. With one
 outgoing guard per key, a walk that marks keys with the starting key finds each cycle once. The case of the
-spec scenario (the exit key behind the only door that it opens itself) is a cycle of length one.
+spec scenario (the exit key behind the only door that it opens itself) is a cycle of length one. When several
+frontier keys can reach the same region, "the guard" is a choice (the lowest key id, as FR-012 (d) says after
+the correction of 2026-11-17), not a proof that the region can only be entered with that key: every frontier key
+is stuck at the end of the pass, so the reported cycle is always a set of keys that block each other, and in the
+pure case (one guard) it is exactly a chain of doors that only the next key opens.
 
 **Cost of the other reading of "the same pass"**: folding the sweep into the traversal would mean flooding
 beyond a closed door at the moment it is found, ignoring its lock, and undoing the flood for the doors that
@@ -97,6 +104,9 @@ layer already builds), so the verification can run on the freshly built rooms be
 **Rationale**: The brief says the fog of war does not apply (FR-001). Using lists indexed by position keeps
 the verification free of the search stamps used by the hunters and by "ir a", so it cannot disturb their
 saved searches. A closed exit whose destination is already reached is skipped without looking at its key.
+Finding a room's position in the sorted vector is a binary search, `O(log V)`, so the cost of the pass is
+`O((V + E) log V + K log K)`: near-linear, which the benchmark shows with operation counters (rooms entered and
+exits examined) and with times.
 
 **Alternatives**: stamping fields in `Sala` (adds fields used by one feature only and couples it to the
 hunters' stamp counter).
@@ -104,7 +114,8 @@ hunters' stamp counter).
 ## R7. Finding a key by id without `dict`
 
 **Decision**: Keys are put in the existing binary-search vector sorted by id (text), built once per
-verification: `O(K log K)` to sort the listing (with `ordenar`) and `O(log K)` per lookup.
+verification: `O(K log K)` to sort the listing (with `ordenar`) and `O(log K)` per lookup. The position of a
+room in the sorted room vector costs `O(log V)` per lookup.
 
 **Rationale**: The service lists keys in any order (FR-010), so the vector is built by sorting, not by trusting
 the listing. The vector only needs `==` and `<` on ids, which hold for text.
@@ -116,7 +127,9 @@ the listing. The vector only needs `==` and `<` on ids, which hold for text.
 **Decision**: `Aplicacion.jugar` verifies once, before asking for the player's name and before the first
 session; loading a saved game inside the session loop does not verify again. `--verificar` calls
 `verificar_cripta`, which builds only the crypt repository, the key repository and the service, and prints
-with `adapters/salida_verificacion.py`. `--forzar` is a flag of `jugar` only.
+with `adapters/salida_verificacion.py`. `--forzar` is a flag of `jugar` only. The game path uses the application's
+own `repo_cripta` and `cliente`: the skeleton that `Aplicacion.__init__` downloaded is reused (no second
+download) and the key query counts in the same budget.
 
 **Rationale**: `Aplicacion.__init__` builds the whole game (catalog included, which makes requests);
 `--verificar` does not need any of it and must not spend requests on it. Printing with plain functions is the
@@ -131,7 +144,10 @@ controller (the controller starts after the game exists).
 for (a) the size of the largest published crypt and (b) chained-key crypts where key `i` lies in the region
 that key `i-1` opens. The naive alternative (one reachability pass from scratch per key taken, picking the lowest
 id obtainable) lives in the benchmark and, as an independent implementation, in the test oracle; the
-benchmark checks both give the same order of keys.
+benchmark checks both give the same order of keys. The naive alternative is measured only up to 10 000 rooms and
+200 keys (about 4×10⁶ room visits): at 100 000 rooms and 2 000 keys it would need about 2×10⁸ visits, many
+minutes in Python. The verification is measured up to 100 000 rooms, and the whole benchmark finishes in about
+a minute.
 
 **Rationale**: FR-021 asks `--bench` to measure the naive alternative with many chained keys, which is the
 shape on which it is quadratic. Equal orders prove that the fast pass is the same function, only faster.

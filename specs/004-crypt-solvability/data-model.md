@@ -29,7 +29,7 @@ When the crypt is solvable, `llaves_inalcanzables`, `puertas_frontera` and `cicl
 
 ## Model objects (one verification)
 
-- **`LlaveLogica`**: `id`, `id_sala`, `id_enemigo`, `obtenida` (bool), `pendientes` (list of `Salida`: closed
+- **`LlaveLogica`**: `id`, `id_sala` (`None` for a key named by a door or by the exit that the key list does not give: it is never obtainable), `id_enemigo`, `obtenida` (bool), `pendientes` (list of `Salida`: closed
   exits waiting for this key), `visita` (the id of the key from which the cycle walk reached it, or `None`).
 - **Per-room lists** (indexed by the room's position in the binary-search vector): `alcanzada` (bool),
   `llaves_en` (list of `LlaveLogica`), `etiqueta_llave` and `etiqueta_puerta` (the guard sweep).
