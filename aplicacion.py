@@ -7,8 +7,9 @@ from adapters.guardado_binario import CabeceraGuardado, GuardadoBinario
 from controller.controlador import Controlador
 from data.fabrica_modelo import FabricaModelo
 from data.repositorio_catalogo import RepositorioCatalogo
-from data.repositorio_cripta import RepositorioCripta
+from data.repositorio_cripta import RepositorioCripta, construir_grafo
 from data.repositorio_llaves import RepositorioLlaves
+from model.linea_tiempo_logica import LineaTiempoPartida
 from service.juego_service import JuegoService
 from service.verificacion_service import VerificacionService
 from structures.cache_fichas import CacheFichas
@@ -39,9 +40,19 @@ def verificar_cripta(url, id_cripta, cliente):
     return 0 if reporte.resoluble else 1
 
 
+def _crear_servicio(app, partida):
+    """El servicio con su línea de tiempo: se arma igual al jugar, al cargar y en --replay (FR-017, FR-019).
+
+    Función de módulo y no método: las pruebas viejas llaman `_sesion` y `reproducir` con una app falsa."""
+    linea = LineaTiempoPartida()
+    linea.iniciar(partida, lambda: construir_grafo(app.dtos), getattr(app, "checkpoint_cada", None))
+    return JuegoService(partida, app.fabrica, linea_tiempo=linea)
+
+
 ## La clase aplicacion arma todas las piezas y permite jugar o reproducir una partida grabada.
 class Aplicacion:
-    def __init__(self, url, id_cripta, tamano_cache=25, cliente=None):
+    def __init__(self, url, id_cripta, tamano_cache=25, cliente=None, checkpoint_cada=None):
+        self.checkpoint_cada = checkpoint_cada     #K de la línea de tiempo; None = el K por defecto (se cablea en la fase 9)
         self.cliente = cliente if cliente is not None else ClienteHttp(url, timeout=10)
         self.nombre_jugador = "Jugador"
         self.repo_cripta = RepositorioCripta(self.cliente)
@@ -100,7 +111,7 @@ class Aplicacion:
 
         partida = self.fabrica.nueva_partida(semilla=semilla)
         partida.jugador.nombre = self.nombre_jugador
-        servicio = JuegoService(partida, self.fabrica)
+        servicio = _crear_servicio(self, partida)
         servicio.actualizar_fichas()
         bitacora = BitacoraPartida("saves")
         controlador = Controlador(servicio, vista, bitacora, self)
@@ -150,7 +161,7 @@ class Aplicacion:
             return
 
         partida = self.fabrica.nueva_partida(semilla=lector.semilla)
-        servicio = JuegoService(partida, self.fabrica)
+        servicio = _crear_servicio(self, partida)
         servicio.actualizar_fichas()
         controlador = Controlador(servicio, None, None, None, avisar=print)
         for comando in lector.comandos:

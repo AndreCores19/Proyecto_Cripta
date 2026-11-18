@@ -12,29 +12,62 @@ from model.viaje_logica import Viaje
 
 class JuegoService:
 
-    def __init__(self, partida, fabrica):
+    def __init__(self, partida, fabrica, linea_tiempo=None):
         self.partida = partida
         self.fabrica = fabrica
+        self.linea_tiempo = linea_tiempo      #LineaTiempoPartida o None (sin línea de tiempo)
+
+    def _registrar(self, tipo, argumento, reloj_antes, acciones_antes, retrocesos_antes):
+        #Una llamada es una acción solo si las acciones subieron exactamente una y no hubo retroceso
+        if self.linea_tiempo is None:
+            return
+        p = self.partida
+        if p.acciones_jugador == acciones_antes + 1 and p.retrocesos == retrocesos_antes:
+            self.linea_tiempo.registrar_accion(p, tipo, argumento, reloj_antes)
+
+    def _marca(self):
+        p = self.partida
+        return p.reloj, p.acciones_jugador, p.retrocesos
+
+    def _bajo_el_cursor(self):
+        nodo = self.partida.jugador.inventario.actual
+        return nodo.objeto.id_instancia if nodo is not None else None
 
     def recoger_objeto(self, id_instancia):
         resultado = False
+        marca = self._marca()
         for objeto in self.partida.jugador.sala.objetos:
             if objeto.id_instancia == id_instancia:
                 resultado = self.partida.recoger(objeto)
                 break
+        if resultado:
+            self._registrar("recoger", id_instancia, *marca)
         self.actualizar_fichas()
         return resultado
 
     def soltar_objeto(self):
+        marca = self._marca()
+        objetivo = self._bajo_el_cursor()
         resultado = self.partida.soltar()
+        if resultado:
+            self._registrar("soltar", objetivo, *marca)
         self.actualizar_fichas()
         return resultado
 
     def equipar_objeto(self):
-        return self.partida.equipar()
+        marca = self._marca()
+        objetivo = self._bajo_el_cursor()
+        resultado = self.partida.equipar()
+        if resultado:
+            self._registrar("equipar", objetivo, *marca)
+        return resultado
 
     def usar_objeto(self):
+        marca = self._marca()
+        objetivo = self._bajo_el_cursor()
         resultado = self.partida.usar()
+        if resultado:
+            self._registrar("usar", objetivo, *marca)
         self.actualizar_fichas()
         return resultado
 
@@ -42,8 +75,11 @@ class JuegoService:
         salida = self.partida.jugador.sala.salida(direccion)
         if salida is None or salida.cerrada:
             return False
+        marca = self._marca()
         self.fabrica.poblar_sala(salida.destino)
         resultado = self.partida.mover(direccion)
+        if resultado:
+            self._registrar("mover", direccion, *marca)
         self.actualizar_fichas()
         return resultado
 
@@ -73,17 +109,27 @@ class JuegoService:
                 break
         if objetivo is None:
             return False
+        marca = self._marca()
         resultado = self.partida.atacar(objetivo)
+        if resultado:
+            self._registrar("atacar", objetivo.id_enemigo, *marca)
         self.actualizar_fichas()
         return resultado
 
     def esperar(self):
+        marca = self._marca()
         resultado = self.partida.esperar_jugador()
+        if resultado:
+            self._registrar("esperar", None, *marca)
         self.actualizar_fichas()
         return resultado
 
     def abrir_puerta(self, direccion):
-        return self.partida.abrir_puerta(direccion)
+        marca = self._marca()
+        resultado = self.partida.abrir_puerta(direccion)
+        if resultado:
+            self._registrar("abrir", direccion, *marca)
+        return resultado
 
     def retroceder(self):
         ## el comando retroceder usa un pergamino del inventario
