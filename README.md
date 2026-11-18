@@ -47,6 +47,8 @@ Opciones:
 | `--cache-size N` | Fichas máximas guardadas en memoria (por defecto 25). |
 | `--replay LOG` | Reproduce una partida grabada en un archivo de bitácora. |
 | `--offline` | Lee las respuestas del paquete de la carpeta `offline/` en lugar de la red. No cuenta solicitudes. Para generar el paquete: `python grabar_offline.py`. |
+| `--verificar CRIPTA` | Verifica si la cripta se puede ganar, imprime el reporte y termina, sin vista y sin jugar. Sale con estado 0 si se puede ganar y 1 si no se puede o si falla la comunicación. |
+| `--forzar` | Juega aunque la cripta no se pueda ganar (sin esta opción, una cripta que no se puede ganar no arranca y se muestra el reporte). |
 | `--bench` | Ejecuta todos los benchmarks y termina, sin abrir la vista interactiva. |
 
 Comandos del juego:
@@ -87,6 +89,19 @@ ya no hay ruta conocida, o se leyó un pergamino de retroceso (que revierte solo
 la orden queda como un comentario `# ir a <id>` y cada paso como un movimiento, de modo que `--replay` y las partidas
 guardadas repiten solo movimientos.
 
+### Verificación de resolubilidad
+
+Antes de empezar un juego, el programa decide si la cripta se puede ganar: desde la sala inicial, cruzando las
+salidas abiertas y las cerradas cuya llave ya se tiene, ¿se puede obtener la llave de salida y llegar a la sala de
+salida por una puerta que la exige? Se supone que las llaves no se consumen, que todo enemigo se puede derrotar (la
+llave que suelta está en la sala donde él empieza) y que ni las trampas ni el cierre automático bloquean. Si se
+puede, se muestra un orden en que conseguir las llaves; si no, el juego no arranca (salvo con `--forzar`) y se muestra
+el reporte: las llaves que no se pueden conseguir y dónde están, las puertas de la frontera bloqueada con la llave que
+exige cada una y los ciclos de llaves que se bloquean entre sí. La ubicación de las llaves sale de una consulta nueva
+al servicio (`/criptas/<id>/llaves`) que cuenta en el presupuesto de solicitudes y se guarda en `cache/llaves/` mientras
+la versión de la cripta no cambie. `--replay` y cargar una partida no vuelven a verificar. Con `--offline` las
+ubicaciones salen de `llaves.json` en el paquete de cada cripta.
+
 ## 4. Pruebas automáticas
 
 `python -m pytest`
@@ -98,6 +113,10 @@ compara una foto exacta del estado antes de una acción y después de retroceder
 `test_vista_niebla` (sala y `mapa`), `test_ir_a_ruta` (ruta, desempates, oráculo y propiedad de SC-002 y SC-003),
 `test_ir_a_viaje` (motivos de parada y pergamino), `test_ir_a_bitacora` (bitácora, comentarios y replay sin vista)
 y `test_bench_ir_a`; los constructores de criptas y el oráculo de rutas están en `tests/mapas_niebla.py`.
+Para la verificación de resolubilidad: `test_solvabilidad_orden` (veredicto y orden de llaves), `test_solvabilidad_informe`
+(llaves inalcanzables, frontera y ciclos), `test_solvabilidad_llaves` (consulta, archivo por versión y paquete sin
+conexión), `test_solvabilidad_comandos` (servicio, texto del reporte, `--forzar` y `--verificar`) y `test_bench_solvabilidad`;
+los constructores de criptas con llaves y el oráculo (una pasada completa por llave) están en `tests/mapas_solvabilidad.py`.
 
 _**Nota:** La carpeta `pruebas_manuales/` contiene pruebas manuales de las capas de datos,
 adaptadores y vista (almacén, caché, catálogo, DTO, estructuras, lector, lista, repositorio y vista).
@@ -128,7 +147,8 @@ También se puede correr uno solo, desde la carpeta del proyecto y con `-m`:
 | `python -m bench.bench_fichas` | Costo de una ficha desde memoria, disco y red, y costo de marcar las fichas en uso. |
 | `python -m bench.bench_precarga` | Solicitudes de contenido de salas: una por sala, anticipar siempre y lote solo si falta. |
 | `python -m bench.bench_catalogo` | Solicitudes de fichas del catálogo: una por id, por sala y por lote de salas. |
-| `python -m bench.bench_ir_a` | Cálculo de la ruta de «ir a» con todo el mapa conocido (100 salas, p99 <= 5 ms) y, como información, el paso completo y 500 y 1000 salas. |
+| `python -m bench.bench_ir_a` | Cálculo de la ruta de «ir a» con todo el mapa conocido (300 salas, p99 <= 5 ms) y, como información, el paso completo y 100, 500 y 1000 salas. |
+| `python -m bench.bench_solvabilidad` | Verificación de resolubilidad: una cripta con la forma de la mayor publicada (300 salas, 4 llaves, máximo <= 200 ms) y el crecimiento con llaves encadenadas contra la alternativa de una pasada completa por llave. |
 | `python -m bench.bench_replay` | Bitácora de partida: anotar con y sin flush, leer, reejecutar y copiar el estado. |
 
 Los benchmarks usan `time`, `gc`, `tracemalloc`, `copy`, `json` y `tempfile` únicamente para medir
@@ -147,7 +167,8 @@ El programa crea estas carpetas y archivos al ejecutarse (todos se pueden borrar
 | `saves/partida_<cripta>_<semilla>.log` | Bitácora de la partida (texto, un comando por línea, más comentarios `# ir a <id>`) para `--replay`. |
 | `saves/puntajes.txt` | Tabla de puntajes local, una línea por partida terminada. |
 | `cache/catalogo/` | Fichas del catálogo descargadas (un `.json` por ficha) y `version.txt`. Si cambia la versión del catálogo, se borra y se vuelve a descargar. |
-| `offline/` | Paquete de respuestas para `--offline`. Se genera con `python grabar_offline.py`. Está incluido en el repositorio. |
+| `cache/llaves/` | Ubicación de las llaves de cada cripta (`<cripta>.json`, con la versión de la cripta para la que se obtuvo). Se vuelve a pedir si cambia la versión. |
+| `offline/` | Paquete de respuestas para `--offline`, con `llaves.json` por cripta. Se genera con `python grabar_offline.py`, que deja solo las criptas que el servicio lista. Está incluido en el repositorio. |
 
 Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
 
