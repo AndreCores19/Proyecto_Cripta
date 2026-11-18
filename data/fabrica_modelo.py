@@ -134,7 +134,21 @@ class FabricaModelo:
         jugador = self.crear_jugador(sala_inicial)
         partida = Partida(jugador, semilla, sala_salida)
         partida.creador_objetos = self.objeto_desde_id
+        partida.salas = self.repo_cripta.salas        #para el registro de estado (línea de tiempo)
+        partida.fabrica = self
         return partida
+
+    #población (la lee y la restaura el registro de estado de la línea de tiempo)
+    def esta_poblada(self, sala):
+        if self.pobladas is None:
+            return False
+        return self.pobladas[self.repo_cripta.salas.posicion(sala.id)]
+
+    def restaurar_poblacion(self, siguiente_instancia, ids_pobladas):
+        self.iniciar()
+        self.siguiente_instancia = siguiente_instancia
+        for id_sala in ids_pobladas:
+            self.pobladas[self.repo_cripta.salas.posicion(id_sala)] = True
 
     def marcar_en_uso(self, ids):
         self.repo_catalogo.marcar_en_uso(ids)

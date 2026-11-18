@@ -14,6 +14,14 @@ RASTRO_VIGENCIA = 400
 
 class Partida:
     def __init__(self, jugador, semilla=None, sala_salida=None):
+        self._iniciar_campos(jugador, semilla, sala_salida)
+        jugador.evento = self.agenda.programar(0, "accion", jugador)
+        self._entrar_en_sala(jugador.sala)
+        self._explorar(jugador.sala)             #fuera de todo marco del historial: nunca se deshace
+        self.avanzar_hasta_jugador()
+
+    def _iniciar_campos(self, jugador, semilla, sala_salida):
+        #los campos de una partida, sin programar nada ni entrar en ninguna sala
         if semilla is None:
             semilla = random.SystemRandom().randrange(2 ** 32)
         self.semilla = semilla
@@ -36,10 +44,15 @@ class Partida:
         self.conocidas = []                      #salas con conocimiento > 0, en orden de descubrimiento
         self.retrocesos = 0                      #cuántos retrocesos van; fuera del historial a propósito
         jugador.inventario.historial = self.historial
-        jugador.evento = self.agenda.programar(0, "accion", jugador)
-        self._entrar_en_sala(jugador.sala)
-        self._explorar(jugador.sala)             #fuera de todo marco del historial: nunca se deshace
-        self.avanzar_hasta_jugador()
+        self.salas = None        #el vector de salas del mundo, si lo hay (lo lee el registro de estado)
+        self.fabrica = None      #quien pobló las salas y lleva el contador de instancias, si lo hay
+
+    @classmethod
+    def desde_registro(cls, registro, mundo):
+        #arma una partida a partir de un registro de estado, SIN los efectos del constructor:
+        #no programa ningún evento ni entra en ninguna sala (todo eso ya está en el registro)
+        from model.registro_estado import restaurar
+        return restaurar(registro, mundo)
 
     #historial
     @contextmanager
@@ -326,10 +339,16 @@ class Partida:
                 and self.jugador.sala is self.sala_salida
                 and self.abrio_puerta_salida)
 
-    def avanzar_hasta_jugador(self):
+    def avanzar_hasta_jugador(self, limite=None):
+        #limite: si no es None, no se extrae ningún evento con tiempo > limite (la consulta
+        #del historial se detiene ahí); los de tiempo <= limite corren todos, sea cual sea su num_sec
         if not self.terminada and self.jugador.evento.pos < 0:
             raise RuntimeError("El jugador no tiene una acción programada")
         while not self.terminada:
+            if limite is not None:
+                siguiente = self.agenda.proximo()
+                if siguiente is None or siguiente.tiempo > limite:
+                    break
             ev = self.agenda.extraer()
             if ev is None:
                 break

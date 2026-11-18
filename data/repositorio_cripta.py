@@ -17,6 +17,64 @@ def direccion_opuesta(direccion):
         return "E"
     return None
 
+def construir_grafo(dtos):
+    #esqueleto puro: arma un grafo nuevo de salas y lo devuelve; no escribe en ningún repositorio
+    vector = VectorBusqueda()
+    creadas = []
+
+    ## Primer ciclo crea las salas
+    for dto in dtos:
+        sala = Sala(dto.id_sala, dto.nombre)
+        vector.agregar(dto.id_sala, sala)
+        creadas.append(sala)
+
+    vector.preparar()
+
+    ## Segundo ciclo enlaza las salidas
+    for i in range(len(dtos)):
+        dto = dtos[i]
+        origen = creadas[i]
+        for salida_dto in dto.salidas:
+            destino = vector.buscar(salida_dto.id_destino)
+            if destino is None:
+                raise ValueError(
+                    f"La sala {dto.id_sala} tiene una salida {salida_dto.direccion} "
+                    f"hacia la sala {salida_dto.id_destino}, que no existe"
+                )
+            origen.agregar_salida(Salida(
+                direccion=salida_dto.direccion,
+                destino=destino,
+                cerrada=salida_dto.cerrada,
+                llave=salida_dto.llave,
+                cierre_automatico=salida_dto.cierre_automatico,
+                costo=salida_dto.costo,
+            ))
+    ## tercer ciclo enlaza las salidas opuestas
+    for sala in creadas:
+        for salida in sala.salidas:
+            if salida.opuesta is not None:
+                continue
+            otra = salida.destino.salida(direccion_opuesta(salida.direccion))
+            if otra is None:
+                continue
+            if otra.destino is not sala:
+                raise ValueError(
+                    f"Puerta inconsistente: la salida {salida.direccion} de la sala "
+                    f"{sala.id} va a la sala {salida.destino.id}, pero la salida "
+                    f"{otra.direccion} de esa sala va a la sala {otra.destino.id}"
+                )
+            if (salida.costo_declarado is not None
+                    and otra.costo_declarado is not None
+                    and salida.costo_declarado != otra.costo_declarado):
+                raise ValueError(
+                    f"Puerta inconsistente: la salida {salida.direccion} de la sala "
+                    f"{sala.id} cuesta {salida.costo_declarado}, pero la salida "
+                    f"{otra.direccion} de la sala {salida.destino.id} "
+                    f"cuesta {otra.costo_declarado}"
+                )
+            salida.enlazar(otra)
+    return vector
+
 class RepositorioCripta:
     def __init__(self, fuente):
         self.fuente = fuente
@@ -42,62 +100,11 @@ class RepositorioCripta:
         return salas
 
     def construir_salas(self, dtos):
-        vector = VectorBusqueda()
-        creadas = []
-
-        ## Primer ciclo crea las salas
-        for dto in dtos:
-            sala = Sala(dto.id_sala, dto.nombre)
-            vector.agregar(dto.id_sala, sala)
-            creadas.append(sala)
-
-        vector.preparar()
+        vector = construir_grafo(dtos)
         self.contenidos = [None] * vector.tamano()
-
-        ## Segundo ciclo enlaza las salidas
-        for i in range(len(dtos)):
-            dto = dtos[i]
-            origen = creadas[i]
-            for salida_dto in dto.salidas:
-                destino = vector.buscar(salida_dto.id_destino)
-                if destino is None:
-                    raise ValueError(
-                        f"La sala {dto.id_sala} tiene una salida {salida_dto.direccion} "
-                        f"hacia la sala {salida_dto.id_destino}, que no existe"
-                    )
-                origen.agregar_salida(Salida(
-                    direccion=salida_dto.direccion,
-                    destino=destino,
-                    cerrada=salida_dto.cerrada,
-                    llave=salida_dto.llave,
-                    cierre_automatico=salida_dto.cierre_automatico,
-                    costo=salida_dto.costo,
-                ))
-        ## tercer ciclo enlaza las salidas opuestas
-        for sala in creadas:
-            for salida in sala.salidas:
-                if salida.opuesta is not None:
-                    continue
-                otra = salida.destino.salida(direccion_opuesta(salida.direccion))
-                if otra is None:
-                    continue
-                if otra.destino is not sala:
-                    raise ValueError(
-                        f"Puerta inconsistente: la salida {salida.direccion} de la sala "
-                        f"{sala.id} va a la sala {salida.destino.id}, pero la salida "
-                        f"{otra.direccion} de esa sala va a la sala {otra.destino.id}"
-                    )
-                if (salida.costo_declarado is not None
-                        and otra.costo_declarado is not None
-                        and salida.costo_declarado != otra.costo_declarado):
-                    raise ValueError(
-                        f"Puerta inconsistente: la salida {salida.direccion} de la sala "
-                        f"{sala.id} cuesta {salida.costo_declarado}, pero la salida "
-                        f"{otra.direccion} de la sala {salida.destino.id} "
-                        f"cuesta {otra.costo_declarado}"
-                    )
-                salida.enlazar(otra)
         self.salas = vector
+
+    construir_grafo = staticmethod(construir_grafo)
 
     def precargar(self, id_sala):
         if self.contenidos is None:

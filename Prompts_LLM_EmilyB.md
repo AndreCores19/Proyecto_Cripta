@@ -595,3 +595,65 @@ Report what you changed in spec.md separately from the rest.
 - Herramienta: Claude
 - Prompt: /speckit-implement Phase 1 only (T001–T003). Do not commit.
 - Uso: implementar la Fase 1 de tasks.md (T001 a T003) sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Update DECISIONES.md:
+1. Keep Andrea's content unchanged, but renumber it to match the assignment's section 5: her "ir a" sections become 5.3 (with the "ir a" performance part as subsection 5.3.1) and her solvability section becomes 5.4. Change the document title to a general one for part two.
+2. Add my sections in numerical order:
+   - 5.1 (hunter route) and 5.2 (route invalidation).
+   - 5.5 (timeline): only a placeholder heading; I will fill it later.
+   - 5.6 (review of part-one decisions): write the event agenda part now, from the 001 and 002 measurements, and leave a placeholder subsection for the undo history, which will be reviewed in spec 005.
+3. Use only what is in specs/001-exit-costs and specs/002-hunter-enemy (plan.md, research.md and the benchmark output files). Follow the same style as Andrea's sections: decision, why the alternatives were rejected, complexity, empirical evidence with the real numbers and the file they come from, and known limits. Say whether each final decision matches the original plan.md and, if not, which measurement changed it.
+Write in Spanish. Do not invent numbers. Do not commit.
+- Uso: redactar DECISIONES.md, manteniendo el contenido de Andrea pero renumerándolo para que coincida con la sección 5 del enunciado, agregando mis secciones en orden numérico, usando solo lo que está en specs/001-exit-costs y specs/002-hunter-enemy, siguiendo el mismo estilo que las secciones de Andrea, y escribiendo en español sin inventar números ni hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-implement Phase 2 only (T004–T010). Do not commit.
+- Uso: implementar la Fase 2 de tasks.md (T004 a T010) sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
