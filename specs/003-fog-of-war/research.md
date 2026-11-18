@@ -1,6 +1,6 @@
 # Research: Fog of War and Automatic Travel
 
-Each entry: decision, rationale, alternatives considered. No open `NEEDS CLARIFICATION`; the four
+Each entry: decision, rationale, alternatives considered. No open `NEEDS CLARIFICATION`; the five
 points that need the spec are in `plan.md` ("Points for the spec").
 
 ## R1. Where the player's knowledge lives

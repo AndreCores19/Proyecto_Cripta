@@ -258,7 +258,7 @@ exploration and door memory work in `Partida.mover`.
 (the largest published crypt, cripta-06) with costs from the same set as `bench_cazador`,
 all rooms explored and all doors remembered open, seeded; the player and the destination are drawn
 per repetition from the seeded generator, far apart. It measures `RutaConocida.siguiente_paso` alone
-(microseconds, 2000 repetitions) and, for information, a whole step (route plus move plus event
+(microseconds; 2000 repetitions for 100 and 300 rooms, 300 for 500 and 1000 rooms) and, for information, a whole step (route plus move plus event
 cycle). Verdict: the 99th percentile of the route computation with 300 rooms is ≤ 5 ms; the maximum is
 printed. Repeated for 100, 500 and 1000 rooms, as information. The first measurement with 300 rooms was above
 the wanted margin, so the heap comparisons and the route loop were optimized; before and after numbers are in
