@@ -184,6 +184,12 @@ class Partida:
             if salida.destino.conocimiento < AVISTADA:
                 self._subir(salida.destino, AVISTADA)
 
+    def _explorar_vecinas(self, sala):
+        #la antorcha: explora a cada vecina por cualquier salida, sin entrar en ella;
+        #solo lee el esqueleto (nombre y salidas), no activa enemigos ni trampas ni baja contenido
+        for salida in sala.salidas:
+            self._explorar(salida.destino)
+
     def _memorizar_puertas(self, sala):
         #anota el estado real de las puertas de `sala` en las dos caras de cada una
         for salida in sala.salidas:
@@ -221,6 +227,8 @@ class Partida:
             self.historial.asignar(self.jugador, "sala", salida.destino)
             self._entrar_en_sala(salida.destino)
             self._explorar(salida.destino)
+            if self.jugador.efecto_activo("antorcha") is not None:
+                self._explorar_vecinas(salida.destino)
             if self.efectos.activar_trampas(salida.destino):
                 return True                      #el jugador se murió en una trampa
             if self._hay_victoria():
