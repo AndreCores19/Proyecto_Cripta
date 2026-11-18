@@ -219,11 +219,13 @@ def test_si_la_consulta_de_llaves_falla_se_muestra_el_error_no_hay_veredicto_y_e
 class FuenteDeCripta:
     """Cliente falso que cuenta datos, páginas del esqueleto y la consulta de llaves en un solo contador."""
 
-    def __init__(self, presupuesto):
+    def __init__(self, presupuesto, sala_llave=1):
         self.solicitudes = 0
         self.presupuesto = presupuesto
+        self.sala_llave = sala_llave            # 1: la cripta se puede ganar; 3: la llave está tras su propia puerta
         self.paginas_pedidas = 0
         self.llaves_pedidas = 0
+        self.otras_pedidas = []                 # lo que no debería pedirse: contenido, catálogo
 
     def asignar_presupuesto(self, n):
         self.presupuesto = n
@@ -252,10 +254,22 @@ class FuenteDeCripta:
             salas = [{"id": 3, "nombre": "S3", "salidas": {"O": {"sala": 2, "cerrada": True, "llave": "k"}}}]
         return {"pagina": pagina, "total_paginas": 2, "salas": salas}
 
+    def contenido_salas(self, id_cripta, ids):
+        self.otras_pedidas.append("contenido")
+        raise AssertionError("--verificar no baja el contenido de las salas")
+
+    def catalogo(self, ids):
+        self.otras_pedidas.append("catalogo")
+        raise AssertionError("--verificar no pide el catálogo")
+
+    def version_catalogo(self):
+        self.otras_pedidas.append("version_catalogo")
+        raise AssertionError("--verificar no pide la versión del catálogo")
+
     def llaves(self, id_cripta):
         self._contar()
         self.llaves_pedidas += 1
-        return {"llaves": [{"id": "k", "sala": 1}]}
+        return {"llaves": [{"id": "k", "sala": self.sala_llave}]}
 
 
 class AppConRepos:
@@ -372,3 +386,87 @@ def test_main_acepta_forzar_y_se_lo_pasa_a_jugar(monkeypatch):
 def test_main_sin_forzar_juega_con_forzar_falso(monkeypatch):
     """FR-015 · sin la opción, una cripta no resoluble no arranca"""
     assert _correr_main(monkeypatch, ["cripta-x", "--offline"]) == [False]
+
+
+# --- --verificar (T027) -----------------------------------------------------------------------------
+
+def _prohibir_vistas(monkeypatch):
+    import view.vista_consola
+    import view.vista_silenciosa
+
+    def prohibido(self, *args, **kwargs):
+        raise AssertionError("vista instanciada en --verificar")
+
+    for modulo in (view.vista_consola, view.vista_silenciosa):
+        for nombre in dir(modulo):
+            clase = getattr(modulo, nombre)
+            if isinstance(clase, type) and clase.__module__ == modulo.__name__:
+                monkeypatch.setattr(clase, "__init__", prohibido)
+
+
+def test_verificar_imprime_el_reporte_sin_bajar_contenido_ni_catalogo_y_sale_con_0_si_se_puede_ganar(
+        tmp_path, monkeypatch, capsys):
+    """FR-017 · US6-1: cripta resoluble"""
+    from aplicacion import verificar_cripta
+    monkeypatch.chdir(tmp_path)
+    cliente = FuenteDeCripta(presupuesto=10)
+    assert verificar_cripta("http://servicio/v1", "cripta-x", cliente) == 0
+    salida = capsys.readouterr().out
+    assert "Verificación de cripta-x: se puede ganar." in salida
+    assert "Orden de llaves:" in salida and "  1. k" in salida
+    assert cliente.otras_pedidas == []                                    # ni contenido ni catálogo
+    assert cliente.paginas_pedidas == 2 and cliente.llaves_pedidas == 1    # esqueleto una vez y una consulta de llaves
+    assert "Solicitudes realizadas: 4 de 10" in salida
+
+
+def test_verificar_sale_con_1_si_la_cripta_no_se_puede_ganar_e_imprime_el_reporte(tmp_path, monkeypatch, capsys):
+    """FR-017 · US6-1: cripta no resoluble"""
+    from aplicacion import verificar_cripta
+    monkeypatch.chdir(tmp_path)
+    assert verificar_cripta("http://servicio/v1", "cripta-x", FuenteDeCripta(presupuesto=10, sala_llave=3)) == 1
+    salida = capsys.readouterr().out
+    assert "Verificación de cripta-x: NO se puede ganar." in salida
+    assert "Ciclo:" in salida
+
+
+def test_verificar_sale_con_1_si_un_error_de_comunicacion_termina_la_ejecucion(tmp_path, monkeypatch, capsys):
+    """FR-017, FR-022 · presupuesto agotado en la consulta de llaves"""
+    from aplicacion import verificar_cripta
+    monkeypatch.chdir(tmp_path)
+    assert verificar_cripta("http://servicio/v1", "cripta-x", FuenteDeCripta(presupuesto=3)) == 1
+    salida = capsys.readouterr().out
+    assert "Error de comunicación con el servicio:" in salida and "Verificación de" not in salida
+
+
+def test_verificar_no_instancia_ninguna_clase_de_la_vista(tmp_path, monkeypatch, capsys):
+    """FR-017 · US6-2 (Constitución III)"""
+    from aplicacion import verificar_cripta
+    monkeypatch.chdir(tmp_path)
+    _prohibir_vistas(monkeypatch)
+    assert verificar_cripta("http://servicio/v1", "cripta-x", FuenteDeCripta(presupuesto=10)) == 0
+    assert "se puede ganar" in capsys.readouterr().out
+
+
+def test_main_con_verificar_llama_a_verificar_cripta_termina_con_su_estado_y_no_juega(monkeypatch):
+    """FR-017 · main --verificar CRIPTA, también con --offline"""
+    import sys
+
+    import main
+
+    llamadas, jugadas = [], []
+
+    class AplicacionEspia:
+        def __init__(self, *args):
+            jugadas.append("creada")
+
+    def falsa(url, id_cripta, cliente):
+        llamadas.append((url, id_cripta, type(cliente).__name__))
+        return 1
+
+    monkeypatch.setattr(main, "Aplicacion", AplicacionEspia)
+    monkeypatch.setattr(main, "verificar_cripta", falsa)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--verificar", "cripta-x", "--offline"])
+    with pytest.raises(SystemExit) as salida:
+        main.main()
+    assert salida.value.code == 1
+    assert llamadas == [(main.URL, "cripta-x", "ClienteOffline")] and jugadas == []

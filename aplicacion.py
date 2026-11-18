@@ -14,10 +14,30 @@ from service.verificacion_service import VerificacionService
 from structures.cache_fichas import CacheFichas
 from view.vista_consola import VistaConsola
 from adapters.salida_replay import imprimir_final_replay, imprimir_reporte
+from adapters.salida_verificacion import imprimir_reporte_verificacion
 from pathlib import Path
 from adapters.guardado_binario import GuardadoBinario, ErrorGuardado
 from view.vista_silenciosa import VistaSilenciosa
 from data.tabla_puntajes import TablaPuntajes, Puntaje
+
+def verificar_cripta(url, id_cripta, cliente):
+    """--verificar: solo la verificación, sin vista, sin catálogo y sin juego (FR-017). Devuelve el estado de salida.
+
+    Baja los datos y el esqueleto de la cripta una vez y pregunta (o lee lo guardado) las llaves; 0 si se puede
+    ganar, 1 si no se puede o si un error de comunicación termina la ejecución.
+    """
+    try:
+        repo = RepositorioCripta(cliente)
+        repo.construir_salas(repo.cargar_esqueleto(id_cripta))
+        servicio = VerificacionService(repo, RepositorioLlaves(cliente, AlmacenLlaves("cache/llaves")))
+        reporte = servicio.verificar()
+    except (ErrorCliente, ErrorOffline) as error:
+        print(f"Error de comunicación con el servicio: {error}")
+        return 1
+    imprimir_reporte_verificacion(reporte)
+    print(f"Solicitudes realizadas: {cliente.solicitudes_realizadas()} de {repo.datos.presupuesto_solicitudes}")
+    return 0 if reporte.resoluble else 1
+
 
 ## La clase aplicacion arma todas las piezas y permite jugar o reproducir una partida grabada.
 class Aplicacion:

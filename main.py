@@ -1,6 +1,6 @@
 import sys
 import argparse
-from aplicacion import Aplicacion
+from aplicacion import Aplicacion, verificar_cripta
 from adapters.lector_bitacora import LectorBitacora, ErrorBitacora
 
 URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
@@ -16,6 +16,8 @@ def main():
                         help="ejecuta los benchmarks y termina")
     parser.add_argument("--offline", action="store_true",
                         help="usa el paquete de respuestas de offline/ en vez de la red")
+    parser.add_argument("--verificar", metavar="CRIPTA",
+                        help="verifica si la cripta se puede ganar, imprime el reporte y termina")
     parser.add_argument("--forzar", action="store_true",
                         help="juega aunque la cripta no se pueda ganar")
     args = parser.parse_args()
@@ -46,6 +48,8 @@ def main():
         cliente = ClienteOffline("offline")
     else:
         cliente = ClienteHttp(URL, timeout=10)
+    if args.verificar:
+        sys.exit(verificar_cripta(URL, args.verificar, cliente))
     if args.replay:
         lector = LectorBitacora(args.replay)
         try:
