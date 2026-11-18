@@ -605,7 +605,8 @@ Report what you changed in spec.md separately from the rest.
    - 5.5 (timeline): only a placeholder heading; I will fill it later.
    - 5.6 (review of part-one decisions): write the event agenda part now, from the 001 and 002 measurements, and leave a placeholder subsection for the undo history, which will be reviewed in spec 005.
 3. Use only what is in specs/001-exit-costs and specs/002-hunter-enemy (plan.md, research.md and the benchmark output files). Follow the same style as Andrea's sections: decision, why the alternatives were rejected, complexity, empirical evidence with the real numbers and the file they come from, and known limits. Say whether each final decision matches the original plan.md and, if not, which measurement changed it.
-Write in Spanish. Do not invent numbers. Do not commit.
+4. Before writing each claim, check it against the actual code and the committed files: class, method and file names, the default mode of the hunter search, and every number. Read the relevant code (structures/, model/ and bench/) instead of trusting plan.md alone. If plan.md and the code disagree, follow the code and mention the difference. At the end, list each number you used with the file it came from, so I can verify it.
+5Write in Spanish. Do not invent numbers. Do not commit.
 - Uso: redactar DECISIONES.md, manteniendo el contenido de Andrea pero renumerándolo para que coincida con la sección 5 del enunciado, agregando mis secciones en orden numérico, usando solo lo que está en specs/001-exit-costs y specs/002-hunter-enemy, siguiendo el mismo estilo que las secciones de Andrea, y escribiendo en español sin inventar números ni hacer commit
 
 ### 18 de Noviembre, 2026
@@ -615,18 +616,18 @@ Write in Spanish. Do not invent numbers. Do not commit.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: /speckit-implement Phase 3 only (T011–T015). Write each test and see it fail before writing the code. Do not commit.
+- Uso: implementar la Fase 3 de tasks.md (T011 a T015), escribiendo cada prueba y viéndola fallar antes de escribir el código, sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: In DECISIONES.md, sections 5.1, 5.2 and 5.6: write every benchmark file reference with its full path (for example specs/002-hunter-enemy/bench-cazador.txt), because spec 003 has files with the same names. In the introduction, change "y a [specs/004" to "y en [specs/004". Do not commit.
+- Uso: cambiar en DECISIONES.md, secciones 5.1, 5.2 y 5.6, cada referencia a un archivo de benchmark por su ruta completa, y en la introducción cambiar "y a [specs/004" por "y en [specs/004", sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: Yes, add the specs/003-fog-of-war/ prefix to that reference in 5.3. Do not change anything else in Andrea's sections. Do not commit.
+- Uso: agregar el prefijo specs/003-fog-of-war/ a esa referencia en la sección 5.3 de DECISIONES.md, sin cambiar nada más en las secciones de Andrea y sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
