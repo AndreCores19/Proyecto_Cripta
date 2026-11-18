@@ -1,8 +1,30 @@
+--- corrida 1 ---
 Benchmark de «ir a» (semilla 1; microsegundos; promedio, p99 y máximo)
  salas   reps             prom       p99       max                      prom       p99       max
-   100   2000   ruta     341.7    1053.1    1646.5   paso completo     709.6    2197.3    3027.7
-   500    300   ruta    2450.2    7791.1    8244.3   paso completo    2608.5    7294.0    8250.4
-  1000    300   ruta    5674.6   15384.5   16063.8   paso completo    6950.2   24814.1   38170.7
+   300   2000   ruta     866.7    2740.1    9626.3   paso completo     854.2    2472.1    3783.7
+   100   2000   ruta     304.4     954.8    2154.4   paso completo     322.9    1034.8    1601.4
+   500    300   ruta    1476.3    4399.5    5265.6   paso completo    1621.3    4777.5    5145.5
+  1000    300   ruta    3027.1    9018.6   10845.3   paso completo    3290.3    9021.6    9991.9
 
-Veredicto con 100 salas: p99 de la ruta = 1.053 ms, máximo = 1.647 ms; límite p99 <= 5 ms: cumple
-(el paso completo y los tamaños de más salas son solo informativos)
+Veredicto con 300 salas: p99 de la ruta = 2.740 ms, máximo = 9.626 ms; límite p99 <= 5 ms: cumple
+(el paso completo y los demás tamaños son solo informativos)
+--- corrida 2 ---
+Benchmark de «ir a» (semilla 1; microsegundos; promedio, p99 y máximo)
+ salas   reps             prom       p99       max                      prom       p99       max
+   300   2000   ruta     850.7    2990.5    5895.5   paso completo     949.5    2982.3    4517.0
+   100   2000   ruta     256.5     956.9    1831.1   paso completo     443.6    1378.3   17783.8
+   500    300   ruta    1522.8    4816.8    6027.7   paso completo    1490.5    5039.5    5255.8
+  1000    300   ruta    3245.2    8580.7   10003.0   paso completo    3376.8    9346.1   10999.2
+
+Veredicto con 300 salas: p99 de la ruta = 2.991 ms, máximo = 5.896 ms; límite p99 <= 5 ms: cumple
+(el paso completo y los demás tamaños son solo informativos)
+--- corrida 3 ---
+Benchmark de «ir a» (semilla 1; microsegundos; promedio, p99 y máximo)
+ salas   reps             prom       p99       max                      prom       p99       max
+   300   2000   ruta     799.7    2644.8    4105.5   paso completo     873.4    2621.8    3891.1
+   100   2000   ruta     415.6    1744.9   15534.9   paso completo     317.5    1039.4    1822.3
+   500    300   ruta    1410.8    4111.3    4275.4   paso completo    1506.6    4161.0    6622.3
+  1000    300   ruta    3231.8    9293.9   13640.0   paso completo    3417.5    8657.3   10539.1
+
+Veredicto con 300 salas: p99 de la ruta = 2.645 ms, máximo = 4.105 ms; límite p99 <= 5 ms: cumple
+(el paso completo y los demás tamaños son solo informativos)

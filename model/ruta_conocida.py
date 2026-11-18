@@ -1,5 +1,6 @@
 from model.ruta_cazador import Busqueda
 from model.sala_logica import ABIERTA, EXPLORADA
+from model.tiempo_logica import COSTO_MOVER
 from structures.monticulo import MonticuloMinimo
 
 
@@ -42,9 +43,18 @@ class RutaConocida:
                 break
             for entrada in sala.entradas:
                 origen = entrada.origen
-                if origen.conocimiento != EXPLORADA or partida.puerta_recordada(entrada) != ABIERTA:
+                if origen.conocimiento != EXPLORADA:
                     continue
-                nd = d + entrada.costo
+                #como partida.puerta_recordada(entrada) != ABIERTA, sin la llamada en el ciclo caliente
+                if origen is aqui or sala is aqui:
+                    if entrada.cerrada:
+                        continue
+                elif entrada.memoria != ABIERTA:
+                    continue
+                costo = entrada.costo_declarado          #como Salida.costo, sin la llamada a la propiedad
+                nd = d + (costo if costo is not None else COSTO_MOVER)
+                if aqui.busq_marca == estampa and nd >= aqui.busq_dist and origen is not aqui:
+                    continue                 #no puede estar en una ruta mejor que la ya hallada hasta el jugador
                 if origen.busq_marca != estampa or nd < origen.busq_dist:
                     origen.busq_marca = estampa
                     origen.busq_dist = nd

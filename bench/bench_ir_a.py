@@ -2,7 +2,7 @@
 
 Todo es local y sembrado con random.Random(semilla): sin red y sin dibujar nada.
 El veredicto es el percentil 99 del cálculo de la ruta (RutaConocida.siguiente_paso solo)
-con 100 salas, que debe ser <= 5 ms; también se imprime el máximo. El paso completo
+con 300 salas (la cripta publicada más grande), que debe ser <= 5 ms; también se imprime el máximo. El paso completo
 (ruta, movimiento y ciclo de eventos) y los tamaños de 500 y 1000 salas son informativos.
 """
 import gc
@@ -28,7 +28,7 @@ class Config:
         self.tamanos = tamanos
 
 
-NORMAL = Config(((100, 2000), (500, 300), (1000, 300)))
+NORMAL = Config(((300, 2000), (100, 2000), (500, 300), (1000, 300)))
 PEQUENO = Config(((30, 30), (60, 10)))
 
 
@@ -155,7 +155,7 @@ def ejecutar(pequeno=False):
     cumple = "cumple" if p99_ms <= LIMITE_MS else "NO cumple"
     print(f"\nVeredicto con {salas} salas: p99 de la ruta = {p99_ms:.3f} ms, máximo = {ruta[2] / 1000:.3f} ms; "
           f"límite p99 <= {LIMITE_MS} ms: {cumple}")
-    print("(el paso completo y los tamaños de más salas son solo informativos)")
+    print("(el paso completo y los demás tamaños son solo informativos)")
 
 
 if __name__ == "__main__":

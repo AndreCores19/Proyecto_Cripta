@@ -20,16 +20,21 @@ class MonticuloMinimo:
         return a[1] < b[1]
 
     def insertar(self, prioridad, valor):
-        self.nodos.append((prioridad, self.secuencia, valor))
+        nodos = self.nodos
+        nodo = (prioridad, self.secuencia, valor)
         self.secuencia += 1
-        i = len(self.nodos) - 1
+        nodos.append(nodo)
+        i = len(nodos) - 1
         while i > 0:
             padre = (i - 1) // 2
-            if self._antes(self.nodos[i], self.nodos[padre]):
-                self.nodos[i], self.nodos[padre] = self.nodos[padre], self.nodos[i]
+            p = nodos[padre]
+            #igual que _antes(nodo, p), escrito aquí para no llamar a un método en cada paso
+            if prioridad < p[0] or (not p[0] < prioridad and nodo[1] < p[1]):
+                nodos[i] = p
                 i = padre
             else:
                 break
+        nodos[i] = nodo
 
     def proximo(self):
         if not self.nodos:
@@ -37,26 +42,33 @@ class MonticuloMinimo:
         return (self.nodos[0][0], self.nodos[0][2])
 
     def extraer(self):
-        if not self.nodos:
+        nodos = self.nodos
+        if not nodos:
             return None
-        raiz = self.nodos[0]
-        ultimo = self.nodos.pop()
-        n = len(self.nodos)
+        raiz = nodos[0]
+        ultimo = nodos.pop()
+        n = len(nodos)
         if n > 0:
-            self.nodos[0] = ultimo
             i = 0
+            pr, sq = ultimo[0], ultimo[1]
             while True:
-                menor = i
                 izq = 2 * i + 1
-                der = izq + 1
-                if izq < n and self._antes(self.nodos[izq], self.nodos[menor]):
-                    menor = izq
-                if der < n and self._antes(self.nodos[der], self.nodos[menor]):
-                    menor = der
-                if menor == i:
+                if izq >= n:
                     break
-                self.nodos[i], self.nodos[menor] = self.nodos[menor], self.nodos[i]
-                i = menor
+                hijo = nodos[izq]
+                der = izq + 1
+                if der < n:
+                    h2 = nodos[der]
+                    #igual que _antes(h2, hijo)
+                    if h2[0] < hijo[0] or (not hijo[0] < h2[0] and h2[1] < hijo[1]):
+                        hijo, izq = h2, der
+                #igual que _antes(hijo, ultimo)
+                if hijo[0] < pr or (not pr < hijo[0] and hijo[1] < sq):
+                    nodos[i] = hijo
+                    i = izq
+                else:
+                    break
+            nodos[i] = ultimo
         return (raiz[0], raiz[2])
 
     def vaciar(self):
