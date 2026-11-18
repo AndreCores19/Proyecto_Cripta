@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Draft
+**Status**: Implemented (delivered 2026-11-17; every task of tasks.md done, suite and benchmarks recorded in this folder)
 
 **Input**: User description: "Fog of war and automatic travel ("ir a") for the Cripta game. Why: until now the player sees the whole map. We want the player to know only what they have explored, for the game to remember what they saw, and for them to be able to travel automatically within that knowledge without cheating. Room states from the player's point of view: Explored: the player has entered it at least once (the starting room is explored from time 0). The player knows its name, its exits, the cost of each exit, and the state of its doors as of the last observation. Sighted: not explored, but it is the destination of an exit of an explored room. The player only knows that a room exists behind that exit. Unknown: none of the above. The player knows nothing. Rules: Door memory: the player observes a door when they are in either of the two rooms it connects. The player's map remembers each door's state as it was at the last observation, even if it has changed since (for example, a door with automatic closing may appear open on the map while actually being closed). Lit torch (antorcha): while it is lit, entering a room also explores all of its neighbors, through any exit, open or closed. Exploring a neighbor this way reveals its name and exits, not its contents, and does not activate its enemies or traps. Everything the view shows and everything the "ir a" command uses must be derived only from the player's knowledge. Downloading the full skeleton is infrastructure and does not count as knowledge. The player's knowledge is game state: it is saved in the save file, it is reverted by the rollback scroll (pergamino de retroceso), and it is part of the timeline. The interface offers a command to view the known map: explored rooms, their exits, and sighted rooms. Command "ir a <room>": Takes the player to an explored room through ordinary moves. If the room is not explored, the command is rejected and consumes no time. The route uses only explored rooms and only exits the map remembers as open. It minimizes the sum of costs; ties are broken the same way as the hunter (first step toward the neighbor with the lowest id), as defined in spec 002. Each step is a complete player action: it consumes time according to the exit cost (spec 001), and clock events happen normally between steps. The route is recomputed before every step with the current knowledge. It never opens doors, even if the player has the key. The trip stops when: the player reaches the destination; enters a room containing enemies (active or asleep); takes damage; or no known route exists anymore. The view shows the reason. In the game log (partida.log) each step is recorded as an individual move, and the "ir a" order is also recorded as a comment. The rollback scroll reverts only the last step, and the trip does not continue. Performance requirement: computing one step of "ir a" with the full known map of the reference crypt takes at most 5 ms."
 
@@ -26,6 +26,11 @@
 - Q: How does the player name the room in "ir a"? → A: By its id only, as shown in the known map.
 - Q: Does the 5 ms limit of FR-026 apply to every computation or to a percentile? → A: To the 99th percentile of the measured computations; the maximum is reported for information and is not a limit (same convention as spec 002).
 - Q: Does the 5 ms limit of FR-026 cover only the route computation of a step, or the whole step? → A: Only the route computation. The time of the whole step (route, move and event cycle) is reported for information and is not a limit; the event cycle keeps its own 20 ms limit.
+
+### Session 2026-11-17
+
+- Q: In which order is a rewind checked against the other stop reasons? → A: This corrects the entry of 2026-11-12 ("..., no route, scroll"), whose order placed the scroll last. The order "end of the game, arrival, enemies in the room, damage, no route, scroll" applies to the reasons met by a step. A rewind that happened since the previous step is detected before the next step is taken and takes precedence over all of them: the trip stops with the scroll reason and takes no further step. The earlier entries are kept as they were; FR-022 carries the corrected rule.
+- Q: What happens if the route says a step exists but the move cannot be performed? → A: The trip stops with the reason "no known route" instead of looping or retrying. It is a guard that should never fire, because the route only uses exits that are open in the player's room; it is added as FR-028 and as scenario 11 of User Story 7.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -188,6 +193,7 @@ sleeping enemies, and the player is damaged, and check that each trip stops for 
 8. **Given** a trip whose next step has no known route, **When** the route is recomputed, **Then** the trip stops with that reason shown. *(FR-022, FR-023)*
 9. **Given** a trip during which the clock events change the state of the doors, **When** the next step is about to start, **Then** the route used is the one computed with the knowledge at that moment. *(FR-020)*
 10. **Given** a trip in which an enemy (for example a hunter) walks into the player's room during the clock events of a step, **When** the step finishes, **Then** the trip stops with the reason "enemies in the room", even though the player entered a room that had no enemies. *(FR-022, FR-023)*
+11. **Given** a trip whose route names an exit but the move through it is refused, **When** the step is attempted, **Then** the trip stops with the reason "no known route", takes no step, consumes no time and does not retry. *(FR-028, FR-022, FR-023)*
 
 ---
 
@@ -237,6 +243,8 @@ unusable.
 - "ir a" toward the room the player is already in: the trip ends as arrived, with no time consumed (US6-10).
 - "ir a" toward an unexplored room: rejected, no time consumed, recorded in the log only as a comment, never as a move (FR-016, FR-024).
 - The player has the key of a door the map remembers as closed: the trip does not open it (FR-021).
+- The route names an exit but the move is refused: the trip stops with "no known route" instead of looping (FR-028).
+- A scroll is read between two steps: the next step is not taken and the trip stops with the scroll reason, even if another reason would also apply (FR-022, FR-025).
 - The route becomes unavailable after the first step: the trip stops, and the time already consumed by the steps taken stays consumed (FR-022).
 - A scroll read after a trip reverts only its last step (FR-025).
 - The game is saved and loaded in the middle of the fog: knowledge is restored exactly (FR-012).
@@ -267,12 +275,13 @@ unusable.
 - **FR-019**: Each step of the trip MUST be a complete player action: it MUST consume time according to the cost of the exit crossed and the player's speed (spec 001), and the clock events MUST happen normally between steps.
 - **FR-020**: The route MUST be recomputed before every step, with the knowledge at that moment, including door observations made during previous steps.
 - **FR-021**: "ir a" MUST NOT open doors, even if the player has the key.
-- **FR-022**: The trip MUST stop when: the player reaches the destination; after a step there are living enemies in the player's room, active or asleep (whether the player entered their room or they arrived during the step); the player takes damage; or the game ends (victory or death); or no known route exists any more; or the player reads a rollback scroll (FR-025). A recomputation that finds no route MUST stop the trip without consuming extra time. When a step meets more than one of these reasons at once, the view MUST show only the first that applies in the order: end of the game, arrival, enemies in the room, damage, no route, scroll.
+- **FR-022**: The trip MUST stop when: the player reaches the destination; after a step there are living enemies in the player's room, active or asleep (whether the player entered their room or they arrived during the step); the player takes damage; or the game ends (victory or death); or no known route exists any more; or the player reads a rollback scroll (FR-025). A recomputation that finds no route MUST stop the trip without consuming extra time. When a step meets more than one of these reasons at once, the view MUST show only the first that applies in the order: end of the game, arrival, enemies in the room, damage, no route, scroll. That order applies to the reasons met by a step; a rewind that happened since the previous step MUST be detected before the next step is taken and takes precedence over the rest: the trip stops with the scroll reason and no further step is taken (clarification 2026-11-17).
 - **FR-023**: The view MUST show the reason why the trip stopped.
 - **FR-024**: In the game log each step of the trip MUST be recorded as an individual move, and the "ir a" order MUST also be recorded as a comment. A rejected order (FR-016) MUST be recorded as a comment too, with no move.
 - **FR-025**: The rollback scroll MUST revert only the last step of the trip, and the trip MUST NOT continue after it (a trip cannot be interrupted from the console, so this applies between two steps; a scroll read after a trip reverts only its last step): it stops with its own reason, rolled back by a scroll (FR-022, FR-023).
 - **FR-026**: Computing the route of one step of "ir a" with the full known map of the reference crypt MUST take at most 5 ms at the 99th percentile of the measured computations, measured locally and without network or rendering; the maximum MUST also be reported, for information, and is not a limit. The time of the whole step (route, move and event cycle) MUST also be reported, for information; it is not a limit, since the event cycle has its own limit (spec 002 FR-017). The reference crypt is the one defined in spec 002 FR-017.
 - **FR-027**: Any synthetic crypt used to measure FR-026 MUST be deterministic by seed: the same seed gives the same crypt.
+- **FR-028**: If the route computation names an exit but the move through it cannot be performed (the move is refused), the trip MUST stop with the reason "no known route" (FR-022, FR-023); it MUST NOT retry the move or loop, and the refused move consumes no time.
 
 ### Key Entities
 
@@ -308,6 +317,6 @@ unusable.
 - A door is observed continuously while the player is in either room it connects (FR-006), so a door that changes while the player waits is seen at once.
 - "Takes damage" in FR-022 covers any loss of life of the player during a step, whatever its cause (enemy attacks, traps).
 - The view of the current room, the known map and the stop reason are shown by the interface in the same language and style as the existing views; their exact wording is not fixed by this spec.
-- Reading the known map (FR-015) does not change the game state and is not recorded in the game log as a move.
+- Reading the known map (FR-015) does not change the game state. The `mapa` command is written to the game log as an ordinary command line, like `inv`, and replay executes it with no effect on the state (with no view it prints nothing). It is not a move and it is not an "ir a" comment.
 - Hunters keep the whole-map knowledge defined in spec 002; the fog of war applies only to the player.
 - The part-one rules for the activation of enemies, damage, traps and the rollback scroll apply as they are; this spec only adds what the scroll reverts (FR-013) and its effect on trips (FR-025).
