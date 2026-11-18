@@ -1,8 +1,21 @@
 """Salida de --replay mediante funciones simples (T035 · FR-014, Constitución III).
 
 Imprime el mismo texto que imprimía la antigua vista de replay. No importa nada de
-model/ ni de view/.
+model/ ni de view/. El resumen de `--hasta` usa las mismas líneas que el comando `historia` del juego
+(adapters/formato_historia.py, FR-014).
 """
+from adapters.formato_historia import lineas_historia
+
+
+def imprimir_historia(respuesta):
+    """El resumen de un `RespuestaHistoriaDTO` aceptado, con el mismo texto que la vista de consola."""
+    for linea in lineas_historia(respuesta.resumen):
+        print(linea)
+
+
+def imprimir_termino_antes(reloj_final):
+    """FR-015: el instante pedido es posterior al final de la partida reproducida."""
+    print(f"La partida terminó antes (instante {reloj_final}).")
 
 
 def imprimir_final_replay(resumen):

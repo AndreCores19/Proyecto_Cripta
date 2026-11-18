@@ -14,7 +14,8 @@ from service.juego_service import JuegoService
 from service.verificacion_service import VerificacionService
 from structures.cache_fichas import CacheFichas
 from view.vista_consola import VistaConsola
-from adapters.salida_replay import imprimir_final_replay, imprimir_reporte
+from adapters.salida_replay import (imprimir_final_replay, imprimir_historia, imprimir_reporte,
+                                    imprimir_termino_antes)
 from adapters.salida_verificacion import imprimir_reporte_verificacion
 from pathlib import Path
 from adapters.guardado_binario import GuardadoBinario, ErrorGuardado
@@ -40,19 +41,34 @@ def verificar_cripta(url, id_cripta, cliente):
     return 0 if reporte.resoluble else 1
 
 
-def _crear_servicio(app, partida):
+def _crear_servicio(app, partida, k=None):
     """El servicio con su línea de tiempo: se arma igual al jugar, al cargar y en --replay (FR-017, FR-019).
 
+    `k`: el K de una partida cargada; si es None, el de `--checkpoint-cada` y, sin la opción, el por defecto.
     Función de módulo y no método: las pruebas viejas llaman `_sesion` y `reproducir` con una app falsa."""
+    if k is None:
+        k = getattr(app, "checkpoint_cada", None)
     linea = LineaTiempoPartida()
-    linea.iniciar(partida, lambda: construir_grafo(app.dtos), getattr(app, "checkpoint_cada", None))
+    linea.iniciar(partida, lambda: construir_grafo(app.dtos), k)
     return JuegoService(partida, app.fabrica, linea_tiempo=linea)
+
+
+def k_para_carga(k_guardado, k_opcion):
+    """(K que se usa, aviso o None) al cargar una partida (FR-017, FR-019).
+
+    Gana el K guardado; si `--checkpoint-cada` se escribió (k_opcion no es None) con otro valor, se avisa.
+    Un archivo sin K (k_guardado None) usa el de la opción, o el por defecto si tampoco hay opción."""
+    if k_guardado is None:
+        return k_opcion, None
+    if k_opcion is not None and k_opcion != k_guardado:
+        return k_guardado, f"Se ignora --checkpoint-cada: esta partida se guardó con K={k_guardado}."
+    return k_guardado, None
 
 
 ## La clase aplicacion arma todas las piezas y permite jugar o reproducir una partida grabada.
 class Aplicacion:
     def __init__(self, url, id_cripta, tamano_cache=25, cliente=None, checkpoint_cada=None):
-        self.checkpoint_cada = checkpoint_cada     #K de la línea de tiempo; None = el K por defecto (se cablea en la fase 9)
+        self.checkpoint_cada = checkpoint_cada     #K de --checkpoint-cada; None = no se escribió (K por defecto)
         self.cliente = cliente if cliente is not None else ClienteHttp(url, timeout=10)
         self.nombre_jugador = "Jugador"
         self.repo_cripta = RepositorioCripta(self.cliente)
@@ -102,16 +118,20 @@ class Aplicacion:
     def _sesion(self, vista, ruta_carga):
         semilla = None
         comandos = []
+        k, aviso_k = None, None
         if ruta_carga is not None:
             guardado = GuardadoBinario()
             with open(ruta_carga, "rb") as archivo:
-                semilla = guardado.leer_cabecera(archivo).semilla
+                cabecera = guardado.leer_cabecera(archivo)
+            semilla = cabecera.semilla
+            #el K guardado gana (la cabecera v2 lo trae; Fase 8)
+            k, aviso_k = k_para_carga(getattr(cabecera, "k", None), getattr(self, "checkpoint_cada", None))
             comandos = guardado.leer_comandos(ruta_carga)
             self._reiniciar_salas()
 
         partida = self.fabrica.nueva_partida(semilla=semilla)
         partida.jugador.nombre = self.nombre_jugador
-        servicio = _crear_servicio(self, partida)
+        servicio = _crear_servicio(self, partida, k)
         servicio.actualizar_fichas()
         bitacora = BitacoraPartida("saves")
         controlador = Controlador(servicio, vista, bitacora, self)
@@ -120,6 +140,8 @@ class Aplicacion:
             bitacora.abrir(datos.id_cripta, datos.version,
                            self.repo_catalogo.version(), partida.semilla)
             self._reejecutar(controlador, vista, comandos)
+            if aviso_k is not None:
+                vista.mostrar_mensaje(aviso_k)       #al empezar la sesión cargada
             controlador.jugar()
         finally:
             bitacora.cerrar()
@@ -154,7 +176,9 @@ class Aplicacion:
             return "No se puede cargar: la partida es de otra cripta o versión."
         return None
 
-    def reproducir(self, lector):
+    def reproducir(self, lector, hasta=None):
+        """--replay; con `hasta` (entero >= 0) se detiene en cuanto el reloj llega a `hasta` y imprime el
+        resumen de ese instante desde la línea de tiempo, sin vista (FR-013..FR-016)."""
         if not self._versiones_coinciden(lector):
             print("No se puede garantizar una reproducción fiel: la versión de la "
                   "cripta o del catálogo cambió desde que se grabó el log.")
@@ -165,10 +189,17 @@ class Aplicacion:
         servicio.actualizar_fichas()
         controlador = Controlador(servicio, None, None, None, avisar=print)
         for comando in lector.comandos:
-            if servicio.terminada():
+            if servicio.terminada() or (hasta is not None and partida.reloj >= hasta):
                 break
             controlador.ejecutar(comando)
-        imprimir_final_replay(servicio.resumen_final())
+        if hasta is None:
+            imprimir_final_replay(servicio.resumen_final())
+        elif hasta <= partida.reloj:
+            imprimir_historia(servicio.historia_por_instante(hasta))
+        else:
+            #el log terminó antes del instante pedido: el estado final y el aviso (FR-015)
+            imprimir_historia(servicio.historia_por_instante(partida.reloj))
+            imprimir_termino_antes(partida.reloj)
         imprimir_reporte(
             self.cliente.solicitudes, self.cliente.presupuesto,
             self.repo_catalogo.aciertos_memoria + self.repo_catalogo.aciertos_disco,
