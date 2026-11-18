@@ -515,18 +515,83 @@ If any decision is no longer compared, restore the comparison. To keep it fast, 
 - Prompt: Replace the dict and the dict comprehension in bench/bench_agenda.py with lists, keeping the same output. Do not rerun the benchmarks. Run the tests that cover bench_agenda and report. Do not commit.
 - Uso: cambiar el dict y la comprensión de dict en bench/bench_agenda.py por listas, manteniendo la misma salida, sin volver a ejecutar los benchmarks, ejecutar las pruebas que cubren bench_agenda y reportar, sin hacer commit
 
-### 11 de Noviembre, 2026
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-specify Timeline. The undo scroll of part one stays limited to 5 actions. The timeline is independent: it lets the player consult, without modifying the game, the state at any instant since the start.
+
+State at instant t: the state after executing every event with time <= t. If a player decision corresponds to t, it is the state just before taking it.
+
+In-game query: "historia <t>" or "historia #k" (the state just before player action number k) shows at least: clock, player's room, life and stats, inventory, active effects, the enemies in that room with their life, and the known map (spec 003) at that moment. The query consumes no virtual time, is not an action, is not written to partida.log, and changes neither the game state nor the undo history. A query for an instant after the current clock is rejected.
+
+Non-interactive query: "--replay partida.log --hasta <t>" replays the game up to t and prints the same summary without creating the view. If t is after the end of the game, it prints the final state and says the game ended earlier.
+
+Undo: actions reverted with a scroll stop existing in the timeline; the timeline describes the game as it ended up. Using a scroll trims the timeline without walking the whole history.
+
+Memory: full copies of the state (checkpoints) are allowed, but at most one every K player actions. K is set with --checkpoint-cada K; the default is chosen by the group and justified with measurements. A query may not need to apply or undo the changes of more than K player actions. Outside checkpoints, only the information needed to rebuild the changes is stored: total memory grows with the number of changes plus one checkpoint every K actions, never with actions times state size. Finding the checkpoint nearest to a requested instant must stay cheap in long games. If reconstruction re-simulates, the checkpoint includes the state of the random generator.
+
+Persistence: saving and loading a game keeps the full timeline. The binary save format changes; a part-one save file is reported as incompatible, never loaded silently.
+
+Performance: a historia query takes at most 50 ms on a game of at least 5000 player actions with the default K, measured locally with --bench, without network or rendering, using the same percentile convention as the existing event-cycle benchmark. --bench measures memory and query time for at least three values of K and for the alternative with no checkpoints, and repeats the part-one undo-history measurements under the new load. Synthetic games are deterministic by seed. --bench and --replay do not create the view.
+
+Each of these Appendix B cases must be an acceptance scenario: historia <t> with t after the current clock is rejected; historia after using a scroll does not show the reverted actions; with several events at the same instant t, historia <t> shows the state after all of them; historia consumes no virtual time, is not written to partida.log and does not change the undo history; --replay partida.log --hasta t with t after the end of the game shows the final state and says the game ended earlier; loading a part-one save file reports the incompatibility and never loads silently.
+- Uso: hacer el spec de línea de tiempo, con la descripción del estado en un instante t, la consulta en el juego y fuera del juego, el deshacer con pergamino, la memoria, la persistencia y el rendimiento, y los escenarios de aceptación de los casos del Apéndice B
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Spec 002, FR-017: the course has published the reference crypt (offline/cripta-06, "Cripta de referencia", 300 rooms). Add task T061 to specs/002-hunter-enemy/tasks.md citing FR-017 and SC-007, then implement it:
+- In bench/bench_ciclo.py add a scenario that loads the cripta-06 skeleton from the offline package (no network), with its exit costs, and places 30 hunters deterministically by seed; also add a synthetic 300-room scenario with 30 hunters.
+- Run bench_ciclo three times and save the output to specs/002-hunter-enemy/bench-referencia.txt (p99, mean and worst).
+- Run tests/test_monticulo.py and every hunter test, since the heap was changed in spec 003, and report.
+Do not change any other measured number or file. Do not commit.
+- Uso: probar el benchmark de ciclo de eventos con la cripta de referencia (cripta-06) y 30 cazadores, agregando un escenario sintético de 300 salas con 30 cazadores, ejecutando bench_ciclo tres veces y guardando la salida en bench-referencia.txt, ejecutando las pruebas de montículo y todas las pruebas de cazador, y reportando los resultados, sin cambiar ningún otro número medido o archivo, y sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-plan Technical context and constraints for spec 005 (timeline):
+
+- Python 3.11+, pytest. Follow the constitution: no dict or set as index or cache, no heapq, bisect, collections. Any search over the timeline is our own code.
+- Preferred design, to be compared in research.md against the alternative of inverting changes backwards with the part-one undo history (structures/historial.py):
+  * Store, for each surviving player action, its number, its clock and what is needed to repeat it (the same data partida.log already records).
+  * Every K player actions, store a checkpoint: a full copy of the game state, including the random generator state and the player's known map (spec 003).
+  * To answer historia, find the checkpoint for the requested action or instant, copy it, and re-simulate forward at most K player actions, stopping at the instant t rule of the spec. The checkpoint for action k is found by index (k // K); the action for an instant t is found with our own binary search over the stored clocks.
+  * Re-simulation never touches the network, never counts against presupuesto_solicitudes, never writes to partida.log, and never changes the live game or its undo history.
+  * A scroll trims the stored actions and checkpoints from the end only.
+- The binary save format goes from version 1 to 2 and stores the timeline and the K in use; a version 1 file is reported as incompatible with the existing mechanism in adapters/guardado_binario.py.
+- --replay ... --hasta and historia print through DTOs; --replay and --bench never create view classes (replay output via adapters/salida_replay.py).
+- Measurements: before any code change, save the current bench_historial and bench_guardado results as the "before" baseline. Then measure memory and historia query time (p99, mean, worst) on a synthetic game of at least 5000 player actions for K = 10, 50, 200, and the no-checkpoint alternative; justify the default K with those numbers. Repeat the part-one undo-history measurements under the new load (section 5.6). Also give evidence for forward re-simulation vs backward inversion (for example, cost per action of each).
+- Uso: hacer el plan para el spec 005 (línea de tiempo), con contexto técnico y restricciones, diseño preferido, formato de guardado binario, mediciones y justificación del valor por defecto de K
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Decisions on the three points for the spec:
+1. Instant with a player decision: keep "the decision wins", as the second sentence of the assignment's 3.6 says. No spec change. Test the Appendix B case "several events at the same instant" with an instant that has no player decision.
+2. Scroll: do not take an extra checkpoint at the rewind point, because the assignment allows at most one checkpoint every K player actions. Instead, at the rewind point record the effects the undo deliberately skips (the consumed scroll and the factory instance counter) and apply them when re-simulating past that point. If you find any other effect the undo skips, list it and add it to the same record.
+3. Do not store checkpoints in the v2 save file: load re-executes the commands and rebuilds them. The v2 file stores the commands and the K in use. Remove the bench_guardado comparison of both.
+Update plan.md, research.md, data-model.md, contracts/ and quickstart.md accordingly. Do not change spec.md. Do not commit. Report what you changed.
+- Uso: hacer las decisiones sobre los tres puntos del spec, manteniendo que la decisión del jugador gana en un instante con decisión, no tomando un checkpoint extra al usar un pergamino y registrando los efectos que el deshacer omite, y no almacenando checkpoints en el archivo de guardado v2, actualizando plan.md, research.md, data-model.md, contracts/ y quickstart.md según corresponda, sin cambiar spec.md ni hacer commit, y reportar los cambios
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: /speckit-tasks Every task cites the FR(s) it serves. The "before" baseline is already saved in specs/005-timeline/bench-antes.txt. Order: recording of actions and checkpoints during play; the historia query by action number and by instant; the scroll trim and the ledger of skipped effects; the historia command and its DTO; --replay --hasta; the v2 save format with K and the part-one incompatibility; --checkpoint-cada; then the benchmark that measures K = 10, 50, 200 and no checkpoints and picks the default K with the plan's rule; then the 5.6 rerun of the undo-history benchmark. Include an oracle test: during a seeded game, capture the live summary before every player action, and check that historia #k and historia <t> give exactly those summaries, including after scrolls and after save and load. Every acceptance scenario has a test task, with fake data and no network. Group tasks in phases that can be reviewed on their own.
+- Uso: hacer la asignación de tareas para el spec 005 (línea de tiempo), con cada tarea citando los FR que sirve, y ordenadas en fases para que cada fase pueda revisarse por sí sola, incluyendo la grabación de acciones y checkpoints, la consulta historia por número de acción e instante, el recorte con pergamino y el registro de efectos omitidos, el comando historia y su DTO, --replay --hasta, el formato de guardado v2 con K y la incompatibilidad de parte uno, --checkpoint-cada, el benchmark que mide K = 10, 50, 200 y sin checkpoints y elige el K por defecto según la regla del plan, y la reejecución del benchmark de historial de deshacer de la sección 5.6, incluyendo una prueba oráculo que capture el resumen en vivo antes de cada acción del jugador y verifique que historia #k e historia <t> den exactamente esos resúmenes
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Change one thing in tasks.md and plan.md: instead of K_POR_DEFECTO = None refusing to start, use a provisional default K = 50, marked in the code and in plan.md as provisional until T068 measures and replaces it. Starting without --checkpoint-cada must work from the first phase. Change nothing else. Do not commit.
+- Uso: cambiar una cosa en tasks.md y plan.md: en lugar de que K_POR_DEFECTO = None rechace iniciar, usar un K provisional por defecto = 50, marcado en el código y en plan.md como provisional hasta que T068 lo mida y lo reemplace, y que iniciar sin --checkpoint-cada funcione desde la primera fase, sin cambiar nada más y sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Apply these fixes. Do not commit.
+- F2: in spec.md, make FR-001 explicit: if a player decision corresponds to instant t, the state is the one just before that decision, so events at t that come after it in agenda order are not included. Add a matching acceptance scenario if none exists. Change nothing else in spec.md.
+- F1: detect a scroll read by the change in partida.retrocesos after any service call (retroceder or usar on a scroll) and trim the timeline there; fix T014's success rule; add a test that reads a scroll with usar.
+- F3: the oracle for instants between decisions is a second live game with a test subclass that snapshots the summary after every executed event; the state at t is the last snapshot with time <= t. After a scroll, the capture list is truncated to the surviving actions.
+- F4: reword the default-K rule to "largest K with p99 <= 25 ms; memory reported next to it".
+- F5, F6, F7, F8, F10, F11, F12: apply your recommendations.
+Report what you changed in spec.md separately from the rest.
+- Uso: aplicar las correcciones F1 a F12, incluyendo hacer explícito en spec.md que si una decisión del jugador corresponde al instante t, el estado es el justo antes de esa decisión, detectar la lectura de un pergamino por el cambio en partida.retrocesos y recortar la línea de tiempo allí, usar un segundo juego en vivo como oráculo para instantes entre decisiones, reformular la regla de K por defecto, y aplicar las recomendaciones para F5 a F12, reportando los cambios en spec.md por separado del resto
+
+### 18 de Noviembre, 2026
 - Herramienta: Claude
 - Prompt:
 - Uso: 
-
-### 11 de Noviembre, 2026
-- Herramienta: Claude
-- Prompt:
-- Uso: 
-
-### 11 de Noviembre, 2026
-- Herramienta: Claude
-- Prompt:
-- Uso: 
-

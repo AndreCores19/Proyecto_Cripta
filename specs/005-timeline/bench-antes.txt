@@ -1,0 +1,21 @@
+# Baseline BEFORE spec 005 (no code changed) - 2026-11-18, Python 3.14.6
+# python -m bench.bench_historial
+ Historial de retroceso (microsegundos por operación) 
+ escenario  salas  enemigos    acción  copiar todo  deshacer  registros
+   pequeño     10        10      84.3        588.5      55.7     240 en 5
+     larga    300        10     120.8      12650.6     106.0     240 en 5
+    normal     20        30     236.7       1441.5     163.0     640 en 5
+    grande    100       100     865.0       5929.6     609.4    2040 en 5
+   extremo    100       300    3158.9      11528.2    2327.8    6040 en 5
+
+acción      = una acción del jugador con el historial activo
+copiar todo = copiar el estado completo (alternativa descartada, prohibida)
+deshacer    = revertir la última acción con el historial
+registros   = funciones de deshacer guardadas en total (máximo 5 cuadros)
+
+# python -m bench.bench_guardado
+Guardado binario vs JSON (misma información en ambos)
+ salas | tamaño bin tamaño json | guardar bin guardar json | cargar todo bin cargar todo json | 1 sala bin 1 sala json
+    50 |     10.2KB      17.7KB |      1.16ms       2.10ms |          0.74ms           0.98ms |    0.160ms     0.475ms
+   500 |     56.8KB     115.0KB |      3.73ms      14.77ms |          5.69ms           2.84ms |    0.355ms     2.401ms
+  5000 |    540.7KB    1112.6KB |     42.80ms     153.63ms |         55.27ms          55.64ms |    2.967ms    18.197ms
