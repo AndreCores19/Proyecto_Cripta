@@ -100,3 +100,41 @@ con un máximo de 3.4 y 3.3 ms entre repeticiones. Cumple el límite de 5 ms con
 de 3 ms: el margen de 3 ms es justo, no holgado. Los máximos tienen picos ocasionales (hasta decenas de ms en
 algunas corridas) que vienen de la máquina y no del algoritmo; no entran en el veredicto, que es el p99.
 `bench_ciclo` no cambia: todos sus p99 siguen por debajo de 20 ms.
+
+## 5.5 Verificación de resolubilidad: una pasada y no una por llave
+
+Esto complementa el [Documento de Decisiones de la primera parte](Documento_de_Decisiones.pdf). El razonamiento
+completo, con las alternativas, está en [`specs/004-crypt-solvability/research.md`](../specs/004-crypt-solvability/research.md)
+(R4 y R5) y los números en `specs/004-crypt-solvability/bench-solvabilidad.txt`.
+
+**Decisión.** Decidir si una cripta se puede ganar con **una sola pasada** que hace crecer a la vez la región alcanzable
+y las llaves tomadas: llegar a una sala vuelve obtenibles las llaves que hay en ella (van a un montículo ordenado por
+id, el de `structures/monticulo.py`), se toma la de menor id, se liberan las puertas que esperaban esa llave y la región
+vuelve a crecer. Cada sala entra una vez, cada salida se examina una vez desde su origen y cada llave entra y sale del
+montículo una vez: `O((V + E) log V + K log K)`, donde el `log V` es buscar la posición de una sala en el vector ordenado.
+El orden en que salen las llaves del montículo es el orden de llaves, y no depende del orden en que el servicio lista las
+llaves ni las salidas.
+
+**Por qué no una pasada completa por llave.** Es lo primero que se escribe: tomar una llave, recorrer otra vez toda la
+cripta con las llaves que se tienen, y repetir. Cuesta `O(K (V + E))`. Cuando obtener una llave abre una región entera, como
+en las criptas de llaves encadenadas, ese costo se vuelve cuadrático. Se dejó solo como alternativa medida en el benchmark y
+como oráculo independiente de las pruebas (que comprueba que ambas dan el mismo orden de llaves).
+
+**Por qué el informe sale de lo que deja la pasada.** Las llaves que no se tomaron, las salidas que quedaron esperando (que
+son justo la frontera bloqueada) y dónde está cada llave ya están en el estado final de la pasada. Los ciclos salen de un
+barrido lineal sobre las únicas salas que la pasada no alcanzó: cada llave de la frontera, en orden de id, inunda esas salas
+ignorando las cerraduras y las etiqueta si no tenían etiqueta, así que cada sala queda con la menor llave que llega a ella
+(la guardiana); seguir guardianas da cada ciclo una vez. No hay una búsqueda de ciclos por llave, que sería otra pasada por llave.
+
+**Medición** (tres corridas, semilla 1; `python -m bench.bench_solvabilidad` dura unos 20 s):
+
+| | Resultado |
+|---|---|
+| Cripta con la forma de la mayor publicada (300 salas, 4 llaves) | máximo de la verificación 5.6, 22.8 y 3.9 ms por corrida (límite 200 ms), con y sin llave de salida alcanzable |
+| Llaves encadenadas, ×10 salas | la verificación tarda 13 a 22 veces más; la alternativa de una pasada por llave, 57 a 143 veces más |
+| 10 000 salas y 200 llaves | verificación 69 a 79 ms; una pasada por llave, 7.4 a 8.5 s |
+| 100 000 salas y 2 000 llaves | verificación 1.1 a 1.5 s (la alternativa ya no se mide: serían unos 2×10⁸ recorridos de sala) |
+
+El crecimiento de la verificación es un poco más que lineal (13 a 22 veces por cada ×10), por el `log V` de la búsqueda
+binaria y por la memoria, y el trabajo visto no depende de las llaves: las salas y las salidas visitadas son siempre las de la
+cripta (por ejemplo 98 049 salas y 196 096 salidas con 2 000 llaves).
