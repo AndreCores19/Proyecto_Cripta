@@ -56,9 +56,9 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 **Purpose**: fix the reference. Nothing in this phase edits code.
 
-- [ ] T001 Check that `specs/005-timeline/spec.md` is committed (Constitution VII; commit `0b0663a`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/`, `aplicacion.py`, `main.py` — all FRs
-- [ ] T002 Run `python -m pytest` on the unchanged code and note the count and time as the "all green before" reference for Phase 12 — all FRs
-- [ ] T003 Check that `specs/005-timeline/bench-antes.txt` exists and contains the `bench_historial` and `bench_guardado` reports of the unchanged code; **do not regenerate it** — FR-026, FR-027
+- [X] T001 Check that `specs/005-timeline/spec.md` is committed (Constitution VII; commit `0b0663a`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/`, `aplicacion.py`, `main.py` — all FRs
+- [X] T002 Run `python -m pytest` on the unchanged code and note the count and time as the "all green before" reference for Phase 12 — all FRs
+- [X] T003 Check that `specs/005-timeline/bench-antes.txt` exists and contains the `bench_historial` and `bench_guardado` reports of the unchanged code; **do not regenerate it** — FR-026, FR-027
 
 **Checkpoint**: baseline noted, nothing else changed.
 

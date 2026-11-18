@@ -593,5 +593,5 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt:
-- Uso: 
+- Prompt: /speckit-implement Phase 1 only (T001–T003). Do not commit.
+- Uso: implementar la Fase 1 de tasks.md (T001 a T003) sin hacer commit
