@@ -1,3 +1,6 @@
+from adapters.salida_verificacion import lineas_reporte
+
+
 class VistaConsola:
     def mostrar_estado(self, estado):
         j = estado.jugador
@@ -47,6 +50,10 @@ class VistaConsola:
                 else:
                     destino = f"Sala {s.id_destino}: {s.nombre_destino}"
                 print(f"    {s.direccion} -> {destino} ({s.puerta}, costo {s.costo})")
+
+    def mostrar_verificacion(self, reporte):
+        for linea in lineas_reporte(reporte):
+            print(linea)
 
     def mostrar_final(self, resumen):
         print("-" * 40)

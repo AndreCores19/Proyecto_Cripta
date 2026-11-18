@@ -1,12 +1,16 @@
 from adapters.almacen_fichas import AlmacenFichas
 from adapters.bitacora_partida import BitacoraPartida
-from adapters.cliente_http import ClienteHttp
+from adapters.almacen_llaves import AlmacenLlaves
+from adapters.cliente_http import ClienteHttp, ErrorCliente
+from adapters.cliente_offline import ErrorOffline
 from adapters.guardado_binario import CabeceraGuardado, GuardadoBinario
 from controller.controlador import Controlador
 from data.fabrica_modelo import FabricaModelo
 from data.repositorio_catalogo import RepositorioCatalogo
 from data.repositorio_cripta import RepositorioCripta
+from data.repositorio_llaves import RepositorioLlaves
 from service.juego_service import JuegoService
+from service.verificacion_service import VerificacionService
 from structures.cache_fichas import CacheFichas
 from view.vista_consola import VistaConsola
 from adapters.salida_replay import imprimir_final_replay, imprimir_reporte
@@ -31,16 +35,38 @@ class Aplicacion:
         self.fabrica = FabricaModelo(self.repo_cripta, self.repo_catalogo)
         self.fabrica.iniciar()
 
-    def jugar(self, ruta_carga=None):
+    def jugar(self, ruta_carga=None, forzar=False):
         vista = VistaConsola()
-        self.nombre_jugador = vista.pedir_nombre()
         try:
+            #antes de empezar: ¿se puede ganar la cripta? (FR-014, FR-015, FR-016); no se repite al cargar ni en --replay
+            if not self._verificar_antes_de_jugar(vista, forzar):
+                return
+            self.nombre_jugador = vista.pedir_nombre()
             while True:
                 ruta_carga = self._sesion(vista, ruta_carga)
                 if ruta_carga is None:
                     break
         finally:
             self._reportar(vista)
+
+    def _servicio_verificacion(self):
+        #con el repositorio y el cliente del juego: el esqueleto ya está bajado y la consulta de llaves comparte el presupuesto
+        return VerificacionService(self.repo_cripta,
+                                   RepositorioLlaves(self.cliente, AlmacenLlaves("cache/llaves")))
+
+    def _verificar_antes_de_jugar(self, vista, forzar):
+        """Devuelve True si el juego puede empezar.
+
+        Muestra el veredicto y el orden de llaves, o el reporte. Si no se puede ganar y no hay `forzar`, False.
+        Si la consulta falla, muestra el error, no da veredicto y deja empezar solo con `forzar` (FR-022).
+        """
+        try:
+            reporte = self._servicio_verificacion().verificar()
+        except (ErrorCliente, ErrorOffline) as error:
+            vista.mostrar_mensaje(f"Error de comunicación con el servicio: {error}")
+            return forzar
+        vista.mostrar_verificacion(reporte)
+        return reporte.resoluble or forzar
 
     def _sesion(self, vista, ruta_carga):
         semilla = None

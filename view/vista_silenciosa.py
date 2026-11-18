@@ -19,3 +19,6 @@ class VistaSilenciosa:
 
     def mostrar_mapa(self, mapa):
         pass
+
+    def mostrar_verificacion(self, reporte):
+        pass
