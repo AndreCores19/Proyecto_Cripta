@@ -8,6 +8,8 @@ from dto.resumen_final_dto import ResumenFinalDTO
 from dto.viaje_dto import ViajeResultadoDTO
 from structures.ordenamientos import ordenar
 from model.viaje_logica import Viaje
+from data.fabrica_reproduccion import FabricaReproduccion
+from service.historia_service import HistoriaService
 
 
 class JuegoService:
@@ -16,6 +18,22 @@ class JuegoService:
         self.partida = partida
         self.fabrica = fabrica
         self.linea_tiempo = linea_tiempo      #LineaTiempoPartida o None (sin línea de tiempo)
+
+    def _historia(self):
+        #un servicio de consulta por llamada: no guarda nada de la partida viva
+        if self.linea_tiempo is None:
+            raise RuntimeError("Esta partida no tiene línea de tiempo")
+
+        def armar_mundo():
+            salas = self.linea_tiempo.constructor_mundo()
+            return FabricaReproduccion.desde(self.fabrica, salas).armar_mundo()
+        return HistoriaService(self.linea_tiempo, armar_mundo)
+
+    def historia_por_instante(self, t):
+        return self._historia().reproducir_en_instante(t)
+
+    def historia_por_accion(self, k):
+        return self._historia().reproducir_en_accion(k)
 
     def _registrar(self, tipo, argumento, reloj_antes, acciones_antes, retrocesos_antes):
         #Una llamada es una acción solo si las acciones subieron exactamente una y no hubo retroceso

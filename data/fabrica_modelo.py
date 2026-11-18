@@ -3,6 +3,7 @@ from model.objeto_logica import Objeto
 from model.enemigo_logica import Enemigo
 from model.partida_logica import Partida
 from model.trampa_logica import Trampa
+from data.fichas_congeladas import FichasCongeladas
 
 class FabricaModelo:
     def __init__(self, repo_cripta, repo_catalogo):
@@ -10,6 +11,7 @@ class FabricaModelo:
         self.repo_catalogo = repo_catalogo
         self.pobladas = None
         self.siguiente_instancia = 1
+        self.fichas_vistas = FichasCongeladas()   #cada ficha que esta fábrica resolvió (la usa la reproducción)
 
     def iniciar(self):
         self.pobladas = [False] * self.repo_cripta.salas.tamano()
@@ -22,6 +24,7 @@ class FabricaModelo:
             ficha = self.repo_catalogo.cache.obtener(id_ficha)
         if ficha is None:
             raise ValueError(f"No se encontró la ficha {id_ficha} en la caché")
+        self.fichas_vistas.guardar(id_ficha, ficha)
         return ficha
 
     def crear_objeto(self, id_instancia, ficha):
@@ -102,7 +105,10 @@ class FabricaModelo:
 
         ids = self.repo_catalogo.ids_del_contenido([contenido])
         self.repo_catalogo.resolver(ids)
+        self._instalar_contenido(sala, contenido, pos)
 
+    def _instalar_contenido(self, sala, contenido, pos):
+        #crea lo que dice el contenido y marca la sala como poblada; la comparte la reproducción
         for instancia in contenido.enemigos:
             ficha = self._ficha(instancia.tipo)
             sala.inactivos.append(self.crear_enemigo(instancia, ficha, sala))

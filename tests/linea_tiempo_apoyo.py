@@ -413,12 +413,25 @@ class PartidaInstrumentada(Partida):
         return resultado
 
 
-def oraculo(servicio, vivos, instantaneas, consultar):
+def instantes_clave(vivos, instantaneas, reloj, paso=97):
+    """Instantes que más pueden fallar, para juegos largos donde recorrer todos sería lento: cada reloj
+    de decisión y de foto con su vecino de cada lado, el 0, el reloj final y uno de cada `paso`."""
+    claves = [0, reloj]
+    for _, r, _ in vivos:
+        claves.extend((r - 1, r, r + 1))
+    for r, _, _ in instantaneas:
+        claves.extend((r - 1, r, r + 1))
+    claves.extend(range(0, reloj + 1, paso))
+    return sorted({t for t in claves if 0 <= t <= reloj})
+
+
+def oraculo(servicio, vivos, instantaneas, consultar, instantes=None):
     """Compara `consultar(modo, valor)` con lo que el juego vivo mostró.
 
     `#k` (1 <= k <= acciones hechas) debe dar lo capturado antes de la acción k. Para cada instante t
-    de 0 al reloj: si t es el reloj de una decisión, gana la captura de esa decisión; si no, la última
-    foto con reloj <= t (con el reloj puesto en t). Avisa de la primera diferencia con k, t y ambos resúmenes."""
+    de 0 al reloj (o de `instantes`, una lista ascendente, si se pasa): si t es el reloj de una decisión,
+    gana la captura de esa decisión; si no, la última foto con reloj <= t (con el reloj puesto en t).
+    Avisa de la primera diferencia con k, t y ambos resúmenes."""
     partida = servicio.partida
     for numero, reloj, esperado in vivos:
         if numero > partida.acciones_jugador:
@@ -428,7 +441,7 @@ def oraculo(servicio, vivos, instantaneas, consultar):
             raise AssertionError(f"Diferencia en #{numero}\nesperado: {esperado}\nobtenido: {obtenido}")
     i = 0                                  #primera entrada de `vivos` con reloj >= t
     j = -1                                 #última foto con reloj <= t
-    for t in range(partida.reloj + 1):
+    for t in (range(partida.reloj + 1) if instantes is None else instantes):
         while i < len(vivos) and vivos[i][1] < t:
             i += 1
         while j + 1 < len(instantaneas) and instantaneas[j + 1][0] <= t:

@@ -22,8 +22,7 @@ class LineaTiempoPartida:
         self.constructor_mundo = constructor_mundo
         self.linea = LineaTiempo(K_POR_DEFECTO if k is None else k)
         self.linea.agregar_punto(capturar(partida))
-        self.reloj_final = partida.reloj
-        self.linea.reloj_final = partida.reloj
+        self._marcar_reloj(partida)
 
     def registrar_accion(self, partida, tipo, argumento, reloj_antes):
         """Anota una acción que se ejecutó con éxito. `reloj_antes` es el reloj de la decisión."""
@@ -31,10 +30,25 @@ class LineaTiempoPartida:
         linea.agregar_accion(reloj_antes, tipo, argumento)
         if len(linea) % linea.k == 0:
             linea.agregar_punto(capturar(partida))
+        self._marcar_reloj(partida)
+
+    def _marcar_reloj(self, partida):
+        #el reloj de ahora; si el juego sigue, también es el de la decisión pendiente (la n+1)
         self.reloj_final = partida.reloj
-        linea.reloj_final = partida.reloj
+        self.linea.reloj_final = partida.reloj
+        self.linea.reloj_decision_pendiente = None if partida.terminada else partida.reloj
 
     #lectura para las consultas
+    @property
+    def reloj_decision_pendiente(self):
+        return self.linea.reloj_decision_pendiente
+
+    def ultimo_menor_o_igual(self, t):
+        return self.linea.ultimo_menor_o_igual(t)
+
+    def punto_para(self, frontera):
+        return self.linea.punto_para(frontera)
+
     @property
     def k(self):
         return self.linea.k

@@ -45,6 +45,7 @@ class Partida:
         self.retrocesos = 0                      #cuántos retrocesos van; fuera del historial a propósito
         jugador.inventario.historial = self.historial
         self.salas = None        #el vector de salas del mundo, si lo hay (lo lee el registro de estado)
+        self.limite_reproduccion = None   #solo la reproducción del historial: no correr eventos con tiempo mayor
         self.fabrica = None      #quien pobló las salas y lleva el contador de instancias, si lo hay
 
     @classmethod
@@ -344,6 +345,8 @@ class Partida:
         #del historial se detiene ahí); los de tiempo <= limite corren todos, sea cual sea su num_sec
         if not self.terminada and self.jugador.evento.pos < 0:
             raise RuntimeError("El jugador no tiene una acción programada")
+        if limite is None:
+            limite = self.limite_reproduccion
         while not self.terminada:
             if limite is not None:
                 siguiente = self.agenda.proximo()
