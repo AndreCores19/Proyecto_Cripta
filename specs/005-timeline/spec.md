@@ -45,6 +45,7 @@ instants, and compare each summary with the state recorded when the game was at 
 6. **Given** any past instant, **When** the summary is shown, **Then** it contains the clock, the player's room, life and stats, inventory, active effects, the enemies in that room with their life, and the known map as the player knew it at that moment. *(FR-004)*
 7. **Given** a game, **When** the player asks "historia 0", **Then** the summary shows the initial state of the game. *(FR-002, FR-004)*
 8. **Given** a malformed, negative or missing argument, **When** the player types "historia", **Then** a message explains the accepted forms and nothing changes. *(FR-005)*
+9. **Given** a player decision that corresponds to instant t and other events scheduled at t that come after that decision in agenda order, **When** the player asks "historia t", **Then** the summary shows the state just before the decision and none of the effects of those later events. *(FR-001)*
 
 ---
 
@@ -224,7 +225,7 @@ three or more values of K and for the no-checkpoint alternative, plus the undo-h
 
 ### Functional Requirements
 
-- **FR-001**: The state at instant t MUST be the state after executing every event with time <= t. When several events share the instant t, the state MUST include all of them. When a player decision corresponds to t, the state MUST be the one just before that decision is taken.
+- **FR-001**: The state at instant t MUST be the state after executing every event with time <= t. When several events share the instant t, the state MUST include all of them. When a player decision corresponds to t, the state MUST be the one just before that decision is taken, so the events at t that come after that decision in agenda order are not included.
 - **FR-002**: The timeline MUST be able to answer for every instant from 0 up to and including the current clock, since the start of the game.
 - **FR-003**: Player actions MUST be numbered from 1 in the order they remain in the game as it ended up. "historia #k" MUST show the state just before player action number k. A k that does not correspond to an action that exists (zero, negative, not yet taken, or reverted) MUST be rejected.
 - **FR-004**: Every summary MUST show at least: the clock; the player's room; the player's life and stats; the inventory; the active effects; the enemies in the player's room with their life; and the known map (spec 003) as the player knew it at that moment. The summary of a past instant MUST NOT show anything the player did not know at that instant.
