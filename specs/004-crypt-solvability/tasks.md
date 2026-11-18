@@ -151,9 +151,9 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 **Independent Test**: a non-solvable crypt with `--forzar`: the game starts.
 
-- [ ] T024 [P] [US5] In `tests/test_solvabilidad_comandos.py` add: US5-1 (`_verificar_antes_de_jugar(vista, forzar=True)` on a non-solvable crypt: the report is shown and it returns `True`), `main()` accepts `--forzar` and passes it to `Aplicacion.jugar(ruta_carga, forzar=True)` (replace `main.Aplicacion` and `main.sys.argv` in the test; read `main.py` first), and without the option the call has `forzar=False`. Docstrings `FR-016 · US5-1` — FR-015, FR-016
-- [ ] T025 [US5] In `main.py` add `parser.add_argument("--forzar", action="store_true", help="juega aunque la cripta no se pueda ganar")` and pass `forzar=args.forzar` in the call `Aplicacion(...).jugar(...)` for the two branches that play (named crypt and menu). `--replay` and `--bench` ignore it. Depends on T022, T024 — FR-016
-- [ ] T026 [US5] Run `python -m pytest tests/test_solvabilidad_comandos.py -v` and the whole suite; all green — FR-016
+- [X] T024 [P] [US5] In `tests/test_solvabilidad_comandos.py` add: US5-1 (`_verificar_antes_de_jugar(vista, forzar=True)` on a non-solvable crypt: the report is shown and it returns `True`), `main()` accepts `--forzar` and passes it to `Aplicacion.jugar(ruta_carga, forzar=True)` (replace `main.Aplicacion` and `main.sys.argv` in the test; read `main.py` first), and without the option the call has `forzar=False`. Docstrings `FR-016 · US5-1` — FR-015, FR-016
+- [X] T025 [US5] In `main.py` add `parser.add_argument("--forzar", action="store_true", help="juega aunque la cripta no se pueda ganar")` and pass `forzar=args.forzar` in the call `Aplicacion(...).jugar(...)` for the two branches that play (named crypt and menu). `--replay` and `--bench` ignore it. Depends on T022, T024 — FR-016
+- [X] T026 [US5] Run `python -m pytest tests/test_solvabilidad_comandos.py -v` and the whole suite; all green — FR-016
 
 **Checkpoint**: `--forzar` works.
 

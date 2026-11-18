@@ -321,3 +321,54 @@ def test_replay_y_cargar_una_partida_no_vuelven_a_verificar(tmp_path, monkeypatc
     assert app._sesion(VistaGuionada(JUGADA), None) is None                # se juega y se guarda
     guardado = tmp_path / "saves" / "partida1.sav"
     assert app._sesion(VistaGuionada(["salir"]), guardado) is None         # se carga: no se verifica
+
+
+# --- --forzar (T024) --------------------------------------------------------------------------------
+
+def test_con_forzar_una_cripta_no_resoluble_muestra_el_reporte_y_el_juego_arranca():
+    """FR-015, FR-016 · US5-1"""
+    repo, llaves = _no_resoluble()
+    vista = VistaGrabadora()
+    assert AppFalsa(VerificacionService(repo, llaves))._verificar_antes_de_jugar(vista, True) is True
+    assert len(vista.reportes) == 1 and vista.reportes[0].resoluble is False
+
+
+def test_con_forzar_si_la_consulta_falla_se_muestra_el_error_sin_veredicto_y_el_juego_arranca():
+    """FR-016, FR-022 · con --forzar se juega sin veredicto"""
+    repo = RepoCriptaFalso(*cadena_de_llaves(2)[:4])
+    vista = VistaGrabadora()
+    servicio = VerificacionService(repo, RepoLlavesFalso([], falla=ErrorCliente("falló la red")))
+    assert AppFalsa(servicio)._verificar_antes_de_jugar(vista, True) is True
+    assert vista.reportes == []
+    assert vista.mensajes == ["Error de comunicación con el servicio: falló la red"]
+
+
+def _correr_main(monkeypatch, argumentos):
+    """Corre main() con una Aplicacion espía y devuelve los `forzar` con que se llamó a jugar."""
+    import sys
+
+    import main
+
+    llamadas = []
+
+    class AplicacionEspia:
+        def __init__(self, *args):
+            pass
+
+        def jugar(self, ruta_carga=None, forzar=False):
+            llamadas.append(forzar)
+
+    monkeypatch.setattr(main, "Aplicacion", AplicacionEspia)
+    monkeypatch.setattr(sys, "argv", ["main.py"] + argumentos)
+    main.main()
+    return llamadas
+
+
+def test_main_acepta_forzar_y_se_lo_pasa_a_jugar(monkeypatch):
+    """FR-016 · US5-1: la opción --forzar llega a Aplicacion.jugar"""
+    assert _correr_main(monkeypatch, ["cripta-x", "--offline", "--forzar"]) == [True]
+
+
+def test_main_sin_forzar_juega_con_forzar_falso(monkeypatch):
+    """FR-015 · sin la opción, una cripta no resoluble no arranca"""
+    assert _correr_main(monkeypatch, ["cripta-x", "--offline"]) == [False]

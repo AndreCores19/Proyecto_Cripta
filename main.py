@@ -16,6 +16,8 @@ def main():
                         help="ejecuta los benchmarks y termina")
     parser.add_argument("--offline", action="store_true",
                         help="usa el paquete de respuestas de offline/ en vez de la red")
+    parser.add_argument("--forzar", action="store_true",
+                        help="juega aunque la cripta no se pueda ganar")
     args = parser.parse_args()
 
     if args.bench:
@@ -53,12 +55,12 @@ def main():
             sys.exit(1)
         Aplicacion(URL, lector.cripta, args.tamano_cache, cliente).reproducir(lector)
     elif args.cripta:
-        Aplicacion(URL, args.cripta, args.tamano_cache, cliente).jugar()
+        Aplicacion(URL, args.cripta, args.tamano_cache, cliente).jugar(forzar=args.forzar)
     else:
         from view.vista_consola import VistaConsola
         id_cripta = VistaConsola().elegir_cripta(cliente.listar_criptas()["criptas"])
         if id_cripta is not None:
-            Aplicacion(URL, id_cripta, args.tamano_cache, cliente).jugar()
+            Aplicacion(URL, id_cripta, args.tamano_cache, cliente).jugar(forzar=args.forzar)
 if __name__ == "__main__":
     from adapters.cliente_http import ErrorCliente
     from adapters.cliente_offline import ErrorOffline
