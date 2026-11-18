@@ -18,6 +18,7 @@ class LineaTiempo:
         self.reloj_decision_pendiente = None
         self.reloj_final = 0
         self.comparaciones = 0   #para medir que la búsqueda por reloj es O(log n)
+        self.operaciones_retroceso = 0   #trabajo de los recortes: registros y puntos borrados, entradas reetiquetadas
 
     def __len__(self):
         return len(self.relojes)
@@ -60,12 +61,46 @@ class LineaTiempo:
         return resultado
 
     def recortar(self, n):
-        #deja las primeras n acciones y los puntos con frontera <= n; borra solo desde el final
+        #deja las primeras n acciones y los puntos con frontera <= n; borra solo desde el final.
+        #Las entradas del libro con etiqueta > n pasan a n y a `reaplicar` (el trabajo es el de lo recortado)
         if n < 0 or n > len(self.relojes):
             raise ValueError("No se puede recortar a esa cantidad de acciones")
         while len(self.relojes) > n:
             del self.relojes[-1]
             del self.tipos[-1]
             del self.argumentos[-1]
+            self.operaciones_retroceso += 1
         while len(self.puntos) > 0 and (len(self.puntos) - 1) * self.k > n:
             del self.puntos[-1]
+            self.operaciones_retroceso += 1
+        #las etiquetas no bajan a lo largo del libro: se mira desde el final y se para al llegar a una menor que n
+        i = len(self.omitidos) - 1
+        while i >= 0 and self.omitidos[i].etiqueta >= n:
+            entrada = self.omitidos[i]
+            if entrada.etiqueta > n:                    #de una acción revertida: se guarda para aplicarlo en n
+                entrada.etiqueta = n
+                entrada.reaplicar = True
+                self.operaciones_retroceso += 1
+            i -= 1                                      #(con etiqueta n: o ya guardada, o de una acción que sobrevivió)
+
+    def omitidos_en(self, frontera):
+        #las entradas guardadas por un pergamino que se aplican con `frontera` acciones hechas, en orden
+        return [e for e in self.omitidos if e.reaplicar and e.etiqueta == frontera]
+
+    def descartar_vencidos(self, limite):
+        #quita las candidatas (no guardadas) con etiqueta <= limite: su acción ya no se puede revertir.
+        #Las etiquetas no bajan, así que solo se mira el comienzo del libro.
+        fin = 0
+        while fin < len(self.omitidos) and self.omitidos[fin].etiqueta <= limite:
+            fin += 1
+        if fin == 0:
+            return
+        escritura = 0
+        for lectura in range(len(self.omitidos)):
+            entrada = self.omitidos[lectura]
+            if lectura < fin and not entrada.reaplicar:
+                continue
+            self.omitidos[escritura] = entrada
+            escritura += 1
+        while len(self.omitidos) > escritura:
+            del self.omitidos[-1]

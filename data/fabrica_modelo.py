@@ -92,9 +92,10 @@ class FabricaModelo:
         )
 
     def poblar_sala(self, sala):
+        #devuelve el contador de instancias con que empezó a poblar, o None si la sala ya estaba poblada
         pos = self.repo_cripta.salas.posicion(sala.id)
         if self.pobladas[pos]:
-            return
+            return None
 
         if self.repo_cripta.contenidos[pos] is None:
             nuevos = self.repo_cripta.precargar(sala.id)
@@ -105,7 +106,9 @@ class FabricaModelo:
 
         ids = self.repo_catalogo.ids_del_contenido([contenido])
         self.repo_catalogo.resolver(ids)
+        inicio = self.siguiente_instancia
         self._instalar_contenido(sala, contenido, pos)
+        return inicio
 
     def _instalar_contenido(self, sala, contenido, pos):
         #crea lo que dice el contenido y marca la sala como poblada; la comparte la reproducción

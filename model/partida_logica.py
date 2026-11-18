@@ -6,6 +6,7 @@ from structures.historial import Historial
 from model.objeto_logica import PERGAMINO_RETROCESO
 from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
 from model.efectos_logica import Efectos
+from model.efectos_omitidos import (EfectoOmitido, INV_AGREGAR, INV_QUITAR, SUELO_PONER, SUELO_QUITAR)
 from model.ruta_cazador import DecisorCazador
 from model.sala_logica import ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA
 
@@ -45,6 +46,7 @@ class Partida:
         self.retrocesos = 0                      #cuántos retrocesos van; fuera del historial a propósito
         jugador.inventario.historial = self.historial
         self.salas = None        #el vector de salas del mundo, si lo hay (lo lee el registro de estado)
+        self.diario_omitidos = None   #el libro de efectos omitidos de la línea de tiempo, si hay una
         self.limite_reproduccion = None   #solo la reproducción del historial: no correr eventos con tiempo mayor
         self.fabrica = None      #quien pobló las salas y lleva el contador de instancias, si lo hay
 
@@ -77,16 +79,23 @@ class Partida:
         self.bitacora.agregar(f"t={self.reloj}: retrocedes en el tiempo")
         return True
 
+    def _omitir(self, tipo, datos, reaplicar=False):
+        #anota en el libro un efecto que el deshacer omite; lo lleva la etiqueta de la acción en curso
+        if self.diario_omitidos is not None:
+            self.diario_omitidos.append(EfectoOmitido(self.acciones_jugador, reaplicar, tipo, datos))
+
     #inventario
     def _quitar_del_suelo(self, sala, objeto):
         if objeto.clase == PERGAMINO_RETROCESO:
             sala.objetos.remove(objeto)        # excluido del historial (§2.11)
+            self._omitir(SUELO_QUITAR, (sala.id, objeto.id_instancia))
         else:
             self.historial.lista_quitar(sala.objetos, objeto)
 
     def _poner_en_suelo(self, sala, objeto):
         if objeto.clase == PERGAMINO_RETROCESO:
             sala.objetos.append(objeto)        # excluido del historial (§2.11)
+            self._omitir(SUELO_PONER, (sala.id, objeto.id_instancia, objeto.id_catalogo))
         else:
             self.historial.lista_agregar(sala.objetos, objeto)
 
@@ -100,6 +109,8 @@ class Partida:
             self._sumar_accion()
             self._quitar_del_suelo(sala, objeto)
             inv.agregar(objeto)
+            if objeto.clase == PERGAMINO_RETROCESO:
+                self._omitir(INV_AGREGAR, (objeto.id_instancia, objeto.id_catalogo))
             self.bitacora.agregar(f"t={self.reloj}: recoges {objeto.nombre}")
             self._programar_siguiente(self.jugador, COSTO_RECOGER)
             self.avanzar_hasta_jugador()
@@ -116,6 +127,8 @@ class Partida:
             self._sumar_accion()
             inv.desequipar(objeto, self.jugador)   # un objeto soltado no puede seguir equipado
             inv.quitar_nodo(nodo)
+            if objeto.clase == PERGAMINO_RETROCESO:
+                self._omitir(INV_QUITAR, (objeto.id_instancia,))
             self._poner_en_suelo(self.jugador.sala, objeto)
             self.bitacora.agregar(f"t={self.reloj}: sueltas {objeto.nombre}")
             self._programar_siguiente(self.jugador, COSTO_SOLTAR)
@@ -178,6 +191,7 @@ class Partida:
         pergamino = nodo.objeto
         self.retroceder()
         inv.quitar_nodo(inv.nodo_de(pergamino))
+        self._omitir(INV_QUITAR, (pergamino.id_instancia,), reaplicar=True)    #el pergamino gastado
         return True
     #salas
     def _entrar_en_sala(self, sala):

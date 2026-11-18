@@ -62,11 +62,13 @@ class FabricaReproduccion(FabricaModelo):
     def poblar_sala(self, sala):
         pos = self.repo_cripta.salas.posicion(sala.id)
         if self.pobladas[pos]:
-            return
+            return None
         contenido = self.repo_cripta.contenidos[pos]
         if contenido is None:
             raise ErrorReproduccion(f"El contenido de la sala {sala.id} no está guardado")
+        inicio = self.siguiente_instancia
         self._instalar_contenido(sala, contenido, pos)
+        return inicio
 
     #lo que `restaurar` necesita para armar entidades por id
     def _objeto_de_catalogo(self, id_instancia, id_catalogo):

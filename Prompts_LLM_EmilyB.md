@@ -641,8 +641,8 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: /speckit-implement Phase 5 only (T025–T036). Write each test and see it fail before writing the code. Do not commit.
+- Uso: implementar la Fase 5 de tasks.md (T025 a T036), escribiendo cada prueba y viéndola fallar antes de escribir el código, sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude

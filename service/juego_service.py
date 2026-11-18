@@ -47,6 +47,11 @@ class JuegoService:
         p = self.partida
         return p.reloj, p.acciones_jugador, p.retrocesos
 
+    def _tras_pergamino(self, retrocesos_antes):
+        #si el contador de retrocesos cambió, se leyó un pergamino: la línea de tiempo se recorta (no es una acción)
+        if self.linea_tiempo is not None and self.partida.retrocesos != retrocesos_antes:
+            self.linea_tiempo.tras_retroceso(self.partida)
+
     def _bajo_el_cursor(self):
         nodo = self.partida.jugador.inventario.actual
         return nodo.objeto.id_instancia if nodo is not None else None
@@ -86,6 +91,7 @@ class JuegoService:
         resultado = self.partida.usar()
         if resultado:
             self._registrar("usar", objetivo, *marca)
+            self._tras_pergamino(marca[2])               #`usar` sobre un pergamino lo lee
         self.actualizar_fichas()
         return resultado
 
@@ -94,7 +100,10 @@ class JuegoService:
         if salida is None or salida.cerrada:
             return False
         marca = self._marca()
-        self.fabrica.poblar_sala(salida.destino)
+        contador_inicial = self.fabrica.poblar_sala(salida.destino)
+        if contador_inicial is not None and self.linea_tiempo is not None:
+            #por si este movimiento se revierte: la sala queda poblada aunque el deshacer no la despueble
+            self.linea_tiempo.anotar_poblacion(salida.destino.id, contador_inicial, marca[1] + 1)
         resultado = self.partida.mover(direccion)
         if resultado:
             self._registrar("mover", direccion, *marca)
@@ -158,7 +167,9 @@ class JuegoService:
         if nodo is None:
             return False
         inv.actual = nodo
+        retrocesos_antes = self.partida.retrocesos
         resultado = self.partida.usar_pergamino()
+        self._tras_pergamino(retrocesos_antes)
         self.actualizar_fichas()
         return resultado
 

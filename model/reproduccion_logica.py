@@ -4,6 +4,7 @@ Parte del punto de control más cercano, arma un grafo de salas NUEVO con la par
 reproduce hacia adelante, con las reglas reales de `Partida`, las acciones guardadas (a lo más K).
 Nunca lee ni escribe la partida viva, su historial, su agenda ni su azar, y no toca la red.
 """
+from model.efectos_omitidos import aplicar
 from model.partida_logica import Partida
 
 
@@ -46,9 +47,18 @@ class Reproductor:
         self.acciones_aplicadas = 0
         mundo = self.armar_mundo()
         partida = Partida.desde_registro(linea.punto_para(frontera), mundo)
-        for indice in range((frontera // linea.k) * linea.k, frontera):
+        base = (frontera // linea.k) * linea.k
+        self._aplicar_omitidos(partida, mundo, base)        #el punto se tomó antes del pergamino, no se refresca
+        for indice in range(base, frontera):
             self._aplicar(partida, mundo, indice, None)
+            self._aplicar_omitidos(partida, mundo, indice + 1)
         return partida, mundo
+
+    def _aplicar_omitidos(self, partida, mundo, frontera):
+        #en el punto de decisión con `frontera` acciones hechas: los efectos que el deshacer omitió ahí.
+        #Una frontera por debajo de la del punto del que se parte nunca llega aquí: ese punto ya los trae.
+        for entrada in self.linea_tiempo.omitidos_en(frontera):
+            aplicar(entrada, mundo, partida)
 
     def _aplicar(self, partida, mundo, indice, limite):
         self.acciones_aplicadas += 1
