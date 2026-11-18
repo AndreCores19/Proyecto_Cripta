@@ -26,12 +26,26 @@ class Viaje:
 
     def paso(self):
         partida = self.partida
+        if partida.terminada:
+            return FIN_PARTIDA
         if partida.jugador.sala is self.destino:
             return LLEGADA
         salida, _ = self.ruta.siguiente_paso(partida, self.destino)
         if salida is None:
             return SIN_RUTA
+        vida = partida.jugador.vida
         if not self.mover(salida.direccion):
             return SIN_RUTA                  #no debería pasar: la ruta solo usa salidas abiertas
         self.direcciones.append(salida.direccion)
+        #después del paso, en el orden de FR-022: fin de la partida, llegada, enemigos, daño
+        jugador = partida.jugador
+        if partida.terminada:
+            return FIN_PARTIDA
+        if jugador.sala is self.destino:
+            return LLEGADA
+        for enemigo in partida.enemigos:
+            if enemigo.sala is jugador.sala and enemigo.esta_vivo():
+                return ENEMIGOS
+        if jugador.vida < vida:
+            return DANO
         return None
