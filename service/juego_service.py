@@ -4,6 +4,8 @@ from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDT
                                   EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
 from dto.inventario_vista_dto import InventarioVistaDTO, ObjetoInventarioDTO
 from dto.resumen_final_dto import ResumenFinalDTO
+from dto.viaje_dto import ViajeResultadoDTO
+from model.viaje_logica import Viaje
 
 
 class JuegoService:
@@ -42,6 +44,22 @@ class JuegoService:
         resultado = self.partida.mover(direccion)
         self.actualizar_fichas()
         return resultado
+
+    def ir_a(self, id_sala):
+        #viaje automático: cada paso es un movimiento normal (self.mover)
+        destino = None
+        for sala in self.partida.conocidas:
+            if str(sala.id).lower() == str(id_sala).lower():
+                destino = sala
+                break
+        if destino is None or destino.conocimiento != EXPLORADA:
+            return ViajeResultadoDTO(False, "no_explorada", 0)
+        viaje = Viaje(self.partida, destino, self.mover)
+        while True:
+            motivo = viaje.paso()
+            if motivo is not None:
+                break
+        return ViajeResultadoDTO(True, motivo, len(viaje.direcciones), viaje.direcciones)
 
     def atacar(self, id_enemigo):
         jugador = self.partida.jugador
