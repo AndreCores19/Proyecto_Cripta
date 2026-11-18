@@ -631,8 +631,8 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: In DECISIONES.md, section 5.6.1, the line above the first table says "la medición de la primera parte usaba costo fijo 100". Make it precise: the operations-per-action rows used exits of cost 100, while the µs rows used a random increment, as explained below the table. Do not commit.
+- Uso: en DECISIONES.md, sección 5.6.1, cambiar la línea sobre la primera tabla para que diga que las filas de operaciones por acción usaban salidas de costo 100, mientras que las filas de µs usaban un incremento aleatorio, como se explica debajo de la tabla, sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude

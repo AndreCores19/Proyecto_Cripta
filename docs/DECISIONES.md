@@ -314,9 +314,9 @@ por acción del jugador; eso está medido abajo.
 
 **Evidencia empírica.**
 
-*Spec 001: costos de salida variables* (`specs/001-exit-costs/bench-parte1.txt` y `specs/001-exit-costs/bench-parte2.txt`; la medición de la primera parte usaba costo fijo 100):
+*Spec 001: costos de salida variables* (`specs/001-exit-costs/bench-parte1.txt` y `specs/001-exit-costs/bench-parte2.txt`; en la primera parte, las filas de operaciones por acción usaron salidas de costo 100 y las filas de µs usaron un incremento aleatorio, como se explica debajo de la tabla):
 
-| Medición | Primera parte (`specs/001-exit-costs/bench-parte1.txt`: salidas de costo 100) | Spec 001 (`specs/001-exit-costs/bench-parte2.txt`: costos variables) |
+| Medición | Primera parte (`specs/001-exit-costs/bench-parte1.txt`) | Spec 001 (`specs/001-exit-costs/bench-parte2.txt`: costos variables) |
 |---|---|---|
 | `programar` (= `extraer`) por acción, 300 / 1000 / 3000 enemigos | 301.0 / 1001.0 / 3001.0 | 123.0 / 414.8 / 1237.4 |
 | Eventos pendientes a la vez (máximo) | 300 / 1000 / 3000 | 300 / 1000 / 3000 |
