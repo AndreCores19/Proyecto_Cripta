@@ -190,7 +190,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 ## Phase 11: Polish & cross-cutting
 
-- [ ] T034 Constitution gate, limited to what this feature adds (`model/solvabilidad_logica.py`, `dto/llave_dto.py`, `dto/reporte_verificacion_dto.py`, `data/repositorio_llaves.py`, `adapters/almacen_llaves.py`, `adapters/salida_verificacion.py`, `service/verificacion_service.py`, `aplicacion.py`, `view/vista_consola.py`, `bench/bench_solvabilidad.py`) — FR-001, FR-013, FR-019, FR-020:
+- [X] T034 Constitution gate, limited to what this feature adds (`model/solvabilidad_logica.py`, `dto/llave_dto.py`, `dto/reporte_verificacion_dto.py`, `data/repositorio_llaves.py`, `adapters/almacen_llaves.py`, `adapters/salida_verificacion.py`, `service/verificacion_service.py`, `aplicacion.py`, `view/vista_consola.py`, `bench/bench_solvabilidad.py`) — FR-001, FR-013, FR-019, FR-020:
   - none uses `dict`, `set`, `heapq`, `bisect`, `collections`, `networkx` or another graph library in the evaluated part (`grep -nE "heapq|bisect|collections|networkx|\bdict\(|\bset\(|\bfrozenset\(|\{\}|\{[^}]*:[^}]*\}" <files>`, reviewing each hit by hand: f-strings and JSON reading are not indexes);
   - `model/` and `structures/` import nothing from `view/` or `controller/`;
   - `grep -rn "Vista" bench/` finds nothing, and the `--verificar` path builds no `view/` class (T027);

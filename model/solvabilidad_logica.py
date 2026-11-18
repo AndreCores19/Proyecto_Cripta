@@ -44,8 +44,8 @@ class Verificador:
 
     La región alcanzable y las llaves tomadas crecen juntas: llegar a una sala vuelve obtenibles las llaves
     que hay en ella (van a un montículo ordenado por id), se toma la de menor id, se liberan las puertas que
-    la esperaban y la región vuelve a crecer. Nunca hay una pasada completa por llave. No lee el
-    conocimiento del jugador (FR-001) ni modifica la cripta.
+    la esperaban y la región vuelve a crecer. Nunca hay una pasada completa por llave. No usa lo que el
+    jugador ya exploró (FR-001) ni modifica la cripta.
     """
 
     def verificar(self, salas, id_inicial, id_salida, id_llave_salida, llaves):
