@@ -29,6 +29,11 @@
 - Q: If the key query lists the same key id twice, how is it treated? → A: Only one entry counts, the one with the lowest room id; the others are ignored (FR-002).
 - Q: What exit status does `--verificar` give when it ends? → A: 0 when the crypt is solvable; 1 when it is not solvable or when a communication error ends the run (FR-017).
 
+### Session 2026-11-17 (corrections after the analysis)
+
+- Correction: FR-010 now says that the order and the report do not depend on the order in which the service lists the keys and the exits of each room; the rooms are taken sorted by id, as in part one, because the room vector of part one already refuses rooms that are not sorted.
+- Correction: FR-012 (d) now says exactly what is reported when several unobtainable keys guard the same region: the lowest key id is the reported guard; the wording "doors that only it opens, directly or through a chain of keys" stays for the pure case.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The player is told before playing whether the crypt can be won (Priority: P1)
@@ -62,13 +67,13 @@ from one run to the next could not be tested or compared.
 
 **Independent Test**: Build a crypt with chained keys (the second key is behind a door that the first
 opens, and so on), verify it, and check that the order respects every dependency; verify the same
-crypt again with its rooms and keys listed in a different order and check that the order is the same.
+crypt again with its keys and the exits of its rooms listed in a different order and check that the order is the same.
 
 **Acceptance Scenarios**:
 
 1. **Given** a solvable crypt with chained keys, **When** it is verified, **Then** the result is an order of keys in which every key appears after all the keys needed to reach it. *(FR-008, FR-009)*
 2. **Given** a crypt with several valid orders of obtaining keys, **When** it is verified twice, **Then** both runs give the same order, and among keys obtainable at the same moment the one with the lowest identifier comes first. *(FR-010, FR-011)*
-3. **Given** the same crypt delivered by the service with its rooms and its keys listed in a different order, **When** it is verified, **Then** the order of keys is the same. *(FR-010)*
+3. **Given** the same crypt delivered by the service with its keys and the exits of its rooms listed in a different order, **When** it is verified, **Then** the order of keys is the same. *(FR-010)*
 
 ---
 
@@ -191,7 +196,7 @@ and with the naive alternative that makes a full pass per key, and compare.
 - The exit key is behind the only door that it opens itself: not solvable, and the report points out the cycle (FR-012).
 - A key is in what a wandering enemy drops: it is obtainable in the enemy's initial room, wherever the enemy goes afterwards (FR-003).
 - A key opens a door that leads to a whole region with more keys: the verification does not repeat a full pass over the crypt for that key (FR-019).
-- Several orders of keys are valid: the same crypt always gives the same one, whatever the order in which the service lists rooms or keys (FR-010, FR-011).
+- Several orders of keys are valid: the same crypt always gives the same one, whatever the order in which the service lists the keys and the exits of each room (FR-010, FR-011).
 - A door closes again after the player passes: it can be opened again with the same key; it never blocks (FR-007).
 - A trap lies on the way: it never blocks (FR-007).
 - The crypt version changes: the key locations saved for the previous version are not used, and the query is made again (FR-005).
@@ -215,9 +220,9 @@ and with the naive alternative that makes a full pass per key, and compare.
 - **FR-007**: The verification MUST assume that: the player can cross any open exit, and any closed exit whose key the player already has; keys are never consumed; every enemy can be defeated, so a key an enemy drops is obtainable in the room where that enemy starts; and traps and automatic door closings never block, since a door that closes again can be opened again with the same key.
 - **FR-008**: A crypt MUST be solvable if, starting from the initial room and under the assumptions of FR-007, the player can obtain the exit key and reach the exit room through a door that requires it. Otherwise it MUST be non-solvable.
 - **FR-009**: For a solvable crypt the result MUST include an order in which to obtain the keys, listing every key the player can obtain, such that every key appears after all the keys needed to reach it.
-- **FR-010**: The result MUST be deterministic: the same crypt MUST always give the same order of keys, and the same report, whatever the order in which the service lists rooms or keys. If several orders are valid, any is accepted.
+- **FR-010**: The result MUST be deterministic: the same crypt MUST always give the same order of keys, and the same report, whatever the order in which the service lists the keys and the exits of each room. The rooms are taken sorted by id, as in part one. If several orders are valid, any is accepted.
 - **FR-011**: When several keys can be obtained at the same moment, the order of keys MUST put first the key with the lowest identifier, compared as text.
-- **FR-012**: For a non-solvable crypt the result MUST include: (a) the keys that cannot be obtained; (b) the doors of the blocked frontier, that is, the closed doors adjacent to the region the player can reach, each with the key it requires; (c) where each of those keys is located; and (d) when a key is located behind doors that only it opens, directly or through a chain of keys, every concrete cycle, reported deterministically: each cycle starting at its lowest key id, and the cycles sorted by that id. A closed door whose key is not in the key list, or that names no key, can never be opened: it MUST appear in the blocked frontier with the key it names (or none), and a key that the key list does not give MUST be reported as unobtainable with its location unknown; the same applies to the exit key.
+- **FR-012**: For a non-solvable crypt the result MUST include: (a) the keys that cannot be obtained; (b) the doors of the blocked frontier, that is, the closed doors adjacent to the region the player can reach, each with the key it requires; (c) where each of those keys is located; and (d) when a key is located behind doors that only it opens, directly or through a chain of keys, every concrete cycle, reported deterministically: each cycle starting at its lowest key id, and the cycles sorted by that id. A cycle is made of keys each of which is located in a region that can only be entered through blocked frontier doors whose keys are themselves unobtainable; when several unobtainable keys guard the same region, the one with the lowest key id is the one reported as its guard. In the pure case, where a single key guards the region, the cycle is exactly a chain of keys located behind doors that only the next key opens. A closed door whose key is not in the key list, or that names no key, can never be opened: it MUST appear in the blocked frontier with the key it names (or none), and a key that the key list does not give MUST be reported as unobtainable with its location unknown; the same applies to the exit key.
 - **FR-013**: The information for the report of a non-solvable crypt MUST come from the same pass over the crypt that decides solvability, not from extra passes per key. One additional linear sweep over only the part of the crypt that pass did not reach MAY be used to find the cycles; a pass per key MUST NOT be used.
 - **FR-014**: Before a game starts, the program MUST run the verification, and the interface MUST let the player see the report. For a solvable crypt, the verdict and the order of keys MUST be shown at the start of the game. The verification MUST NOT run again for `--replay` or for loading a saved game inside a running session.
 - **FR-015**: If the crypt is not solvable, the game MUST NOT start and the report MUST be shown, unless the `--forzar` option is used.
@@ -236,7 +241,7 @@ and with the naive alternative that makes a full pass per key, and compare.
 - **Key location**: For each key, the room where it is and, when an enemy carries it, that enemy; in that case the room is the one where the enemy starts.
 - **Order of keys**: A sequence in which to obtain the keys, where every key appears after all the keys needed to reach it.
 - **Blocked frontier**: The closed doors adjacent to the region the player can reach, each with the key it requires.
-- **Cycle**: A key located behind doors that only it opens, directly or through a chain of keys.
+- **Cycle**: A key located behind doors that only it opens, directly or through a chain of keys; when several keys guard the same region, the guard reported is the one with the lowest key id.
 - **Verdict and report**: Solvable (with an order of keys) or non-solvable (with the unobtainable keys, the blocked frontier, the key locations and the cycle, if any).
 
 ## Success Criteria *(mandatory)*
@@ -245,7 +250,7 @@ and with the naive alternative that makes a full pass per key, and compare.
 
 - **SC-001**: 100% of the acceptance scenarios in this spec pass as automated tests, each citing its FR.
 - **SC-002**: A non-solvable crypt never starts a game without `--forzar`, and the report is shown in 100% of those cases.
-- **SC-003**: The same crypt gives the same order of keys and the same report in 100% of runs, whatever the order in which its rooms and keys are listed.
+- **SC-003**: The same crypt gives the same order of keys and the same report in 100% of runs, whatever the order in which its keys and the exits of its rooms are listed.
 - **SC-004**: In every non-solvable crypt of the tests, the report lists exactly the unobtainable keys, the blocked frontier, the key locations and, when it exists, the cycle: 0 omissions and 0 extra entries.
 - **SC-005**: Verifying the largest published crypt takes at most 200 ms.
 - **SC-006**: With synthetic crypts of many chained keys, the verification grows approximately linearly with the size of the crypt, and the benchmark reports it next to the naive alternative.
