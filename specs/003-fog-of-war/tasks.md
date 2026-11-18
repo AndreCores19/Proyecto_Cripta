@@ -37,6 +37,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 | `tests/test_ir_a_viaje.py` (new) | trip, stop reasons, scroll (US6-1, US6-7, US6-10, US7 including US7-11, US8-1) |
 | `tests/test_ir_a_bitacora.py` (new) | log comments, saved commands, replay (US6-8, US6-9) |
 | `tests/test_bench_ir_a.py` (new) | US9 |
+| `tests/test_ir_a_guardado.py` (new) | FR-012, SC-005: save through `GuardadoBinario` and load through `Aplicacion._sesion` |
 | `tests/capturar_estado_niebla.py` (new helper, not a test module) | state of seeded games before any change |
 
 ## Common fixtures
@@ -244,6 +245,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
     - No spec correction was needed, so `checklists/requirements.md` was not touched.
 - [X] T054 Add a note under T053 saying what was checked and what was not, and update `specs/003-fog-of-war/checklists/requirements.md` only if a spec correction was needed (a spec correction goes in its own commit before the code that depends on it) — all FRs
 - [X] T055 [US7] Cover the guard of FR-028 (added on 2026-11-17, after delivery): in `tests/test_ir_a_viaje.py` add US7-11 with docstring `FR-028, FR-022 · US7-11`. (a) A `Viaje` on a known chain whose move function always returns `False` (the route names an exit but the move is refused): `paso()` returns `SIN_RUTA`, `direcciones` stays empty, `partida.reloj`, `partida.acciones_jugador` and the player's room are unchanged, and the move function was called exactly once per `paso()`, never in a loop. (b) The same through `JuegoService.ir_a`, replacing the instance's `mover` by one that refuses: the result is `aceptado` True, `motivo` `"sin_ruta"`, `pasos` 0, `direcciones` `[]`. Tests only; `model/viaje_logica.py` already has the guard. Depends on T032 — FR-028, FR-022
+- [X] T056 [US4] Cover saving and loading with fog (added on 2026-11-17 after the analysis, X5): create `tests/test_ir_a_guardado.py`. Through `Aplicacion._sesion` (the real path of the `guardar` and `cargar` commands, with the real `guardar_partida`, `ruta_guardado` and `validar_guardado`, and `GuardadoBinario`), with a fake factory (`FabricaFalsa` subclass that builds the rooms again on every `nueva_partida`) and no network: play a game with a torch picked up and lit, two entries with the torch, a door observed on leaving a room and one "ir a" trip; `guardar`; then load it with `_sesion(vista, ruta)` and check that (a) the knowledge snapshot (room levels, door memory, discovered rooms) of the loaded game equals the original, on rooms rebuilt from scratch, with the same seed and clock; (b) the saved commands hold the steps of the trip as moves and not the order ("ir a ..."); (c) saving again after loading gives the same command list. Production code unchanged: the test passed without fixes. Depends on T019, T028 — FR-012, FR-024, SC-005
 
 ---
 
@@ -261,7 +263,7 @@ Phase 1 (T001–T004)  baseline: nothing else may start before T003–T004 are s
 → Phase 9  US8           T034, T035 → T036 → T037
 → Phase 10 US5           T038 → T039 → T040
 → Phase 11 US9           T041 → T042 → T043
-→ Phase 12 polish        T044, T045, T046, T050, T055 → T047 → T048 → T049, T051, T052 → T053 → T054
+→ Phase 12 polish        T044, T045, T046, T050, T055, T056 → T047 → T048 → T049, T051, T052 → T053 → T054
 ```
 
 - Phase 2 depends only on Phase 1. Phases 3 to 5 each add code to `model/partida_logica.py`, so they are sequential.
@@ -289,5 +291,5 @@ Phase 12: T044 ∥ T045 ∥ T049
 3. **"ir a"** (Phases 7 to 9): the route and the trip first, then the stop reasons, then the scroll. MVP of the command: Phase 7.
 4. **Known map and benchmark** (Phases 10 and 11), then polish (Phase 12).
 5. Commit per phase; a spec correction always goes in its own commit before the code that follows it (Constitution VII). Review each phase's checkpoint before starting the next.
-6. **Scenario coverage** (Constitution IX): US1-1, US1-2, US1-7 → T007; US1-3..US1-6, US1-8 → T008; US2-1..5 → T012; US3-1..5 → T015; US3-6 and scenario 5 → T018; US4-1, US4-4 → T019; US4-2, US4-3 → T018; US5-1..3 → T038; US6-1, US6-2, US6-7, US6-10 → T023; US6-3..6 → T021; US6-8, US6-9 → T026; US7-1, US7-2, US7-9 → T030; US7-3..8 → T031; US7-11 and FR-028 → T055; US8-1 → T034; US8-2, US8-3 → T035; US9-1 → T042 and T043; US9-2 → T041; SC-002 and SC-003 → T050; Appendix B → T051; decision §5.3 → T052.
+6. **Scenario coverage** (Constitution IX): US1-1, US1-2, US1-7 → T007; US1-3..US1-6, US1-8 → T008; US2-1..5 → T012; US3-1..5 → T015; US3-6 and scenario 5 → T018; US4-1, US4-4 → T019; US4-2, US4-3 → T018; US5-1..3 → T038; US6-1, US6-2, US6-7, US6-10 → T023; US6-3..6 → T021; US6-8, US6-9 → T026; US7-1, US7-2, US7-9 → T030; US7-3..8 → T031; US7-11 and FR-028 → T055; FR-012 and SC-005 (save and load) → T056; US8-1 → T034; US8-2, US8-3 → T035; US9-1 → T042 and T043; US9-2 → T041; SC-002 and SC-003 → T050; Appendix B → T051; decision §5.3 → T052.
 7. **Mandatory scenarios of the assignment** (spec Input): 1 → US6-1 (T023); 2 → US7-1 (T030); 3 → US7-3 (T031); 4 → US3-2 (T015); 5 → US3-6 (T018); 6 → US8-1 (T034).

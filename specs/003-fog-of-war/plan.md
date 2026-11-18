@@ -86,7 +86,7 @@ synthetic crypt of 300 rooms; synthetic crypts of 100, 500 and 1000 rooms are re
 | Item | Status | Notes |
 |---|---|---|
 | `spec.md` committed before implementation | PASS | Commits `0773eaf` and `64b8c88`. A spec correction goes in its own commit first (Constitution VII). |
-| Every task cites its FR | PASS | Every task of `tasks.md` (T001 to T055) cites its FRs. |
+| Every task cites its FR | PASS | Every task of `tasks.md` (T001 to T056) cites its FRs. |
 | Every scenario has a test citing its FR | PASS | Mapping in [quickstart.md](./quickstart.md) and the scenario-coverage list of `tasks.md`; T051 maps every Appendix B case. |
 
 ### Principles
