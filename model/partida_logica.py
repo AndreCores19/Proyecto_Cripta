@@ -7,7 +7,7 @@ from model.objeto_logica import PERGAMINO_RETROCESO
 from model.tiempo_logica import (intervalo, COSTO_ESPERAR, COSTO_ATACAR, COSTO_ABRIR, COSTO_RECOGER, COSTO_SOLTAR, COSTO_EQUIPAR, COSTO_USAR)
 from model.efectos_logica import Efectos
 from model.ruta_cazador import DecisorCazador
-from model.sala_logica import AVISTADA, DESCONOCIDA, EXPLORADA
+from model.sala_logica import ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA
 
 RASTRO_VIGENCIA = 400
 
@@ -184,6 +184,21 @@ class Partida:
             if salida.destino.conocimiento < AVISTADA:
                 self._subir(salida.destino, AVISTADA)
 
+    def _memorizar_puertas(self, sala):
+        #anota el estado real de las puertas de `sala` en las dos caras de cada una
+        for salida in sala.salidas:
+            valor = CERRADA if salida.cerrada else ABIERTA
+            self.historial.asignar(salida, "memoria", valor)
+            if salida.opuesta is not None:
+                self.historial.asignar(salida.opuesta, "memoria", valor)
+
+    def puerta_recordada(self, salida):
+        #una puerta que toca la sala del jugador se lee en vivo; las demás, de lo anotado
+        aqui = self.jugador.sala
+        if salida.origen is aqui or salida.destino is aqui:
+            return CERRADA if salida.cerrada else ABIERTA
+        return salida.memoria
+
     def _refrescar_rastro(self):
         self.historial.asignar(self.jugador.sala, "rastro", self.reloj)
 
@@ -202,6 +217,7 @@ class Partida:
         with self._accion_jugador():
             self._refrescar_rastro()
             self._sumar_accion()
+            self._memorizar_puertas(self.jugador.sala)   #antes de cambiar de sala
             self.historial.asignar(self.jugador, "sala", salida.destino)
             self._entrar_en_sala(salida.destino)
             self._explorar(salida.destino)
