@@ -61,16 +61,43 @@ Comandos del juego:
 | `usar`, `equipar`, `soltar` | Actúan sobre el objeto marcado con `>` en el inventario. |
 | `inv`, `sig`, `ant` | Ver el inventario y moverse al siguiente o al anterior. |
 | `inv peso`, `inv valor`, `inv nombre` | Vista ordenada del inventario (no cambia el orden real). |
+| `mapa` | Ver el mapa conocido: las salas exploradas con sus salidas, costos y estado recordado de las puertas. No consume tiempo. |
+| `ir a <id>` | Viajar automáticamente a una sala ya explorada (por el id que muestra `mapa`), un paso normal a la vez. |
 | `retroceder` | Usar el pergamino de retroceso (también funciona seleccionando el pergamino en inventario y escribir usar). |
 | `guardar [nombre]`, `cargar [nombre]` | Guardar o cargar la partida (nombre por defecto: `partida`). |
 | `salir` | Terminar la sesión. |
+
+### Niebla de guerra y viaje automático
+
+El jugador solo conoce lo que ha explorado. Cada sala está en uno de tres estados:
+
+- **explorada**: el jugador estuvo en ella (o la antorcha la exploró); se ven su nombre, sus salidas, costos y puertas.
+- **avistada**: es el destino de una salida de una sala explorada; solo se sabe que existe, y la salida se muestra
+  como `sin explorar`, sin nombre ni id.
+- **desconocida**: no aparece en ninguna parte.
+
+El mapa recuerda cada puerta como la vio por última vez: mientras el jugador está en una de las dos salas de la puerta la
+ve en vivo, y al salir queda anotado su estado. Con la **antorcha** encendida, al entrar en una sala quedan exploradas
+todas sus vecinas (también las que están detrás de una puerta cerrada), sin activar enemigos ni trampas ni pedir su contenido.
+
+`ir a <id>` calcula la ruta más barata sobre lo conocido (solo salas exploradas y puertas recordadas abiertas; nunca abre una
+puerta) y da un paso normal por vez, recalculando la ruta antes de cada uno. El viaje se detiene, y el mensaje
+`Viaje detenido: ...` dice por qué, cuando: termina la partida, llega al destino, hay enemigos en la sala, recibe daño,
+ya no hay ruta conocida, o se leyó un pergamino de retroceso (que revierte solo el último paso). En la bitácora
+la orden queda como un comentario `# ir a <id>` y cada paso como un movimiento, de modo que `--replay` y las partidas
+guardadas repiten solo movimientos.
+
 ## 4. Pruebas automáticas
 
 `python -m pytest`
 
 Las pruebas están en `tests/` y cubren: inventario, puertas, efectos (veneno y regeneración),
 botín de enemigos, ordenamientos, bitácora, servicio y una prueba aleatoria del retroceso que
-compara una foto exacta del estado antes de una acción y después de retroceder.
+compara una foto exacta del estado antes de una acción y después de retroceder. Para la niebla de guerra y
+«ir a»: `test_niebla_estados`, `test_niebla_puertas`, `test_niebla_antorcha`, `test_niebla_retroceso`,
+`test_vista_niebla` (sala y `mapa`), `test_ir_a_ruta` (ruta, desempates, oráculo y propiedad de SC-002 y SC-003),
+`test_ir_a_viaje` (motivos de parada y pergamino), `test_ir_a_bitacora` (bitácora, comentarios y replay sin vista)
+y `test_bench_ir_a`; los constructores de criptas y el oráculo de rutas están en `tests/mapas_niebla.py`.
 
 _**Nota:** La carpeta `pruebas_manuales/` contiene pruebas manuales de las capas de datos,
 adaptadores y vista (almacén, caché, catálogo, DTO, estructuras, lector, lista, repositorio y vista).
@@ -101,6 +128,7 @@ También se puede correr uno solo, desde la carpeta del proyecto y con `-m`:
 | `python -m bench.bench_fichas` | Costo de una ficha desde memoria, disco y red, y costo de marcar las fichas en uso. |
 | `python -m bench.bench_precarga` | Solicitudes de contenido de salas: una por sala, anticipar siempre y lote solo si falta. |
 | `python -m bench.bench_catalogo` | Solicitudes de fichas del catálogo: una por id, por sala y por lote de salas. |
+| `python -m bench.bench_ir_a` | Cálculo de la ruta de «ir a» con todo el mapa conocido (100 salas, p99 <= 5 ms) y, como información, el paso completo y 500 y 1000 salas. |
 | `python -m bench.bench_replay` | Bitácora de partida: anotar con y sin flush, leer, reejecutar y copiar el estado. |
 
 Los benchmarks usan `time`, `gc`, `tracemalloc`, `copy`, `json` y `tempfile` únicamente para medir
@@ -116,7 +144,7 @@ El programa crea estas carpetas y archivos al ejecutarse (todos se pueden borrar
 | Ruta | Qué contiene |
 |---|---|
 | `saves/<nombre>.sav` | Partida guardada con `guardar [nombre]`, en el formato binario propio. |
-| `saves/partida_<cripta>_<semilla>.log` | Bitácora de la partida (texto, un comando por línea) para `--replay`. |
+| `saves/partida_<cripta>_<semilla>.log` | Bitácora de la partida (texto, un comando por línea, más comentarios `# ir a <id>`) para `--replay`. |
 | `saves/puntajes.txt` | Tabla de puntajes local, una línea por partida terminada. |
 | `cache/catalogo/` | Fichas del catálogo descargadas (un `.json` por ficha) y `version.txt`. Si cambia la versión del catálogo, se borra y se vuelve a descargar. |
 | `offline/` | Paquete de respuestas para `--offline`. Se genera con `python grabar_offline.py`. Está incluido en el repositorio. |
@@ -129,7 +157,7 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
 
 | Carpeta | Contenido |
 |---|---|
-| `model/` | Lógica del juego: partida, jugador, enemigos, salas, objetos, trampas, efectos, inventario y reloj. No conoce la red ni los archivos. |
+| `model/` | Lógica del juego: partida, jugador, enemigos, salas, objetos, trampas, efectos, inventario, reloj, la ruta de «ir a» y el viaje. No conoce la red ni los archivos. |
 | `structures/` | Estructuras de datos propias: agenda (heap), historial (buffer circular de cuadros), bitácora (buffer circular), lista doblemente enlazada, ordenamientos, caché y cola. |
 | `service/` | `JuegoService`: fachada entre los controladores y el modelo. |
 | `data/`, `dto/`, `adapters/` | Acceso a la API, lectura de fichas y archivos. |
@@ -140,6 +168,7 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
 ## 8. Documentación
 
 - **Documento de Decisiones de Diseño:** [docs/Documento_de_Decisiones.pdf](docs/Documento_de_Decisiones.pdf)
+- **Decisiones de la niebla de guerra y «ir a»** (complementa al documento anterior): [docs/DECISIONES.md](docs/DECISIONES.md)
 - **Bitácora de prompts a LLM:** `Prompts_LLM_EmilyB.md` y `Prompts_LLM_AndreaC.md`.
 
 ## 9. Decisiones de diseño resumidas 
@@ -171,5 +200,10 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
   no coinciden.
 - **Modo sin conexión:** `ClienteOffline` ofrece los mismos métodos que `ClienteHttp` y lee JSON
   del paquete `offline/`; la elección se hace en un solo lugar de `main.py` y el modelo no se entera.
+- **Niebla de guerra:** el conocimiento son dos enteros en la propia cripta (`Sala.conocimiento`, `Salida.memoria`)
+  más una lista de salas descubiertas; todo cambio pasa por el historial, así que el pergamino lo revierte y
+  recargar una partida lo reconstruye al reejecutar los comandos.
+- **«ir a»:** búsqueda propia (`RutaConocida`) hacia atrás desde el destino sobre lo conocido, con el montículo propio
+  y las estampas del cazador; ver [docs/DECISIONES.md](docs/DECISIONES.md).
 - **Puntajes:** archivo de texto; al mostrarse se ordenan con `ordenar` (victorias primero, luego
   más enemigos derrotados y menos tiempo).
