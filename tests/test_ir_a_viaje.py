@@ -1,4 +1,5 @@
 from model.enemigo_logica import Enemigo
+from model.objeto_logica import Objeto, PERGAMINO_RETROCESO
 from model.sala_logica import ABIERTA, CERRADA, Sala
 from model.trampa_logica import Trampa
 from model.viaje_logica import (DANO, ENEMIGOS, FIN_PARTIDA, LLEGADA, RETROCESO, SIN_RUTA, Viaje)
@@ -301,4 +302,49 @@ def test_un_cazador_que_entra_en_la_sala_durante_el_paso_detiene_el_viaje():
     resultado = servicio.ir_a("5")
     assert resultado.motivo == ENEMIGOS and resultado.pasos == 1
     assert cazador.sala is partida.jugador.sala
+    assert partida.jugador.sala is salas[1]
+
+
+# --- El pergamino revierte solo el último paso (T034) -----------------------
+
+def _pergamino():
+    return Objeto(90, "pergamino", "Pergamino", PERGAMINO_RETROCESO, 1, 1)
+
+
+def _estado_del_jugador(partida):
+    return (partida.jugador.sala.id, partida.reloj, partida.acciones_jugador)
+
+
+def test_un_retroceso_entre_dos_pasos_revierte_solo_el_ultimo_y_el_viaje_se_detiene():
+    """FR-022, FR-023, FR-025 · US8-1 (escenario 6)"""
+    salas, _, partida, servicio = _cadena_conocida()
+    llamadas = []
+
+    def mover(direccion):
+        llamadas.append(direccion)
+        return servicio.mover(direccion)
+
+    viaje = Viaje(partida, salas[4], mover)
+    assert viaje.paso() is None
+    tras_el_primero = _estado_del_jugador(partida)
+    assert viaje.paso() is None
+    assert partida.retroceder() is True                      # se lee el pergamino entre dos pasos
+    assert _estado_del_jugador(partida) == tras_el_primero   # solo se revirtió el último paso
+    assert viaje.paso() == RETROCESO
+    assert len(llamadas) == 2                                # no se dio ningún paso más
+    assert _estado_del_jugador(partida) == tras_el_primero
+
+
+def test_con_un_pergamino_real_del_inventario_el_viaje_se_detiene_por_retroceso():
+    """FR-022, FR-025 · US8-1 (JuegoService.retroceder con un pergamino real)"""
+    salas, _, partida, servicio = _cadena_conocida()
+    partida.jugador.inventario.agregar(_pergamino())
+    viaje = Viaje(partida, salas[4], servicio.mover)
+    assert viaje.paso() is None
+    assert viaje.paso() is None
+    sala_tras_dos = partida.jugador.sala
+    assert servicio.retroceder() is True
+    assert partida.jugador.sala is not sala_tras_dos
+    assert partida.jugador.sala is salas[1]
+    assert viaje.paso() == RETROCESO
     assert partida.jugador.sala is salas[1]

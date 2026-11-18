@@ -22,10 +22,13 @@ class Viaje:
         self.destino = destino
         self.mover = mover
         self.ruta = RutaConocida()
+        self.retrocesos = partida.retrocesos #para notar un pergamino leído entre dos pasos
         self.direcciones = []                #las salidas que se cruzaron, en orden
 
     def paso(self):
         partida = self.partida
+        if partida.retrocesos != self.retrocesos:
+            return RETROCESO
         if partida.terminada:
             return FIN_PARTIDA
         if partida.jugador.sala is self.destino:

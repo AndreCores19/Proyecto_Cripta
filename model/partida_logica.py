@@ -34,6 +34,7 @@ class Partida:
         self.efectos = Efectos(self)
         self.decisor_cazador = DecisorCazador("compartido")
         self.conocidas = []                      #salas con conocimiento > 0, en orden de descubrimiento
+        self.retrocesos = 0                      #cuántos retrocesos van; fuera del historial a propósito
         jugador.inventario.historial = self.historial
         jugador.evento = self.agenda.programar(0, "accion", jugador)
         self._entrar_en_sala(jugador.sala)
@@ -58,6 +59,7 @@ class Partida:
     def retroceder(self):
         if self.terminada or not self.historial.deshacer():
             return False
+        self.retrocesos += 1                     #un viaje en curso lo nota y se detiene
         self.bitacora.agregar(f"t={self.reloj}: retrocedes en el tiempo")
         return True
 

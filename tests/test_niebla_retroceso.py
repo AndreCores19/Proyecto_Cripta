@@ -1,7 +1,8 @@
 from controller.controlador import Controlador
+from model.objeto_logica import Objeto, PERGAMINO_RETROCESO
 from model.sala_logica import ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA, NO_OBSERVADA
 from tests.mapas_cazador import cadena, grilla
-from tests.mapas_niebla import partida_en, servicio_en
+from tests.mapas_niebla import explorar_todo, partida_en, servicio_en
 from view.vista_silenciosa import VistaSilenciosa
 
 
@@ -118,3 +119,52 @@ def test_misma_cripta_semilla_y_comandos_dan_el_mismo_conocimiento_en_cada_paso(
             controlador_b.ejecutar(comando)
             assert (instantanea_conocimiento(salas_a, partida_a)
                     == instantanea_conocimiento(salas_b, partida_b))
+
+
+# --- El pergamino y los viajes (T035) ---------------------------------------
+
+def _preparar_conocido(salas, partida):
+    """Todo explorado y recordado, y `conocidas` completa (preparación de la prueba)."""
+    explorar_todo(salas)
+    for sala in salas:
+        if not any(c is sala for c in partida.conocidas):
+            partida.conocidas.append(sala)
+
+
+def test_el_paso_revertido_devuelve_las_salas_exploradas_y_las_puertas_observadas():
+    """FR-013, FR-025 · US8-2"""
+    salas, pares = cadena([100, 100, 100])
+    partida = partida_en(salas, salas[0])
+    _preparar_conocido(salas, partida)
+    # S3 aún no se conoce y la puerta de S1 nunca se observó: el paso hacia S2 descubre ambas cosas
+    salas[2].conocimiento = 0
+    partida.conocidas.remove(salas[2])
+    for cara in pares[0]:
+        cara.memoria = 0
+    antes = instantanea_conocimiento(salas, partida)
+    servicio = servicio_en(partida)
+    resultado = servicio.ir_a("2")
+    assert resultado.motivo == "llegada" and resultado.pasos == 1
+    assert salas[2].conocimiento == 1 and pares[0][0].memoria == 1
+    assert instantanea_conocimiento(salas, partida) != antes
+    assert partida.retroceder() is True
+    assert instantanea_conocimiento(salas, partida) == antes
+
+
+def test_un_pergamino_leido_tras_un_viaje_revierte_solo_su_ultimo_paso():
+    """FR-013, FR-025 · US8-3"""
+    salas, _ = cadena([100, 100, 100])
+    partida = partida_en(salas, salas[0])
+    servicio = servicio_en(partida)
+    for _ in range(3):
+        servicio.mover("E")
+    for _ in range(3):
+        servicio.mover("O")
+    partida.jugador.inventario.agregar(Objeto(90, "pergamino", "Pergamino", PERGAMINO_RETROCESO, 1, 1))
+    resultado = servicio.ir_a("4")
+    assert resultado.motivo == "llegada" and resultado.pasos == 3
+    assert partida.jugador.sala is salas[3]
+    reloj_tras_dos_pasos = partida.reloj - 100
+    assert servicio.retroceder() is True
+    assert partida.jugador.sala is salas[2]                   # solo el último paso
+    assert partida.reloj == reloj_tras_dos_pasos
