@@ -1,0 +1,33 @@
+--- corrida 1 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.307     0.975     2.779   cumple
+                grande    100       100      1.202     3.232     5.005   cumple
+               extremo    100       300      3.732     8.672    10.474   cumple
+             cazadores    100       300      2.582     6.347    12.832   cumple
+ cazadores_rango_total    100       300      2.042     5.105     8.837   cumple
+   referencia_cripta06    300        30      1.130     2.166    17.198   cumple
+  referencia_sintetica    300        30      1.407     3.417   137.594   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- corrida 2 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.371     1.002     2.741   cumple
+                grande    100       100      1.262     4.247     5.779   cumple
+               extremo    100       300      4.880    13.948    20.164   cumple
+             cazadores    100       300      7.705    12.873   115.515   cumple
+ cazadores_rango_total    100       300      5.678     9.596    20.960   cumple
+   referencia_cripta06    300        30      1.312     2.181    31.385   cumple
+  referencia_sintetica    300        30      1.265     2.083     2.718   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
+--- corrida 3 ---
+             escenario  salas  enemigos   promedio       p99      peor   (ms)
+                normal     20        30      0.324     0.960     1.566   cumple
+                grande    100       100      2.123     4.715     7.612   cumple
+               extremo    100       300     10.386    15.076    38.370   cumple
+             cazadores    100       300      7.614    12.622    46.090   cumple
+ cazadores_rango_total    100       300      5.801     9.649    33.493   cumple
+   referencia_cripta06    300        30      1.242     2.098     3.678   cumple
+  referencia_sintetica    300        30      1.151     2.033     2.543   cumple
+
+Limite: 20 ms por ciclo (veredicto sobre el percentil 99: p99 <= 20 ms)
