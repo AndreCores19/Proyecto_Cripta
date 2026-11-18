@@ -92,8 +92,8 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 **Independent Test**: a crypt where the key is in what a wandering enemy drops.
 
-- [ ] T009 [P] [US4] In `tests/test_solvabilidad_informe.py` add: US4-1 (a key with `id_enemigo` set and `id_sala` the enemy's initial room: the verification places it in that room, so the key is obtainable as soon as that room is reached and the order and verdict equal the oracle's), `LlaveUbicacionDTO.desde_json({"id": ..., "sala": ..., "enemigo": ...})` keeps the enemy id and `desde_json` without `enemigo` gives `id_enemigo` `None`. The key's location is never moved by the enemy's behavior (no enemy is simulated). Docstrings `FR-003 · US4-1` — FR-002, FR-003
-- [ ] T010 [US4] Run `python -m pytest tests/test_solvabilidad_informe.py -v`. If a test fails, the cause is the verification using `id_enemigo` for something other than the report: fix it in `model/solvabilidad_logica.py` — FR-003. Then run the whole suite
+- [X] T009 [P] [US4] In `tests/test_solvabilidad_informe.py` add: US4-1 (a key with `id_enemigo` set and `id_sala` the enemy's initial room: the verification places it in that room, so the key is obtainable as soon as that room is reached and the order and verdict equal the oracle's), `LlaveUbicacionDTO.desde_json({"id": ..., "sala": ..., "enemigo": ...})` keeps the enemy id and `desde_json` without `enemigo` gives `id_enemigo` `None`. The key's location is never moved by the enemy's behavior (no enemy is simulated). Docstrings `FR-003 · US4-1` — FR-002, FR-003
+- [X] T010 [US4] Run `python -m pytest tests/test_solvabilidad_informe.py -v`. If a test fails, the cause is the verification using `id_enemigo` for something other than the report: fix it in `model/solvabilidad_logica.py` — FR-003. Then run the whole suite
 
 **Checkpoint**: enemy keys are placed. US4-2 is added in Phase 5, where the report exists.
 
