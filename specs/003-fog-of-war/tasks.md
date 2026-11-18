@@ -34,7 +34,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 | `tests/test_niebla_antorcha.py` (new) | US3 |
 | `tests/test_niebla_retroceso.py` (new) | US4, US3-6, US8-2, US8-3 |
 | `tests/test_ir_a_ruta.py` (new) | route search and tie-break (US6-2..US6-6), property test of SC-002 and SC-003 |
-| `tests/test_ir_a_viaje.py` (new) | trip, stop reasons, scroll (US6-1, US6-7, US6-10, US7, US8-1) |
+| `tests/test_ir_a_viaje.py` (new) | trip, stop reasons, scroll (US6-1, US6-7, US6-10, US7 including US7-11, US8-1) |
 | `tests/test_ir_a_bitacora.py` (new) | log comments, saved commands, replay (US6-8, US6-9) |
 | `tests/test_bench_ir_a.py` (new) | US9 |
 | `tests/capturar_estado_niebla.py` (new helper, not a test module) | state of seeded games before any change |
@@ -54,7 +54,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 **Purpose**: save the "before" numbers and state. Nothing in this phase edits code. Every later task depends on it.
 
-- [X] T001 Check that `specs/003-fog-of-war/spec.md` and the plan artifacts are committed (commits `0773eaf` and `73cc881`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/` or `main.py` (Constitution VII) — all FRs
+- [X] T001 Check that `specs/003-fog-of-war/spec.md` and the plan artifacts are committed (spec commits `0773eaf` and `64b8c88`, plan artifacts `73cc881`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/` or `main.py` (Constitution VII) — all FRs
 - [X] T002 Run `python -m pytest` on the unchanged code and note the result. It is the "all green before" reference for Phase 3 and Phase 12 — FR-014
 - [X] T003 [P] Run `python -m bench.bench_ciclo` three times on the unchanged code and save all three outputs, separated by a line `--- corrida N ---`, to `specs/003-fog-of-war/bench-antes-ciclo.txt`. Do not edit the output — FR-026
 - [X] T004 [P] Capture the state of seeded games before any change — FR-014 (SC-006):
@@ -176,7 +176,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 - [X] T034 [P] [US8] In `tests/test_ir_a_viaje.py` add scenario 6 / US8-1 (the console cannot interrupt a running trip, so "during" means between two steps): drive the trip by hand with `Viaje` and a move function wrapper that, after the first step, calls `partida.retroceder()` once (a rewind of the last step); the next `paso()` returns `RETROCESO`, no further move is made, and only the last step was reverted (room, clock and `acciones_jugador` equal the state after the first step minus the rewound step). Also with `JuegoService.retroceder()` and a real scroll in the inventory — FR-022, FR-023, FR-025
 - [X] T035 [P] [US8] In `tests/test_niebla_retroceso.py` add US8-2 (the reverted step explored new rooms and observed doors: both return to the previous state) and US8-3 (a scroll read after a finished trip reverts only the last step of the trip) — FR-013, FR-025
-- [X] T036 [US8] In `model/partida_logica.py` add `self.retrocesos = 0` in `__init__`, a plain attribute **not** written through the history, and add 1 to it in `retroceder()` when `historial.deshacer()` succeeds. In `Viaje` store `partida.retrocesos` at creation and return `RETROCESO` at the start of `paso()` if it changed. Depends on T034, T035 — FR-022, FR-025
+- [X] T036 [US8] In `model/partida_logica.py` add `self.retrocesos = 0` in `__init__`, a plain attribute **not** written through the history, and add 1 to it in `retroceder()` when `historial.deshacer()` succeeds. In `Viaje` store `partida.retrocesos` at creation and make it the **first** check of `paso()`, before every other check: if it changed, return `RETROCESO` and take no step (FR-022 as amended on 2026-11-17: a rewind since the previous step is detected before the next step and takes precedence over the ordered reasons end of the game, arrival, enemies, damage, no route). Depends on T034, T035 — FR-022, FR-025
 - [X] T037 [US8] Run `python -m pytest tests/test_ir_a_viaje.py tests/test_niebla_retroceso.py tests/test_retroceso_aleatorio.py -v` and the whole suite; all green — FR-025
 
 **Checkpoint**: all P1 stories done. Review before the P2 phases.
@@ -204,8 +204,8 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 **Independent Test**: run `bench_ir_a` and read the verdict.
 
 - [X] T041 [P] [US9] Write `tests/test_bench_ir_a.py` (small configuration, like `tests/test_bench_cazador.py`): US9-2 (the same seed builds the same crypt twice: compare `(id, direction, destination id, cost)` of every exit), the report has the average, 99th percentile and maximum, the benchmark builds games with `Partida` directly and `grep`-style check that `bench/bench_ir_a.py` contains no import of `view`, and every measured route equals `ruta_referencia` on the small configuration — FR-026, FR-027
-- [X] T042 [US9] Create `bench/bench_ir_a.py`: a seeded crypt builder (reuse `armar_cripta`/`_salas_conexas` of `bench/bench_cazador.py` after reading them, or write a seeded builder in the new file) with `num_salas` rooms and costs from the same set, `explorar_todo`-style marking of every room explored and every door remembered open **by plain assignment**; `ejecutar(pequeno=False)` measures `RutaConocida.siguiente_paso` alone (microseconds, 2000 repetitions, player and destination drawn per repetition from `random.Random(semilla)`, far apart) and, for information, a whole step (route plus move plus event cycle) for 100 rooms (the verdict size), then 500 and 1000 rooms as information. It prints average, 99th percentile and maximum, and the verdict `p99 <= 5 ms` for 100 rooms. Register it in the `--bench` list of `main.py` next to `bench_cazador`. Imports nothing from `view/`. Depends on T041 — FR-026, FR-027
-- [X] T043 [US9] Run `python -m bench.bench_ir_a`, `python -m pytest tests/test_bench_ir_a.py -v`, and record the output in `specs/003-fog-of-war/bench-ir-a.txt`. The verdict at 100 rooms must be `<= 5 ms` at the 99th percentile — FR-026 (SC-007)
+- [X] T042 [US9] Create `bench/bench_ir_a.py`: a seeded crypt builder (reuse `armar_cripta`/`_salas_conexas` of `bench/bench_cazador.py` after reading them, or write a seeded builder in the new file) with `num_salas` rooms and costs from the same set, `explorar_todo`-style marking of every room explored and every door remembered open **by plain assignment**; `ejecutar(pequeno=False)` measures `RutaConocida.siguiente_paso` alone (microseconds, 2000 repetitions, player and destination drawn per repetition from `random.Random(semilla)`, far apart) and, for information, a whole step (route plus move plus event cycle) for 300 rooms (the verdict size: the largest published crypt, cripta-06, has 300 rooms), then 100, 500 and 1000 rooms as information. It prints average, 99th percentile and maximum, and the verdict `p99 <= 5 ms` for 300 rooms. Register it in the `--bench` list of `main.py` next to `bench_cazador`. Imports nothing from `view/`. Depends on T041 — FR-026, FR-027
+- [X] T043 [US9] Run `python -m bench.bench_ir_a`, `python -m pytest tests/test_bench_ir_a.py -v`, and record the output in `specs/003-fog-of-war/bench-ir-a.txt`. The verdict at 300 rooms must be `<= 5 ms` at the 99th percentile — FR-026 (SC-007). The whole step is reported for information; a p99 of the whole step above 3 ms is a reason to look for savings in the route search before anything else
 
 **Checkpoint**: performance evidence saved.
 
@@ -243,6 +243,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
     - Not checked by hand: `ir a` stopped by damage, by `sin_ruta` or by a scroll, a victory trip, and a door that closes by itself during a trip (only the automated tests cover them); a saved game (`guardar`/`cargar`) with a trip; the crypts `cripta-02` to `cripta-04`; the online mode (`--offline` was used, so no request was made).
     - No spec correction was needed, so `checklists/requirements.md` was not touched.
 - [X] T054 Add a note under T053 saying what was checked and what was not, and update `specs/003-fog-of-war/checklists/requirements.md` only if a spec correction was needed (a spec correction goes in its own commit before the code that depends on it) — all FRs
+- [ ] T055 [US7] Cover the guard of FR-028 (added on 2026-11-17, after delivery): in `tests/test_ir_a_viaje.py` add US7-11 with docstring `FR-028, FR-022 · US7-11`. (a) A `Viaje` on a known chain whose move function always returns `False` (the route names an exit but the move is refused): `paso()` returns `SIN_RUTA`, `direcciones` stays empty, `partida.reloj`, `partida.acciones_jugador` and the player's room are unchanged, and the move function was called exactly once per `paso()`, never in a loop. (b) The same through `JuegoService.ir_a`, replacing the instance's `mover` by one that refuses: the result is `aceptado` True, `motivo` `"sin_ruta"`, `pasos` 0, `direcciones` `[]`. Tests only; `model/viaje_logica.py` already has the guard. Depends on T032 — FR-028, FR-022
 
 ---
 
@@ -260,7 +261,7 @@ Phase 1 (T001–T004)  baseline: nothing else may start before T003–T004 are s
 → Phase 9  US8           T034, T035 → T036 → T037
 → Phase 10 US5           T038 → T039 → T040
 → Phase 11 US9           T041 → T042 → T043
-→ Phase 12 polish        T044, T045, T046, T050 → T047 → T048 → T049, T051, T052 → T053 → T054
+→ Phase 12 polish        T044, T045, T046, T050, T055 → T047 → T048 → T049, T051, T052 → T053 → T054
 ```
 
 - Phase 2 depends only on Phase 1. Phases 3 to 5 each add code to `model/partida_logica.py`, so they are sequential.
@@ -268,7 +269,7 @@ Phase 1 (T001–T004)  baseline: nothing else may start before T003–T004 are s
 - Phase 7 needs Phases 3 and 4 (explored rooms and `puerta_recordada`); Phases 8 and 9 edit `model/viaje_logica.py` after it, so they are sequential.
 - Phase 10 (`mapa`) needs Phases 3 and 4 only and could run in parallel with Phases 7 to 9 in a second session, since it touches `dto/mapa_vista_dto.py`, `view/` and a different part of the controller and service; it is placed late because it is P2.
 - Phase 11 needs Phase 7 (`RutaConocida`).
-- Edits to the same file are sequential: `model/partida_logica.py` (T009 → T013 → T016 → T036), `model/viaje_logica.py` (T024 → T032 → T036), `service/juego_service.py` (T010 → T025 → T039), `controller/controlador.py` (T028 → T039), `tests/test_ir_a_viaje.py` (T023 → T030 → T031 → T034 → T045), `tests/test_ir_a_ruta.py` (T021 → T050), `tests/test_vista_niebla.py` (T008 → T038), `tests/test_niebla_retroceso.py` (T018 → T019 → T035), `tests/test_ir_a_bitacora.py` (T026 → T044).
+- Edits to the same file are sequential: `model/partida_logica.py` (T009 → T013 → T016 → T036), `model/viaje_logica.py` (T024 → T032 → T036), `service/juego_service.py` (T010 → T025 → T039), `controller/controlador.py` (T028 → T039), `tests/test_ir_a_viaje.py` (T023 → T030 → T031 → T034 → T045 → T055), `tests/test_ir_a_ruta.py` (T021 → T050), `tests/test_vista_niebla.py` (T008 → T038), `tests/test_niebla_retroceso.py` (T018 → T019 → T035), `tests/test_ir_a_bitacora.py` (T026 → T044).
 - `[P]` marks tasks that touch different files with no unfinished dependency; with one implementer they can be done in any order inside their phase.
 
 ### Parallel examples
@@ -288,5 +289,5 @@ Phase 12: T044 ∥ T045 ∥ T049
 3. **"ir a"** (Phases 7 to 9): the route and the trip first, then the stop reasons, then the scroll. MVP of the command: Phase 7.
 4. **Known map and benchmark** (Phases 10 and 11), then polish (Phase 12).
 5. Commit per phase; a spec correction always goes in its own commit before the code that follows it (Constitution VII). Review each phase's checkpoint before starting the next.
-6. **Scenario coverage** (Constitution IX): US1-1, US1-2, US1-7 → T007; US1-3..US1-6, US1-8 → T008; US2-1..5 → T012; US3-1..5 → T015; US3-6 and scenario 5 → T018; US4-1, US4-4 → T019; US4-2, US4-3 → T018; US5-1..3 → T038; US6-1, US6-2, US6-7, US6-10 → T023; US6-3..6 → T021; US6-8, US6-9 → T026; US7-1, US7-2, US7-9 → T030; US7-3..8 → T031; US8-1 → T034; US8-2, US8-3 → T035; US9-1 → T042 and T043; US9-2 → T041; SC-002 and SC-003 → T050; Appendix B → T051; decision §5.3 → T052.
+6. **Scenario coverage** (Constitution IX): US1-1, US1-2, US1-7 → T007; US1-3..US1-6, US1-8 → T008; US2-1..5 → T012; US3-1..5 → T015; US3-6 and scenario 5 → T018; US4-1, US4-4 → T019; US4-2, US4-3 → T018; US5-1..3 → T038; US6-1, US6-2, US6-7, US6-10 → T023; US6-3..6 → T021; US6-8, US6-9 → T026; US7-1, US7-2, US7-9 → T030; US7-3..8 → T031; US7-11 and FR-028 → T055; US8-1 → T034; US8-2, US8-3 → T035; US9-1 → T042 and T043; US9-2 → T041; SC-002 and SC-003 → T050; Appendix B → T051; decision §5.3 → T052.
 7. **Mandatory scenarios of the assignment** (spec Input): 1 → US6-1 (T023); 2 → US7-1 (T030); 3 → US7-3 (T031); 4 → US3-2 (T015); 5 → US3-6 (T018); 6 → US8-1 (T034).

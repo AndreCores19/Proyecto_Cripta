@@ -103,10 +103,13 @@ search costing more than the 10% trigger.
 
 ## R7. What "the full known map of the reference crypt" is for the benchmark
 
-**Decision**: Same stand-in as spec 002 (clarification of 2026-11-10): until the course publishes the
-reference crypt, a synthetic crypt, seeded, of the size of the largest scenario of the existing
-event-cycle benchmark (100 rooms), fully explored with every door remembered open; larger sizes as
-information. When the official crypt is published, the measurement is repeated with it and prevails.
+**Decision**: Spec 002 (clarification of 2026-11-10) defines the reference crypt as the one the course
+publishes and, until then, a seeded synthetic crypt of the size of the largest scenario of the existing
+event-cycle benchmark (100 rooms). The largest published crypt (cripta-06) has 300 rooms, so the verdict of
+`bench_ir_a` is measured with a seeded synthetic crypt of **300 rooms**, fully explored with every door
+remembered open; 100, 500 and 1000 rooms are reported for information. Spec 002 is not edited; this is the
+size this feature measures with. If the course publishes a different reference crypt, the measurement is
+repeated with it and prevails.
 
 ## R8. Display order of the known map
 

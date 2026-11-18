@@ -56,8 +56,9 @@ II (fixed tie-breaks), III (DTOs; no view in `--bench`/`--replay`), IV (nothing 
 hardcoded), V (no new request: exploring never downloads room content), VI (benchmarks
 deterministic by seed), VIII (this plan adds no rule; see "Points for the spec").
 
-**Scale/Scope**: Reference-crypt size (the largest scenario of `bench/bench_ciclo.py`, 100 rooms)
-and synthetic crypts of 500 to 1000 rooms to show the trend.
+**Scale/Scope**: The largest published crypt (cripta-06) has 300 rooms, so the verdict is measured with a
+synthetic crypt of 300 rooms; synthetic crypts of 100, 500 and 1000 rooms are reported for information
+(100 is the size of the largest `bench/bench_ciclo.py` scenario).
 
 ## Constitution Check
 
@@ -85,8 +86,8 @@ and synthetic crypts of 500 to 1000 rooms to show the trend.
 | Item | Status | Notes |
 |---|---|---|
 | `spec.md` committed before implementation | PASS | Commits `0773eaf` and `64b8c88`. A spec correction goes in its own commit first (Constitution VII). |
-| Every task cites its FR | PENDING | Enforced when `tasks.md` is generated. |
-| Every scenario has a test citing its FR | PENDING | Mapping in [quickstart.md](./quickstart.md). |
+| Every task cites its FR | PASS | Every task of `tasks.md` (T001 to T055) cites its FRs. |
+| Every scenario has a test citing its FR | PASS | Mapping in [quickstart.md](./quickstart.md) and the scenario-coverage list of `tasks.md`; T051 maps every Appendix B case. |
 
 ### Principles
 
@@ -95,8 +96,8 @@ and synthetic crypts of 500 to 1000 rooms to show the trend.
 | II. Determinism | PASS | Route ties use `(room id, direction name)`, as the hunter. Knowledge depends only on the player's moves, the torch effect and door states, all deterministic. The discovery list is in order of discovery and is sorted by room id for display with our sort. |
 | IV. No hardcoded data | PASS | Nothing about a crypt appears in code. |
 | V. Network budget | PASS | Exploring (also by the torch) reads only the skeleton. Only `JuegoService.mover` calls `poblar_sala`, for the room the player enters, as today. |
-| VI. Evidence-backed performance | PASS (pending data) | The 5 ms claim and the cost of the bookkeeping on the event cycle come only from §Measurements. The "before" baseline is saved first. |
-| VIII. What goes where | PASS | Structures and algorithms stay here; the rules stay in the spec. Four gaps found while planning are listed in "Points for the spec" instead of being decided. |
+| VI. Evidence-backed performance | PASS | The 5 ms claim and the cost of the bookkeeping on the event cycle come only from §Measurements: see `specs/003-fog-of-war/bench-ir-a.txt` (route and whole step), `bench-antes-ciclo.txt` and `bench-despues-ciclo.txt`. |
+| VIII. What goes where | PASS | Structures and algorithms stay here; the rules stay in the spec. Gaps found while planning are listed in "Points for the spec" instead of being decided. |
 
 ## Design
 
@@ -119,7 +120,7 @@ and synthetic crypts of 500 to 1000 rooms to show the trend.
 | FR-019 | service | Each step is `JuegoService.mover` (the same path as the `w/a/s/d` commands), so time, clock events and trap/victory handling are the ones of an ordinary move. |
 | FR-020 | model | The route is computed again inside every step, with the knowledge at that moment. Nothing is kept between steps. |
 | FR-021 | model | The search and the trip never call `abrir_puerta`. |
-| FR-022, FR-023 | model + service + view | `Viaje` (R4) checks the stop reasons after each step and before each step; the reason goes into `ViajeResultadoDTO` and is printed by the controller. |
+| FR-022, FR-023, FR-028 | model + service + view | `Viaje` (R4) checks a rewind first at the start of each step, then the other reasons before and after the step (order in §Trips); a refused move stops the trip with `SIN_RUTA` (guard); the reason goes into `ViajeResultadoDTO` and is printed by the controller. |
 | FR-024 | controller + adapters | Comment line for the order, one move line per step (R5, contract [bitacora-comentarios.md](./contracts/bitacora-comentarios.md)). |
 | FR-025 | model + service | A scroll is a separate command, so it reverts the last step's history frame. `Partida` counts rewinds in a plain counter outside the history; a live trip notices a change and stops without another step. |
 | FR-026, FR-027 | bench | New `bench/bench_ir_a.py` (§Measurements). |
@@ -180,17 +181,33 @@ V_k + E_k) over that region.
 
 `Viaje(partida, destino, mover)` receives the service's move function (so the step also downloads the
 room content, exactly as `w/a/s/d` do). `paso()` returns `None` while the trip goes on, or a stop
-reason. Reasons, in the order of FR-022: `FIN_PARTIDA`, `LLEGADA`, `ENEMIGOS`, `DANO`, `SIN_RUTA`, `RETROCESO`.
+reason: `FIN_PARTIDA`, `LLEGADA`, `ENEMIGOS`, `DANO`, `SIN_RUTA`, `RETROCESO`.
 
 The console cannot interrupt a running trip (clarification 2026-11-12): the rewind check below exists for
 the step-level case, where a test or a future interface drives the steps one at a time and reads a scroll
 between two of them.
 
-Per step: (1) if the rewind counter changed since the trip began, stop `RETROCESO` (FR-025); (2) if
-the player is in `destino`, stop `LLEGADA`; (3) compute the route; if none, stop `SIN_RUTA` with no
-time consumed; (4) record the player's life, call `mover(direccion)`; (5) after it, check in order:
-game ended, player in `destino`, alive enemies in the room (whoever arrived there, clarification 2026-11-12), life lower than before.
-When several hold, the first in this order, which is the order of FR-022, is reported (clarification 2026-11-12).
+Order (FR-022 as amended on 2026-11-17). The order "end of the game, arrival, enemies in the room, damage,
+no route, scroll" applies to the reasons met by a step. A rewind that happened since the previous step is
+detected **first**, at the start of `paso()`, before the next step is taken, and takes precedence. So `paso()`
+does, in this order:
+
+1. If `Partida.retrocesos` differs from the value stored when the trip began, stop `RETROCESO` (FR-025).
+   No step is taken.
+2. If the game has ended, stop `FIN_PARTIDA`; if the player is in `destino`, stop `LLEGADA` (also when the
+   trip begins there: no time is consumed).
+3. Compute the route; if there is none, stop `SIN_RUTA` with no time consumed (FR-022).
+4. Record the player's life and call `mover(direccion)`. **Guard (FR-028):** if `mover` returns `False`
+   (the route named an exit but the move was refused, which the route search should make impossible because it
+   only uses exits open in the player's room), stop `SIN_RUTA` instead of looping or retrying; the direction is
+   not recorded and no time is consumed.
+5. After a completed step, check in order: game ended (`FIN_PARTIDA`), player in `destino` (`LLEGADA`),
+   alive enemies of `Partida.enemigos` in the player's room (`ENEMIGOS`, whoever arrived there, clarification
+   2026-11-12), life lower than before (`DANO`); otherwise the trip goes on.
+
+When several of the reasons of step 5 hold, the first in this order, which is the order of FR-022, is
+reported (clarification 2026-11-12). The rewind of step 1 is not part of that comparison: it is detected
+before any step (clarification 2026-11-17).
 
 `JuegoService.ir_a(id_sala)` rejects an unexplored room, builds the `Viaje`, loops `paso()` until a
 reason comes out and returns a `ViajeResultadoDTO(motivo, pasos, direcciones)`.
@@ -237,13 +254,15 @@ After the last change run the same command into `bench-despues-ciclo.txt`. All s
 (more than 10% slower, best of 3 runs), not as a gate, as in spec 002. The likely cause would be the
 exploration and door memory work in `Partida.mover`.
 
-**1. One step of "ir a" (FR-026, SC-007)** — new `bench/bench_ir_a.py`. Synthetic crypt of 100 rooms
-(the size of the largest `bench_ciclo` scenario) with costs from the same set as `bench_cazador`,
+**1. One step of "ir a" (FR-026, SC-007)** — new `bench/bench_ir_a.py`. Synthetic crypt of **300 rooms**
+(the largest published crypt, cripta-06) with costs from the same set as `bench_cazador`,
 all rooms explored and all doors remembered open, seeded; the player and the destination are drawn
 per repetition from the seeded generator, far apart. It measures `RutaConocida.siguiente_paso` alone
 (microseconds, 2000 repetitions) and, for information, a whole step (route plus move plus event
-cycle). Verdict: the 99th percentile of the route computation is ≤ 5 ms; the maximum is printed.
-Repeated for 500 and 1000 rooms, as information.
+cycle). Verdict: the 99th percentile of the route computation with 300 rooms is ≤ 5 ms; the maximum is
+printed. Repeated for 100, 500 and 1000 rooms, as information. The first measurement with 300 rooms was above
+the wanted margin, so the heap comparisons and the route loop were optimized; before and after numbers are in
+`docs/DECISIONES.md` §5.4 and `specs/003-fog-of-war/bench-ir-a.txt`.
 
 **2. Determinism (FR-027)**: the same seed gives the same crypt (a test compares two builds).
 
@@ -264,7 +283,7 @@ specs/003-fog-of-war/
 │   ├── comando-mapa.md
 │   ├── vista-sala-niebla.md
 │   └── bitacora-comentarios.md
-└── tasks.md             # /speckit-tasks, not created here
+└── tasks.md
 ```
 
 ### Source Code (repository root)
@@ -287,6 +306,7 @@ adapters/
 └── lector_bitacora.py   # skip comment lines
 view/vista_consola.py    # sin explorar, mostrar_mapa, viaje messages
 view/vista_silenciosa.py # no-op mostrar_mapa
+structures/monticulo.py  # comparisons written inline (speed only; same behavior)
 bench/bench_ir_a.py      # NEW
 tests/
 ├── test_niebla_estados.py     test_niebla_puertas.py   test_niebla_antorcha.py
@@ -301,13 +321,14 @@ the route search and the trip; everything else is a small change to existing fil
 
 ## Points for the spec
 
-Found while planning; the plan did not decide them (Constitution VIII). All four were settled in
+Found while planning; the plan did not decide them (Constitution VIII). All five were settled in
 `/speckit-clarify` on 2026-11-12 and are listed here for traceability.
 
 1. **Order of stop reasons.** Resolved (clarification 2026-11-12): the first that applies in the order of FR-022.
-2. **Stop by a scroll.** Resolved (clarification 2026-11-12): its own reason, `RETROCESO`, last in the order of FR-022.
-3. **How the destination is named.** Resolved (clarification 2026-11-12): by id only, as shown in the known map.
-4. **Verdict of FR-026.** Resolved (clarification 2026-11-12): 99th percentile of the route computation ≤ 5 ms, maximum printed; the whole step is reported for information only.
+2. **Stop by a scroll.** Resolved (clarification 2026-11-12): its own reason, `RETROCESO`. Corrected on 2026-11-17: it is last in the order of the reasons met by a step, but a rewind since the previous step is detected before the next step and takes precedence (FR-022).
+3. **Refused move.** Resolved (clarification 2026-11-17): the trip stops with `SIN_RUTA` (FR-028).
+4. **How the destination is named.** Resolved (clarification 2026-11-12): by id only, as shown in the known map.
+5. **Verdict of FR-026.** Resolved (clarification 2026-11-12): 99th percentile of the route computation ≤ 5 ms, maximum printed; the whole step is reported for information only.
 
 ## Complexity Tracking
 

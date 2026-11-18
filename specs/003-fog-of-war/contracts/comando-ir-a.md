@@ -25,10 +25,12 @@ id as shown by the known-map view (compared like enemy ids: text, case-insensiti
 | `enemigos` | After the step there are living enemies in the player's room, active or asleep, whoever arrived there | none |
 | `dano` | The player lost life during the step | none |
 | `sin_ruta` | No known route exists before a step | none |
-| `retroceso` | A scroll was read; the trip does not continue (FR-022, FR-025) | none |
+| `retroceso` | A scroll was read since the previous step; the trip does not continue (FR-022, FR-025) | none |
 
 When several reasons hold after the same step, the first in the order of this table is reported
-(spec FR-022, clarification 2026-11-12).
+(spec FR-022, clarification 2026-11-12). `retroceso` is the exception: a rewind since the previous step is
+detected before the next step is taken and takes precedence (clarification 2026-11-17). If the move named by
+the route is refused, the trip stops with `sin_ruta` and does not retry (FR-028).
 
 ## Controller
 

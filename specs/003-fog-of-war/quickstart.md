@@ -44,6 +44,7 @@ Each test name or docstring cites its FR. Expected mapping:
 | US7-7 | several reasons at once: the first in the order of FR-022 is shown; death at the destination is `fin_partida` | FR-022, FR-023 |
 | US7-8, US7-9 | stops when no route remains; recomputed after clock events | FR-020, FR-022 |
 | US7-10 | an enemy walks into the player's room during the step: the trip stops with `enemigos` | FR-022, FR-023 |
+| US7-11 | the route names an exit but the move is refused: the trip stops with `sin_ruta`, no step, no time | FR-028, FR-022 |
 | US8-1 / scenario 6 | scroll between steps reverts only the last step, the trip does not continue and stops with its own reason | FR-022, FR-023, FR-025 |
 | US8-2, US8-3 | knowledge of the last step reverts with it | FR-013, FR-025 |
 | US9-1 | one route computation on the full known map ≤ 5 ms | FR-026 |
