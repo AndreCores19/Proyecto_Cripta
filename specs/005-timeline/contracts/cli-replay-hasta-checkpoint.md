@@ -8,7 +8,7 @@
 - Absent: the default K (`model/linea_tiempo_logica.K_POR_DEFECTO`, provisional 50, replaced by task T068 with the measured value; see
   `plan.md`, "Default K").
 - Loading a game saved with K1 while `--checkpoint-cada K2` was typed and K2 ≠ K1: the game uses K1
-  and shows "`--checkpoint-cada` ignored: this game was saved with K=<K1>" (FR-017). If the option
+  and shows "Se ignora --checkpoint-cada: esta partida se guardó con K=<K1>." (FR-017). If the option
   was not typed, no notice.
 
 ## `--replay LOG --hasta T`
@@ -19,7 +19,7 @@
   `adapters/salida_replay.py`), builds the timeline as the game does, stops as soon as the clock is
   ≥ T or the commands end, then prints the summary of instant T (same text as in-game, FR-014).
 - If T is greater than the final clock: prints the final state and the line
-  "the game ended earlier (instant <final clock>)" (FR-015).
+  "La partida terminó antes (instante <final clock>)." (FR-015).
 - Exit status 0 in both cases. No view class is created (FR-016). Requests/budget as `--replay` does
   today (the catalog); the query itself makes none.
 

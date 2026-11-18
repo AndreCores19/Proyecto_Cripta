@@ -271,3 +271,69 @@ def test_oraculo_modo_2_por_el_comando_historia(k, acciones, semilla):
             instantes=instantes_clave(vivos, instantaneas, p.reloj, 97 if k < 100 else 331))
     controlador.ejecutar(f"historia #{p.acciones_jugador + 1}")
     assert "no existe" in controlador.vista.mensajes[-1]
+
+
+# ---------------------------------------------------------------- modo 3: tras guardar y cargar (Fase 8)
+
+class _VistaQueJuega(VistaConsola):
+    """Elige comandos con semilla mirando el juego vivo y anota la decisión antes de cada uno."""
+
+    def __init__(self, azar, servicios, vivos, n, ejecutados, al_final):
+        self.azar, self.servicios, self.vivos = azar, servicios, vivos
+        self.restantes, self.ejecutados, self.al_final = n, ejecutados, list(al_final)
+
+    def pedir_comando(self):
+        servicio = self.servicios[-1]
+        registrar_vivo(self.vivos, servicio)
+        if self.restantes > 0 and not servicio.terminada():
+            self.restantes -= 1
+            comando = _elegir_comando(self.azar, servicio, True)
+        else:
+            comando = self.al_final.pop(0) if self.al_final else "salir"
+        if comando.split()[0] not in ("guardar", "salir"):
+            self.ejecutados.append(comando)
+        return comando
+
+    def __getattribute__(self, nombre):
+        if nombre.startswith("mostrar_"):
+            return lambda *a, **k: None                  #sin imprimir nada
+        return object.__getattribute__(self, nombre)
+
+
+@pytest.mark.parametrize("k", [1, 3, 7, 100000])
+def test_oraculo_modo_3_tras_guardar_y_cargar(k, tmp_path, monkeypatch):
+    """SC-002, SC-005, FR-017 · una partida con pergaminos se guarda a mitad (justo tras una lectura), se carga
+    en otra aplicación (los comandos se vuelven a ejecutar con la línea de tiempo anotando) y se sigue jugando:
+    cada `#k` y cada instante de toda la partida dan lo que mostró el juego vivo, antes y después de guardar"""
+    import aplicacion
+    from test_linea_tiempo_guardado import AppDeGuardado
+
+    monkeypatch.chdir(tmp_path)
+    servicios = []
+    original = aplicacion._crear_servicio
+
+    def espia(app, partida, k_carga=None):
+        servicio = original(app, partida, k_carga)
+        servicios.append(servicio)
+        return servicio
+    monkeypatch.setattr(aplicacion, "_crear_servicio", espia)
+    mundo = dict(MUNDO, con_pergaminos=True, vida_jugador=5000)
+    azar = random.Random(41)
+    vivos, ejecutados = [], []
+    primera = AppDeGuardado(k=k, semilla=4, preparar=_pergaminos_en_todas_las_salas, **mundo)
+    primera._sesion(_VistaQueJuega(azar, servicios, vivos, 90, ejecutados,
+                                   ["retroceder", "guardar partida1", "salir"]), None)
+    antes = servicios[-1]
+    cargada = AppDeGuardado(k=None, semilla=4, preparar=_pergaminos_en_todas_las_salas, **mundo)
+    cargada._sesion(_VistaQueJuega(azar, servicios, vivos, 90, ejecutados, ["salir"]),
+                    tmp_path / "saves" / "partida1.sav")
+    servicio = servicios[-1]
+    assert servicio is not antes and servicio.linea_tiempo.k == k            #el K guardado
+    p = servicio.partida
+    assert p.retrocesos >= 2 and p.acciones_jugador > antes.partida.acciones_jugador
+
+    testigo = AppDeGuardado(semilla=4, preparar=_pergaminos_en_todas_las_salas, clase=PartidaInstrumentada, **mundo)
+    ejecutar_comandos(JuegoService(testigo.mundo.partida, testigo.fabrica), ejecutados)
+    assert resumen_plano(testigo.mundo.partida) == resumen_plano(p)
+    oraculo(servicio, vivos, testigo.mundo.partida.instantaneas, _consultar(servicio),
+            instantes=instantes_clave(vivos, testigo.mundo.partida.instantaneas, p.reloj, 97 if k < 100 else 331))

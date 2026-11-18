@@ -9,7 +9,7 @@ from data.fabrica_modelo import FabricaModelo
 from data.repositorio_catalogo import RepositorioCatalogo
 from data.repositorio_cripta import RepositorioCripta, construir_grafo
 from data.repositorio_llaves import RepositorioLlaves
-from model.linea_tiempo_logica import LineaTiempoPartida
+from model.linea_tiempo_logica import K_POR_DEFECTO, LineaTiempoPartida
 from service.juego_service import JuegoService
 from service.verificacion_service import VerificacionService
 from structures.cache_fichas import CacheFichas
@@ -132,6 +132,7 @@ class Aplicacion:
         partida = self.fabrica.nueva_partida(semilla=semilla)
         partida.jugador.nombre = self.nombre_jugador
         servicio = _crear_servicio(self, partida, k)
+        self.k_sesion = servicio.linea_tiempo.k          #el K en uso: es el que se guarda
         servicio.actualizar_fichas()
         bitacora = BitacoraPartida("saves")
         controlador = Controlador(servicio, vista, bitacora, self)
@@ -164,9 +165,10 @@ class Aplicacion:
 
     def validar_guardado(self, ruta):
         # devuelve un mensaje de error, o None si se puede cargar
+        #se lee el archivo entero (cabecera, índice y comandos) antes de tocar nada: un archivo cortado en
+        #cualquier parte se rechaza aquí y nunca a medio cargar (FR-018). Solo lectura.
         try:
-            with open(ruta, "rb") as archivo:
-                cab = GuardadoBinario().leer_cabecera(archivo)
+            cab = GuardadoBinario().validar(ruta)
         except (ErrorGuardado, OSError, UnicodeDecodeError) as error:
             return f"No se puede cargar: {error}"
         datos = self.repo_cripta.datos
@@ -218,7 +220,8 @@ class Aplicacion:
     def guardar_partida(self, semilla, comandos, nombre):
         ruta = self.ruta_guardado(nombre)
         ruta.parent.mkdir(exist_ok=True)
-        cabecera = CabeceraGuardado(self.repo_cripta.datos.id_cripta, self.repo_cripta.datos.version, self.repo_catalogo.version(), semilla)
+        cabecera = CabeceraGuardado(self.repo_cripta.datos.id_cripta, self.repo_cripta.datos.version, self.repo_catalogo.version(), semilla,
+                                     k=getattr(self, "k_sesion", None) or K_POR_DEFECTO)
         GuardadoBinario().guardar(ruta, cabecera, self.repo_cripta.contenidos, comandos)
         return ruta
 

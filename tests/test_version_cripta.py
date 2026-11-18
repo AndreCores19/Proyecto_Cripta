@@ -20,8 +20,9 @@ caché del catálogo:
 - Búsqueda de "costo" en adapters/: sin coincidencias. Esta feature no
   modificó ningún archivo de adapters/ (git diff desde el primer commit de la
   feature, b82edfa^, vacío para adapters/).
-- VERSION_FORMATO sigue en 1 en guardado_binario.py y en bitacora_partida.py,
-  sin cambios.
+- VERSION_FORMATO sigue en 1 en bitacora_partida.py. En guardado_binario.py
+  pasó a 2 con la spec 005 (la cabecera guarda el K de la línea de tiempo); el
+  archivo sigue sin guardar costos.
 
 Los costos viven solo en el esqueleto de la cripta (SalidaDTO.costo), que se
 descarga al iniciar y se vuelve a enlazar con construir_salas.

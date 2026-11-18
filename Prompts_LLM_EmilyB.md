@@ -656,5 +656,20 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: /speckit-implement Phase 8 only (T053–T059). Also update specs/005-timeline/contracts/ so the quoted notices match the Spanish text the program prints ("Se ignora --checkpoint-cada: esta partida se guardó con K=…" and "La partida terminó antes (instante N)."). Do not commit.
+- Uso: implementar la Fase 8 de tasks.md (T053 a T059) y actualizar specs/005-timeline/contracts/ para que los avisos citados coincidan con el texto en español que imprime el programa, sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt: 
 - Uso: 

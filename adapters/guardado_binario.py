@@ -4,9 +4,9 @@ from dto.contenido_sala_dto import (ContenidoSalaDTO, InstanciaEnemigoDTO,Instan
 from structures.vector_busqueda import VectorBusqueda
 
 MAGIC = b"CRPT"
-VERSION_FORMATO = 1
-FORMATO_FIJO = "<4sHQIIQQ"      ## magic, versión, semilla, n_salas, n_comandos,
-                                ## off_indice, off_comandos  (38 bytes)
+VERSION_FORMATO = 2
+PREFIJO = "<4sH"                ## magic, versión: se lee primero y solo (6 bytes)
+FORMATO_FIJO = "<QIIQQI"        ## v2: semilla, n_salas, n_comandos, off_indice, off_comandos, k
 FORMATO_INDICE = "<IQI"         ## id_sala, offset, largo
 
 
@@ -82,28 +82,31 @@ class GuardadoBinario:
     ## Encabezado
 
     def _escribir_cabecera(self, archivo, cab):
-        archivo.write(struct.pack(FORMATO_FIJO, MAGIC, VERSION_FORMATO, cab.semilla,
-                                  cab.n_salas, cab.n_comandos,
-                                  cab.off_indice, cab.off_comandos))
+        archivo.write(struct.pack(PREFIJO, MAGIC, VERSION_FORMATO))
+        archivo.write(struct.pack(FORMATO_FIJO, cab.semilla, cab.n_salas, cab.n_comandos,
+                                  cab.off_indice, cab.off_comandos, cab.k))
         self.escribir_cadena(archivo, cab.id_cripta)
         self.escribir_cadena(archivo, cab.version_cripta)
         self.escribir_cadena(archivo, cab.version_catalogo)
 
     def leer_cabecera(self, archivo):
-        (magic, version, semilla, n_salas, n_comandos,
-         off_indice, off_comandos) = self._leer(archivo, FORMATO_FIJO)
+        #primero magic y versión: un v1 (aunque sea más corto que la cabecera v2) es incompatible, no truncado
+        magic, version = self._leer(archivo, PREFIJO)
         if magic != MAGIC:
             raise ErrorGuardado("No es un archivo de guardado de Cripta")
         if version != VERSION_FORMATO:
             raise ErrorGuardado(
                 f"Formato de guardado incompatible: el archivo es v{version} "
                 f"y este programa usa v{VERSION_FORMATO}")
+        (semilla, n_salas, n_comandos, off_indice, off_comandos, k) = self._leer(archivo, FORMATO_FIJO)
+        if k < 1:
+            raise ErrorGuardado(f"El archivo no se puede leer: K={k} no es un entero positivo")
         id_cripta = self.leer_cadena(archivo)
         version_cripta = self.leer_cadena(archivo)
         version_catalogo = self.leer_cadena(archivo)
         return CabeceraGuardado(id_cripta, version_cripta, version_catalogo,
                                 semilla, n_salas, n_comandos,
-                                off_indice, off_comandos)
+                                off_indice, off_comandos, k)
 
     ## guardar
 
@@ -153,6 +156,24 @@ class GuardadoBinario:
             archivo.seek(entrada[0])
             return self.leer_sala(archivo)
 
+    def validar(self, ruta):
+        """Lee la cabecera, el índice, cada sala y los comandos sin guardar nada; devuelve la cabecera.
+
+        Lanza ErrorGuardado si algo falta o no se puede leer. No abre el archivo para escribir."""
+        with open(ruta, "rb") as archivo:
+            cabecera = self.leer_cabecera(archivo)
+            try:
+                indice = self.leer_indice(archivo, cabecera)
+            except ValueError as error:                   #índice desordenado: el archivo está dañado
+                raise ErrorGuardado(f"El índice de salas está dañado: {error}")
+            for offset, _ in indice.valores:
+                archivo.seek(offset)
+                self.leer_sala(archivo)
+            archivo.seek(cabecera.off_comandos)
+            for _ in range(cabecera.n_comandos):
+                self.leer_cadena(archivo)
+        return cabecera
+
     def leer_comandos(self, ruta):
         with open(ruta, "rb") as archivo:
             cabecera = self.leer_cabecera(archivo)
@@ -165,7 +186,7 @@ class GuardadoBinario:
 ## guarda los datos
 class CabeceraGuardado:
     def __init__(self, id_cripta, version_cripta, version_catalogo, semilla,
-                 n_salas=0, n_comandos=0, off_indice=0, off_comandos=0):
+                 n_salas=0, n_comandos=0, off_indice=0, off_comandos=0, k=1):
         self.id_cripta = id_cripta
         self.version_cripta = version_cripta
         self.version_catalogo = version_catalogo
@@ -174,3 +195,4 @@ class CabeceraGuardado:
         self.n_comandos = n_comandos
         self.off_indice = off_indice
         self.off_comandos = off_comandos
+        self.k = k                      #el K de la línea de tiempo con que se jugó (v2, FR-017)
