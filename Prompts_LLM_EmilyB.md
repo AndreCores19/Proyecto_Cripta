@@ -646,8 +646,8 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: /speckit-implement Phase 6 only (T037–T047). Do not commit.
+- Uso: implementar la Fase 6 de tasks.md (T037 a T047) sin hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude

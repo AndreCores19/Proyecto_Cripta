@@ -1,15 +1,14 @@
 from model.objeto_logica import PERGAMINO_RETROCESO
-from model.sala_logica import ABIERTA, CERRADA, EXPLORADA
-from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDTO,
-                                  EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
-from dto.mapa_vista_dto import MapaVistaDTO, SalaConocidaDTO, SalidaConocidaDTO
-from dto.inventario_vista_dto import InventarioVistaDTO, ObjetoInventarioDTO
+from model.sala_logica import EXPLORADA
+from dto.estado_vista_dto import EstadoVistaDTO, SalidaVistaDTO, TrampaVistaDTO, ObjetoVistaDTO
+from dto.inventario_vista_dto import InventarioVistaDTO
 from dto.resumen_final_dto import ResumenFinalDTO
 from dto.viaje_dto import ViajeResultadoDTO
-from structures.ordenamientos import ordenar
 from model.viaje_logica import Viaje
 from data.fabrica_reproduccion import FabricaReproduccion
 from service.historia_service import HistoriaService
+from service.lectura_partida import (enemigo_vista, enemigos_de_la_sala, jugador_vista, mapa_vista,
+                                     objeto_inventario, objetos_del_inventario)
 
 
 class JuegoService:
@@ -30,10 +29,12 @@ class JuegoService:
         return HistoriaService(self.linea_tiempo, armar_mundo)
 
     def historia_por_instante(self, t):
-        return self._historia().reproducir_en_instante(t)
+        #RespuestaHistoriaDTO: el estado en el instante t, o el motivo del rechazo
+        return self._historia().consultar_instante(t)
 
     def historia_por_accion(self, k):
-        return self._historia().reproducir_en_accion(k)
+        #RespuestaHistoriaDTO: el estado justo antes de la acción k, o el motivo del rechazo
+        return self._historia().consultar_accion(k)
 
     def _registrar(self, tipo, argumento, reloj_antes, acciones_antes, retrocesos_antes):
         #Una llamada es una acción solo si las acciones subieron exactamente una y no hubo retroceso
@@ -203,17 +204,11 @@ class JuegoService:
 
     @staticmethod
     def _objeto_inventario(objeto, actual):
-        return ObjetoInventarioDTO(objeto.id_instancia, objeto.nombre, objeto.peso,
-                                   objeto.valor, bool(objeto.equipado), actual)
+        return objeto_inventario(objeto, actual)
 
     def inventario_vista(self):
         inv = self.partida.jugador.inventario
-        objetos = []
-        nodo = inv.cabeza
-        while nodo is not None:
-            objetos.append(self._objeto_inventario(nodo.objeto, nodo is inv.actual))
-            nodo = nodo.siguiente
-        return InventarioVistaDTO(inv.tamano, inv.capacidad_max, objetos)
+        return InventarioVistaDTO(inv.tamano, inv.capacidad_max, objetos_del_inventario(self.partida))
 
     def resumen_final(self):
         p = self.partida
@@ -227,9 +222,7 @@ class JuegoService:
 
     def enemigos_en_sala(self):
         sala = self.partida.jugador.sala
-        return [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
-                                [ef.tipo for ef in e.efectos], e.es_cazador())
-                for e in self.partida.enemigos if e.sala is sala and e.esta_vivo()]
+        return [enemigo_vista(e) for e in self.partida.enemigos if e.sala is sala and e.esta_vivo()]
 
     def terminada(self):
         return self.partida.terminada
@@ -239,39 +232,18 @@ class JuegoService:
 
     def mapa_vista(self):
         #Solo lee el conocimiento del jugador; no cambia nada ni consume tiempo
-        partida = self.partida
-        exploradas = [s for s in partida.conocidas if s.conocimiento == EXPLORADA]
-        salas = []
-        for sala in ordenar(exploradas, lambda s: s.id):
-            salidas = []
-            for s in sala.salidas:
-                recordada = partida.puerta_recordada(s)
-                puerta = "abierta" if recordada == ABIERTA else "cerrada" if recordada == CERRADA else "sin observar"
-                if s.destino.conocimiento == EXPLORADA:
-                    salidas.append(SalidaConocidaDTO(s.direccion, s.destino.id, s.destino.nombre, s.costo, puerta))
-                else:
-                    salidas.append(SalidaConocidaDTO(s.direccion, None, None, s.costo, puerta))
-            salas.append(SalaConocidaDTO(sala.id, sala.nombre, salidas))
-        return MapaVistaDTO(partida.jugador.sala.id, salas)
+        return mapa_vista(self.partida)
 
     def estado_vista(self):
         #Solo lee el estado; nunca lo cambia
         partida = self.partida
         sala = partida.jugador.sala
-        j = partida.jugador
-        inv = j.inventario
-        jugador = JugadorVistaDTO(
-            j.nombre, j.vida, j.vida_max, j.ataque, j.defensa, j.velocidad,
-            inv.arma_equipada.nombre if inv.arma_equipada is not None else None,
-            inv.armadura_equipada.nombre if inv.armadura_equipada is not None else None,
-            [e.tipo for e in j.efectos])
+        jugador = jugador_vista(partida)
         salidas = [SalidaVistaDTO(s.direccion,
                                 s.destino.nombre if s.destino.conocimiento == EXPLORADA else None,
                                 s.cerrada, s.costo)
                    for s in sala.salidas]
-        enemigos = [EnemigoVistaDTO(e.nombre, e.id_enemigo, e.vida, e.vida_max,
-                                    [ef.tipo for ef in e.efectos], e.es_cazador())
-                    for e in partida.enemigos if e.sala is sala]
+        enemigos = enemigos_de_la_sala(partida)
         trampas = [TrampaVistaDTO(t.nombre, t.dano, t.armada) for t in sala.trampas]
         objetos = [ObjetoVistaDTO(o.id_instancia, o.nombre) for o in sala.objetos]
         return EstadoVistaDTO(sala.id, sala.nombre, partida.reloj, jugador, salidas,

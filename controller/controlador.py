@@ -12,6 +12,26 @@ TEXTOS_DE_MOTIVO = (
 )
 
 
+USO_HISTORIA = ("Uso: historia <instante> o historia #<acción> "
+                "(el instante es un entero desde 0; la acción, un entero desde 1).")
+
+TEXTOS_DE_RECHAZO_HISTORIA = (
+    ("despues_del_reloj", "Ese instante todavía no ha ocurrido."),
+    ("accion_inexistente", "Esa acción no existe."),
+    ("argumento_invalido", USO_HISTORIA),
+)
+
+
+def _es_entero(texto):
+    #solo cifras 0-9: sin signo, sin punto, sin espacios
+    if not texto:
+        return False
+    for c in texto:
+        if c not in "0123456789":
+            return False
+    return True
+
+
 def _buscar(pares, clave, por_defecto):
     for k, valor in pares:
         if k == clave:
@@ -94,7 +114,8 @@ class Controlador:
         comando = palabras[0]
         direccion = direccionar(comando)
 
-        if comando not in ("salir", "guardar", "cargar", "ir"):  # ← cambia esta condición
+        #`historia` es una consulta: nunca llega a la lista de comandos ni a la bitácora (FR-007)
+        if comando not in ("salir", "guardar", "cargar", "ir", "historia"):
             self.comandos.append(" ".join(palabras))  # ← nuevo: siempre
             if self.bitacora is not None:
                 self.bitacora.anotar(" ".join(palabras))
@@ -112,6 +133,8 @@ class Controlador:
             self._mostrar_mapa()
         elif comando == "ir":
             self._cmd_ir_a(palabras)
+        elif comando == "historia":
+            self._cmd_historia(palabras)
         elif comando == "esperar":
             self.servicio.esperar()
         elif comando == "atacar":
@@ -144,6 +167,24 @@ class Controlador:
             if self.bitacora is not None:
                 self.bitacora.anotar(tecla)
         self._mostrar_mensaje(f"Viaje detenido: {_buscar(TEXTOS_DE_MOTIVO, resultado.motivo, resultado.motivo)}")
+
+    def _cmd_historia(self, palabras):
+        #historia <t> (entero >= 0) o historia #<k> (entero >= 1); nada más
+        argumento = palabras[1] if len(palabras) == 2 else ""
+        por_accion = argumento.startswith("#")
+        numero = argumento[1:] if por_accion else argumento
+        if not _es_entero(numero):
+            self._mostrar_mensaje(USO_HISTORIA)
+            return
+        if por_accion:
+            respuesta = self.servicio.historia_por_accion(int(numero))
+        else:
+            respuesta = self.servicio.historia_por_instante(int(numero))
+        if respuesta.aceptada:
+            if self.vista is not None:
+                self.vista.mostrar_historia(respuesta.resumen)
+        else:
+            self._mostrar_mensaje(_buscar(TEXTOS_DE_RECHAZO_HISTORIA, respuesta.motivo, USO_HISTORIA))
 
     def _cmd_recoger(self, palabras):
         objetos = self.servicio.objetos_en_sala()

@@ -1,10 +1,12 @@
+from dto.resumen_historia_dto import RespuestaHistoriaDTO, ResumenHistoriaDTO
 from model.reproduccion_logica import Reproductor
+from service.lectura_partida import enemigos_de_la_sala, jugador_vista, mapa_vista, objetos_del_inventario
 
 
 class ResultadoHistoria:
-    """Lo que devuelve una consulta: aceptada o el motivo; la partida del mundo aparte y su reloj.
+    """Lo que devuelve una reproducción: aceptada o el motivo; la partida del mundo aparte y su reloj.
 
-    (La Fase 6 lo convierte en `RespuestaHistoriaDTO` para el controlador y la vista.)"""
+    Es interno del servicio (lleva una Partida); hacia afuera sale `RespuestaHistoriaDTO`."""
 
     def __init__(self, aceptada, motivo=None, partida=None, reloj=None):
         self.aceptada = aceptada
@@ -15,6 +17,20 @@ class ResultadoHistoria:
 
 def _rechazo(motivo):
     return ResultadoHistoria(False, motivo)
+
+
+def resumen_de(partida, reloj):
+    """El `ResumenHistoriaDTO` de la partida del mundo aparte, leído con las funciones de la vista viva."""
+    sala = partida.jugador.sala
+    return ResumenHistoriaDTO(reloj, sala.id, sala.nombre, jugador_vista(partida),
+                              objetos_del_inventario(partida), enemigos_de_la_sala(partida),
+                              mapa_vista(partida))
+
+
+def respuesta_de(resultado):
+    if not resultado.aceptada:
+        return RespuestaHistoriaDTO(False, resultado.motivo, None)
+    return RespuestaHistoriaDTO(True, None, resumen_de(resultado.partida, resultado.reloj))
 
 
 class HistoriaService:
@@ -39,3 +55,9 @@ class HistoriaService:
             return _rechazo("accion_inexistente")
         partida, reloj = Reproductor(self.linea_tiempo, self.armar_mundo).antes_de_la_accion(k)
         return ResultadoHistoria(True, None, partida, reloj)
+
+    def consultar_instante(self, t):
+        return respuesta_de(self.reproducir_en_instante(t))
+
+    def consultar_accion(self, k):
+        return respuesta_de(self.reproducir_en_accion(k))

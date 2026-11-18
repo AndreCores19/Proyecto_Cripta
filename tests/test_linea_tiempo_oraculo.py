@@ -3,7 +3,8 @@
 Modo 1, sin pergaminos (Fase 4): se juega una partida con semilla anotando el resumen vivo antes de
 cada acción del jugador; un segundo juego vivo, instrumentado, anota una foto tras cada evento. Luego
 cada `#k` y cada instante t se consulta y se compara con lo que esos juegos mostraron.
-Los modos 2 (con pergaminos) y 3 (tras guardar y cargar) los agregan las fases 5 y 8.
+Los modos 2 (con pergaminos) y 3 (tras guardar y cargar) los agregan las fases 5 y 8; la Fase 6 corre
+los modos 1 y 2 también por el comando `historia` (el DTO que llega a la vista y el texto que imprime).
 """
 import random
 
@@ -15,6 +16,7 @@ from linea_tiempo_apoyo import (PartidaInstrumentada, VistaMuda, _elegir_comando
                                 registrar_vivo, resumen_plano)
 from model.linea_tiempo_logica import LineaTiempoPartida
 from service.juego_service import JuegoService
+from view.vista_consola import VistaConsola
 
 MUNDO = dict(salas=9, enemigos=6, cazadores=2)
 
@@ -39,7 +41,7 @@ def _consultar(servicio):
         r = (servicio.historia_por_instante(valor) if modo == "t"
              else servicio.historia_por_accion(valor))
         assert r.aceptada, f"{modo} {valor} rechazada: {r.motivo}"
-        return con_reloj(resumen_plano(r.partida), r.reloj)
+        return resumen_plano(r.resumen)
     return consultar
 
 
@@ -188,3 +190,84 @@ def test_oraculo_modo_2_tras_pergaminos(k, acciones, semilla):
     n = p.acciones_jugador
     assert servicio.historia_por_accion(n + 1).motivo == "accion_inexistente"
     assert servicio.historia_por_instante(p.reloj + 1).motivo == "despues_del_reloj"
+
+
+# ---------------------------------------------------------------- modos 1 y 2 por el comando (Fase 6)
+
+class _VistaQueImprime(VistaConsola):
+    """La vista de consola real, con `print` cambiado por una lista: anota el resumen y el texto."""
+
+    def __init__(self):
+        self.resumenes = []
+        self.textos = []
+        self.mensajes = []
+
+    def mostrar_historia(self, resumen):
+        self.resumenes.append(resumen)
+        impresas = []
+        import builtins
+        original = builtins.print
+        builtins.print = lambda *a, **k: impresas.append(" ".join(str(x) for x in a))
+        try:
+            super().mostrar_historia(resumen)
+        finally:
+            builtins.print = original
+        self.textos.append(impresas)
+
+    def mostrar_mensaje(self, texto):
+        self.mensajes.append(texto)
+
+
+def _consultar_por_el_comando(servicio):
+    vista = _VistaQueImprime()
+    controlador = Controlador(servicio, vista, None, None)
+
+    def consultar(modo, valor):
+        antes = len(vista.resumenes)
+        controlador.ejecutar(f"historia {valor}" if modo == "t" else f"historia #{valor}")
+        assert len(vista.resumenes) == antes + 1, f"{modo} {valor} rechazada: {vista.mensajes[-1:]}"
+        resumen, lineas = vista.resumenes[-1], vista.textos[-1]
+        plano = resumen_plano(resumen)
+        #el texto impreso dice lo mismo que el DTO esperado
+        texto = "\n".join(lineas)
+        reloj, id_sala, jugador, inventario, enemigos, _ = plano
+        assert lineas[1] == f"Historia en el instante {reloj}"
+        assert f"Sala {id_sala}: " in lineas[2]
+        assert f"(Vida: {jugador[0]}/{jugador[1]})" in lineas[3]
+        assert f"Ataque: {jugador[2]}  Defensa: {jugador[3]}  Velocidad: {jugador[4]}" in lineas[4]
+        for id_instancia, nombre, equipado in inventario:
+            assert f"  [{id_instancia}] {nombre}{' (equipado)' if equipado else ''}" in lineas
+        for id_enemigo, vida in enemigos:
+            assert f"[{id_enemigo}] (Vida: {vida}/" in texto
+        assert controlador.comandos == []
+        return plano
+    return consultar, controlador
+
+
+@pytest.mark.parametrize("k, acciones", [(1, 150), (3, 150), (7, 150), (100000, 80)])
+def test_oraculo_modo_1_por_el_comando_historia(k, acciones):
+    """SC-002, FR-004, FR-005 · modo 1 por `Controlador.ejecutar("historia ...")`: el DTO que llega a la vista
+    y el texto que imprime dan lo que mostró el juego vivo"""
+    servicio, vivos, instantaneas = _correr(k, 4, 11, acciones, vida=600)
+    p = servicio.partida
+    consultar, controlador = _consultar_por_el_comando(servicio)
+    oraculo(servicio, vivos, instantaneas, consultar,
+            instantes=instantes_clave(vivos, instantaneas, p.reloj, 97 if k < 100 else 331))
+    vista = controlador.vista
+    controlador.ejecutar(f"historia {p.reloj + 1}")
+    controlador.ejecutar(f"historia #{p.acciones_jugador + 1}")
+    assert len(vista.mensajes) == 2 and controlador.comandos == []
+
+
+@pytest.mark.parametrize("k, acciones, semilla", [(1, 300, 29), (3, 300, 29), (7, 300, 29), (100000, 150, 33)])
+def test_oraculo_modo_2_por_el_comando_historia(k, acciones, semilla):
+    """SC-002, SC-004, FR-004, FR-005, FR-010 · modo 2 por el comando: tras los pergaminos cada `historia #k`
+    que sobrevive y cada `historia t` dan lo que mostró el juego vivo; un número revertido se rechaza"""
+    servicio, vivos, instantaneas, _ = _correr_con_pergaminos(k, 4, semilla, acciones)
+    p = servicio.partida
+    assert p.retrocesos >= 5
+    consultar, controlador = _consultar_por_el_comando(servicio)
+    oraculo(servicio, vivos, instantaneas, consultar,
+            instantes=instantes_clave(vivos, instantaneas, p.reloj, 97 if k < 100 else 331))
+    controlador.ejecutar(f"historia #{p.acciones_jugador + 1}")
+    assert "no existe" in controlador.vista.mensajes[-1]

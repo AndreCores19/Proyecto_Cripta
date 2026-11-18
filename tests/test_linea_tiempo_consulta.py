@@ -9,7 +9,7 @@ import pytest
 from controller.controlador import Controlador
 from linea_tiempo_apoyo import (PartidaInstrumentada, VistaMuda, armar_mundo, con_reloj,
                                 ejecutar_comandos, instantes_clave, jugar_semilla, oraculo,
-                                registrar_vivo, resumen_plano)
+                                partida_consultada, registrar_vivo, resumen_plano)
 from model.linea_tiempo_logica import LineaTiempoPartida
 from model.partida_logica import Partida
 from model.registro_estado import restaurar
@@ -35,7 +35,7 @@ def _consultar(servicio):
         r = (servicio.historia_por_instante(valor) if modo == "t"
              else servicio.historia_por_accion(valor))
         assert r.aceptada, f"{modo} {valor} rechazada: {r.motivo}"
-        return con_reloj(resumen_plano(r.partida), r.reloj)
+        return resumen_plano(r.resumen)
     return consultar
 
 
@@ -105,7 +105,7 @@ def test_historia_por_accion_da_el_estado_justo_antes_de_esa_accion():
             continue
         r = servicio.historia_por_accion(numero)
         assert r.aceptada and r.motivo is None
-        assert r.reloj == reloj                                      #el reloj de la decisión
+        assert r.resumen.reloj == reloj                                      #el reloj de la decisión
         assert consultar("#", numero) == esperado, f"#{numero}"
         revisadas += 1
     assert revisadas == servicio.partida.acciones_jugador >= 40
@@ -118,7 +118,7 @@ def test_un_instante_posterior_al_reloj_se_rechaza_y_no_cambia_nada(despues):
     p = servicio.partida
     antes = _huella(p)
     r = servicio.historia_por_instante(p.reloj + despues)
-    assert (r.aceptada, r.motivo, r.partida) == (False, "despues_del_reloj", None)
+    assert (r.aceptada, r.motivo, r.resumen) == (False, "despues_del_reloj", None)
     assert _huella(p) == antes
 
 
@@ -177,13 +177,14 @@ def test_el_resumen_tiene_los_campos_y_el_mapa_no_muestra_lo_desconocido():
             comprobada = True
             break
     assert comprobada
-    resumen = servicio.historia_por_instante(servicio.partida.reloj).partida
+    vivo = servicio.partida
+    resumen = servicio.historia_por_instante(vivo.reloj).resumen
     #los campos del FR-004: reloj, sala, vida y estadísticas, equipo, inventario, efectos, enemigos y mapa
     plano = resumen_plano(resumen)
     assert len(plano) == 6
     reloj, id_sala, jugador, inventario, enemigos, mapa = plano
-    assert (reloj, id_sala) == (resumen.reloj, resumen.jugador.sala.id)
-    assert jugador[:2] == (resumen.jugador.vida, resumen.jugador.vida_max)
+    assert (reloj, id_sala) == (vivo.reloj, vivo.jugador.sala.id)
+    assert jugador[:2] == (vivo.jugador.vida, vivo.jugador.vida_max)
     assert mapa[0] == id_sala
 
 
@@ -193,9 +194,9 @@ def test_el_instante_cero_es_el_estado_inicial():
     inicial = resumen_plano(m.partida)
     jugar_semilla(servicio, 5, 40)
     r = servicio.historia_por_instante(0)
-    assert r.aceptada and r.reloj == 0
-    assert con_reloj(resumen_plano(r.partida), 0) == con_reloj(inicial, 0)
-    assert resumen_plano(servicio.historia_por_accion(1).partida) == inicial
+    assert r.aceptada and r.resumen.reloj == 0
+    assert con_reloj(resumen_plano(r.resumen), 0) == con_reloj(inicial, 0)
+    assert resumen_plano(servicio.historia_por_accion(1).resumen) == inicial
 
 
 @pytest.mark.parametrize("argumento", ["abc", "-3", -3, -1, 1.5, "1.5", None, True, "", "#2", [1]])
@@ -204,7 +205,7 @@ def test_instantes_mal_formados_se_rechazan_con_argumento_invalido(argumento):
     servicio, _, _, _ = _juego(3, n=20)
     antes = _huella(servicio.partida)
     r = servicio.historia_por_instante(argumento)
-    assert (r.aceptada, r.motivo, r.partida) == (False, "argumento_invalido", None)
+    assert (r.aceptada, r.motivo, r.resumen) == (False, "argumento_invalido", None)
     assert _huella(servicio.partida) == antes
 
 
@@ -214,7 +215,7 @@ def test_numeros_de_accion_mal_formados_se_rechazan_con_argumento_invalido(argum
     servicio, _, _, _ = _juego(3, n=20)
     antes = _huella(servicio.partida)
     r = servicio.historia_por_accion(argumento)
-    assert (r.aceptada, r.motivo, r.partida) == (False, "argumento_invalido", None)
+    assert (r.aceptada, r.motivo, r.resumen) == (False, "argumento_invalido", None)
     assert _huella(servicio.partida) == antes
 
 
@@ -225,10 +226,10 @@ def test_el_instante_igual_al_reloj_es_el_estado_vivo_y_k_mas_uno_no_existe():
     servicio, _, _, _ = _juego(3, n=40)
     p = servicio.partida
     r = servicio.historia_por_instante(p.reloj)
-    assert r.aceptada and r.reloj == p.reloj
-    assert resumen_plano(r.partida) == resumen_plano(p)
+    assert r.aceptada and r.resumen.reloj == p.reloj
+    assert resumen_plano(r.resumen) == resumen_plano(p)
     r = servicio.historia_por_accion(p.acciones_jugador + 1)
-    assert (r.aceptada, r.motivo, r.partida) == (False, "accion_inexistente", None)
+    assert (r.aceptada, r.motivo, r.resumen) == (False, "accion_inexistente", None)
     r = servicio.historia_por_accion(p.acciones_jugador + 500)
     assert (r.aceptada, r.motivo) == (False, "accion_inexistente")
     assert servicio.historia_por_accion(p.acciones_jugador).aceptada
@@ -239,7 +240,7 @@ def test_un_juego_sin_acciones_solo_tiene_el_instante_cero():
     m, servicio, _ = _armar(3, 3)
     assert servicio.partida.acciones_jugador == 0 and servicio.partida.reloj == 0
     r = servicio.historia_por_instante(0)
-    assert r.aceptada and resumen_plano(r.partida) == resumen_plano(m.partida)
+    assert r.aceptada and resumen_plano(r.resumen) == resumen_plano(m.partida)
     assert servicio.historia_por_instante(1).motivo == "despues_del_reloj"
     assert servicio.historia_por_accion(1).motivo == "accion_inexistente"
 
@@ -366,8 +367,8 @@ def test_las_consultas_no_tocan_la_red_ni_el_catalogo_aunque_la_ficha_se_haya_de
     for i in range(100):
         consultar("t", p.reloj * i // 100)
         consultar("#", 1 + p.acciones_jugador * i // 100)
-    r = servicio.historia_por_accion(1)                              #restaura la sala 1 con la espada del suelo
-    assert any(o.id_catalogo == "espada" for o in r.partida.jugador.sala.objetos)
+    consulta = partida_consultada(servicio, "#", 1)                  #restaura la sala 1 con la espada del suelo
+    assert any(o.id_catalogo == "espada" for o in consulta.jugador.sala.objetos)
     assert (m.catalogo.resoluciones, m.cliente.llamadas) == (resoluciones, llamadas)
     assert m.cliente.solicitudes_realizadas() == 0
     assert _huella(p) == huella

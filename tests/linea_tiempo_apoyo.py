@@ -274,6 +274,15 @@ def resumen_plano(origen):
                   origen.enemigos, origen.mapa)
 
 
+def partida_consultada(servicio, modo, valor):
+    """La Partida del mundo aparte de una consulta, para las pruebas que miran adentro (ids en el suelo,
+    inventario). Hacia afuera el servicio solo entrega `RespuestaHistoriaDTO`; esto usa su servicio interno."""
+    historia = servicio._historia()
+    r = historia.reproducir_en_instante(valor) if modo == "t" else historia.reproducir_en_accion(valor)
+    assert r.aceptada, f"{modo} {valor} rechazada: {r.motivo}"
+    return r.partida
+
+
 def _a_plano(resultado):
     return resultado if isinstance(resultado, tuple) else resumen_plano(resultado)
 

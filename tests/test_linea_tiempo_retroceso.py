@@ -11,7 +11,8 @@ import pytest
 from controller.controlador import Controlador
 from dto.contenido_sala_dto import InstanciaEnemigoDTO
 from linea_tiempo_apoyo import (PartidaInstrumentada, VistaMuda, armar_mundo, con_reloj,
-                                ejecutar_comandos, oraculo, registrar_vivo, resumen_plano)
+                                ejecutar_comandos, oraculo, partida_consultada, registrar_vivo,
+                                resumen_plano)
 from model.linea_tiempo_logica import LineaTiempoPartida
 from model.partida_logica import Partida
 from service.juego_service import JuegoService
@@ -35,7 +36,7 @@ def _consultar(servicio):
         r = (servicio.historia_por_instante(valor) if modo == "t"
              else servicio.historia_por_accion(valor))
         assert r.aceptada, f"{modo} {valor} rechazada: {r.motivo}"
-        return con_reloj(resumen_plano(r.partida), r.reloj)
+        return resumen_plano(r.resumen)
     return consultar
 
 
@@ -277,10 +278,10 @@ def test_libro_1_el_pergamino_gastado_falta_despues_del_retroceso_y_sigue_antes(
     vivo = _estado_vivo(c)
     assert _ids_del_inventario(c.servicio) == [9]                    #el 8 se gastó
     assert c.consultar("t", c.partida.reloj) == con_reloj(vivo, c.partida.reloj)
-    antes = c.servicio.historia_por_accion(3)                        #justo antes de `w`: el 8 aún no se gastó
-    assert [o.id_instancia for o in antes.partida.jugador.inventario.a_lista()] == [8, 9]
-    despues = c.servicio.historia_por_accion(4)                      #tras el pergamino: ya no está
-    assert [o.id_instancia for o in despues.partida.jugador.inventario.a_lista()] == [9]
+    antes = c.servicio.historia_por_accion(3).resumen                #justo antes de `w`: el 8 aún no se gastó
+    assert [o.id_instancia for o in antes.inventario] == [8, 9]
+    despues = c.servicio.historia_por_accion(4).resumen              #tras el pergamino: ya no está
+    assert [o.id_instancia for o in despues.inventario] == [9]
     c.oraculo()
 
 
@@ -296,7 +297,7 @@ def test_libro_2_un_pergamino_recogido_por_una_accion_revertida_queda_en_la_mano
     inv = _ids_del_inventario(c.servicio)
     assert len(inv) == 1 and inv[0] != 8
     assert inv[0] not in _pergaminos_del_suelo(c.servicio)
-    consulta = c.servicio.historia_por_instante(c.partida.reloj).partida
+    consulta = partida_consultada(c.servicio, "t", c.partida.reloj)
     assert [o.id_instancia for o in consulta.jugador.inventario.a_lista()] == inv
     assert inv[0] not in [o.id_instancia for o in consulta.jugador.sala.objetos]
     c.oraculo()
@@ -313,7 +314,7 @@ def test_libro_3_un_pergamino_soltado_por_una_accion_revertida_esta_en_el_suelo_
     c = _correr(guion)
     assert _ids_del_inventario(c.servicio) == []
     assert 8 in _pergaminos_del_suelo(c.servicio)
-    consulta = c.servicio.historia_por_instante(c.partida.reloj).partida
+    consulta = partida_consultada(c.servicio, "t", c.partida.reloj)
     assert consulta.jugador.inventario.a_lista() == []
     assert 8 in [o.id_instancia for o in consulta.jugador.sala.objetos]
     c.oraculo()

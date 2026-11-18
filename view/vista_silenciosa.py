@@ -22,3 +22,6 @@ class VistaSilenciosa:
 
     def mostrar_verificacion(self, reporte):
         pass
+
+    def mostrar_historia(self, resumen):
+        pass

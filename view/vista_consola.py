@@ -1,3 +1,4 @@
+from adapters.formato_historia import lineas_historia, lineas_mapa
 from adapters.salida_verificacion import lineas_reporte
 
 
@@ -40,16 +41,13 @@ class VistaConsola:
         print("-" * 40)
 
     def mostrar_mapa(self, mapa):
-        print("Mapa conocido:")
-        for sala in mapa.salas:
-            aqui = "  (tú estás aquí)" if sala.id_sala == mapa.id_sala_actual else ""
-            print(f"  Sala {sala.id_sala}: {sala.nombre}{aqui}")
-            for s in sala.salidas:
-                if s.id_destino is None:
-                    destino = "sin explorar"
-                else:
-                    destino = f"Sala {s.id_destino}: {s.nombre_destino}"
-                print(f"    {s.direccion} -> {destino} ({s.puerta}, costo {s.costo})")
+        for linea in lineas_mapa(mapa):
+            print(linea)
+
+    def mostrar_historia(self, resumen):
+        #el mismo texto que imprime --replay --hasta (adapters/formato_historia.py, FR-014)
+        for linea in lineas_historia(resumen):
+            print(linea)
 
     def mostrar_verificacion(self, reporte):
         for linea in lineas_reporte(reporte):
