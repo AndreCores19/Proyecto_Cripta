@@ -28,6 +28,8 @@ class LectorBitacora:
             if not linea:
                 continue
             if en_cuerpo:
+                if linea.startswith("#"):
+                    continue                 #comentario (p. ej. «# ir a 7»): no es un comando
                 self.comandos.append(linea)
             elif linea == "---":
                 en_cuerpo = True

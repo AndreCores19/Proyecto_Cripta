@@ -28,3 +28,9 @@ class BitacoraPartida:
         if self.archivo is not None:
             self.archivo.write(f"{comando}\n")
             self.archivo.flush()
+
+    def comentar(self, texto):
+        #línea de comentario: el lector la omite y nunca llega a la lista de comandos
+        if self.archivo is not None:
+            self.archivo.write(f"# {texto}\n")
+            self.archivo.flush()

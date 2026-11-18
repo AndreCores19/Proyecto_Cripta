@@ -1,4 +1,24 @@
 
+#tecla de cada dirección, para anotar los pasos de «ir a» como movimientos normales
+TECLAS_DE_DIRECCION = (("N", "w"), ("S", "s"), ("E", "d"), ("O", "a"))
+
+TEXTOS_DE_MOTIVO = (
+    ("llegada", "llegaste a tu destino"),
+    ("enemigos", "hay enemigos en la sala"),
+    ("dano", "recibiste daño"),
+    ("fin_partida", "la partida terminó"),
+    ("sin_ruta", "no hay ruta conocida"),
+    ("retroceso", "retrocediste con un pergamino"),
+)
+
+
+def _buscar(pares, clave, por_defecto):
+    for k, valor in pares:
+        if k == clave:
+            return valor
+    return por_defecto
+
+
 def direccionar(tecla):
     tecla = tecla.lower()
     if tecla == "w":
@@ -70,7 +90,7 @@ class Controlador:
         comando = palabras[0]
         direccion = direccionar(comando)
 
-        if comando not in ("salir", "guardar", "cargar"):  # ← cambia esta condición
+        if comando not in ("salir", "guardar", "cargar", "ir"):  # ← cambia esta condición
             self.comandos.append(" ".join(palabras))  # ← nuevo: siempre
             if self.bitacora is not None:
                 self.bitacora.anotar(" ".join(palabras))
@@ -84,6 +104,8 @@ class Controlador:
         elif direccion is not None:
             self._avisar_si_falla(self.servicio.mover(direccion),
                                   "No puedes moverte en esa dirección.")
+        elif comando == "ir":
+            self._cmd_ir_a(palabras)
         elif comando == "esperar":
             self.servicio.esperar()
         elif comando == "atacar":
@@ -98,6 +120,24 @@ class Controlador:
             self._cmd_inventario(palabras)
         else:
             self._mostrar_mensaje("Comando no reconocido.")
+
+    def _cmd_ir_a(self, palabras):
+        if len(palabras) < 3 or palabras[1] != "a":
+            self._mostrar_mensaje("Uso: ir a <id>")
+            return
+        if self.bitacora is not None:
+            self.bitacora.comentar(f"ir a {palabras[2]}")
+        resultado = self.servicio.ir_a(palabras[2])
+        if not resultado.aceptado:
+            self._mostrar_mensaje("Esa sala no está explorada.")
+            return
+        #solo los pasos dados se anotan, como movimientos: la orden no se guarda en la lista de comandos
+        for direccion in resultado.direcciones:
+            tecla = _buscar(TECLAS_DE_DIRECCION, direccion, direccion)
+            self.comandos.append(tecla)
+            if self.bitacora is not None:
+                self.bitacora.anotar(tecla)
+        self._mostrar_mensaje(f"Viaje detenido: {_buscar(TEXTOS_DE_MOTIVO, resultado.motivo, resultado.motivo)}")
 
     def _cmd_recoger(self, palabras):
         objetos = self.servicio.objetos_en_sala()
