@@ -53,8 +53,8 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 **Purpose**: fix the reference. Nothing in this phase edits code.
 
-- [ ] T001 Check that `specs/004-crypt-solvability/spec.md` is committed (commit `326fc76`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/`, `aplicacion.py`, `main.py` or `grabar_offline.py` (Constitution VII) — all FRs
-- [ ] T002 Run `python -m pytest` on the unchanged code and note the result (count and time). It is the "all green before" reference for Phase 11 — all FRs
+- [X] T001 Check that `specs/004-crypt-solvability/spec.md` is committed (commit `326fc76`) and that `git status` shows no change under `model/`, `structures/`, `data/`, `service/`, `dto/`, `view/`, `controller/`, `adapters/`, `bench/`, `aplicacion.py`, `main.py` or `grabar_offline.py` (Constitution VII) — all FRs
+- [X] T002 Run `python -m pytest` on the unchanged code and note the result (count and time). It is the "all green before" reference for Phase 11 — all FRs
 
 **Checkpoint**: baseline noted and nothing else changed.
 
