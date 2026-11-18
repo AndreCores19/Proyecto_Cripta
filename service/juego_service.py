@@ -1,10 +1,12 @@
 from model.objeto_logica import PERGAMINO_RETROCESO
-from model.sala_logica import EXPLORADA
+from model.sala_logica import ABIERTA, CERRADA, EXPLORADA
 from dto.estado_vista_dto import (EstadoVistaDTO, JugadorVistaDTO, SalidaVistaDTO,
                                   EnemigoVistaDTO, TrampaVistaDTO, ObjetoVistaDTO)
+from dto.mapa_vista_dto import MapaVistaDTO, SalaConocidaDTO, SalidaConocidaDTO
 from dto.inventario_vista_dto import InventarioVistaDTO, ObjetoInventarioDTO
 from dto.resumen_final_dto import ResumenFinalDTO
 from dto.viaje_dto import ViajeResultadoDTO
+from structures.ordenamientos import ordenar
 from model.viaje_logica import Viaje
 
 
@@ -159,6 +161,23 @@ class JuegoService:
 
     def semilla(self):
         return self.partida.semilla
+
+    def mapa_vista(self):
+        #Solo lee el conocimiento del jugador; no cambia nada ni consume tiempo
+        partida = self.partida
+        exploradas = [s for s in partida.conocidas if s.conocimiento == EXPLORADA]
+        salas = []
+        for sala in ordenar(exploradas, lambda s: s.id):
+            salidas = []
+            for s in sala.salidas:
+                recordada = partida.puerta_recordada(s)
+                puerta = "abierta" if recordada == ABIERTA else "cerrada" if recordada == CERRADA else "sin observar"
+                if s.destino.conocimiento == EXPLORADA:
+                    salidas.append(SalidaConocidaDTO(s.direccion, s.destino.id, s.destino.nombre, s.costo, puerta))
+                else:
+                    salidas.append(SalidaConocidaDTO(s.direccion, None, None, s.costo, puerta))
+            salas.append(SalaConocidaDTO(sala.id, sala.nombre, salidas))
+        return MapaVistaDTO(partida.jugador.sala.id, salas)
 
     def estado_vista(self):
         #Solo lee el estado; nunca lo cambia

@@ -16,3 +16,6 @@ class VistaSilenciosa:
 
     def mostrar_inventario_ordenado(self, objetos, criterio):
         pass
+
+    def mostrar_mapa(self, mapa):
+        pass

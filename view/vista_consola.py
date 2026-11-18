@@ -36,6 +36,18 @@ class VistaConsola:
             print(f"  {mensaje}")
         print("-" * 40)
 
+    def mostrar_mapa(self, mapa):
+        print("Mapa conocido:")
+        for sala in mapa.salas:
+            aqui = "  (tú estás aquí)" if sala.id_sala == mapa.id_sala_actual else ""
+            print(f"  Sala {sala.id_sala}: {sala.nombre}{aqui}")
+            for s in sala.salidas:
+                if s.id_destino is None:
+                    destino = "sin explorar"
+                else:
+                    destino = f"Sala {s.id_destino}: {s.nombre_destino}"
+                print(f"    {s.direccion} -> {destino} ({s.puerta}, costo {s.costo})")
+
     def mostrar_final(self, resumen):
         print("-" * 40)
         for mensaje in resumen.bitacora:

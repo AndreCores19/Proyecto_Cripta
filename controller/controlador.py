@@ -68,6 +68,10 @@ class Controlador:
         if self.vista is not None:
             self.vista.mostrar_final(resumen)
 
+    def _mostrar_mapa(self):
+        if self.vista is not None:
+            self.vista.mostrar_mapa(self.servicio.mapa_vista())
+
     def _mostrar_inventario(self, inventario):
         if self.vista is not None:
             self.vista.mostrar_inventario(inventario)
@@ -104,6 +108,8 @@ class Controlador:
         elif direccion is not None:
             self._avisar_si_falla(self.servicio.mover(direccion),
                                   "No puedes moverte en esa dirección.")
+        elif comando == "mapa":
+            self._mostrar_mapa()
         elif comando == "ir":
             self._cmd_ir_a(palabras)
         elif comando == "esperar":
