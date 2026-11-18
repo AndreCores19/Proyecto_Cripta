@@ -1,0 +1,54 @@
+# AFTER spec 005 (timeline active, K_POR_DEFECTO=10) - 2026-11-18, Python 3.14.6, Windows 11, 11th Gen Intel Core i5-1155G7 @ 2.50GHz
+# Baseline: specs/005-timeline/bench-antes.txt. Run one after another with nothing else running (PyCharm idle).
+
+# python -m bench.bench_historial   (run 1 of 3)
+ Historial de retroceso: parte uno y bajo la nueva carga (microsegundos; K=10) 
+ escenario  salas  enemigos | action (part one) | action (timeline) | undo (part one) | undo (timeline) | closures kept (max 5 frames) | capture checkpoint (us)
+   pequeño     10        10 |             122.5 |             210.5 |            71.1 |           123.1 |                  240 en 5     |                    77.9
+     larga    300        10 |             204.8 |             119.7 |            90.9 |            57.5 |                  240 en 5     |                    80.5
+    normal     20        30 |             472.6 |             428.3 |           277.5 |           174.8 |                  640 en 5     |                    91.7
+    grande    100       100 |            1239.7 |            2002.4 |           986.7 |           935.0 |                 2040 en 5     |                   140.3
+   extremo    100       300 |            3568.7 |            4583.2 |          2726.6 |          2897.5 |                 6040 en 5     |                   600.7
+
+action (part one)  = una acción del jugador con el historial activo, sin línea de tiempo
+action (timeline)  = la misma acción con la línea de tiempo anotando (un punto cada 10)
+undo               = revertir la última acción con el historial (con la línea: más el recorte)
+closures kept      = funciones de deshacer guardadas en total (máximo 5 cuadros)
+capture checkpoint = tomar un punto de control (reemplaza la copia completa con deepcopy, descartada)
+
+# python -m bench.bench_historial   (run 2 of 3)
+ Historial de retroceso: parte uno y bajo la nueva carga (microsegundos; K=10) 
+ escenario  salas  enemigos | action (part one) | action (timeline) | undo (part one) | undo (timeline) | closures kept (max 5 frames) | capture checkpoint (us)
+   pequeño     10        10 |              85.9 |              87.2 |            61.5 |            52.6 |                  240 en 5     |                    36.0
+     larga    300        10 |              82.1 |              96.0 |            50.3 |            75.2 |                  240 en 5     |                    43.3
+    normal     20        30 |             291.1 |             254.1 |           153.4 |           153.4 |                  640 en 5     |                    75.6
+    grande    100       100 |            1498.6 |            1481.2 |           871.8 |           691.3 |                 2040 en 5     |                    93.3
+   extremo    100       300 |            4374.1 |            4284.3 |          3333.0 |          3105.6 |                 6040 en 5     |                   235.2
+
+action (part one)  = una acción del jugador con el historial activo, sin línea de tiempo
+action (timeline)  = la misma acción con la línea de tiempo anotando (un punto cada 10)
+undo               = revertir la última acción con el historial (con la línea: más el recorte)
+closures kept      = funciones de deshacer guardadas en total (máximo 5 cuadros)
+capture checkpoint = tomar un punto de control (reemplaza la copia completa con deepcopy, descartada)
+
+# python -m bench.bench_historial   (run 3 of 3)
+ Historial de retroceso: parte uno y bajo la nueva carga (microsegundos; K=10) 
+ escenario  salas  enemigos | action (part one) | action (timeline) | undo (part one) | undo (timeline) | closures kept (max 5 frames) | capture checkpoint (us)
+   pequeño     10        10 |             105.6 |             202.1 |            88.2 |            61.8 |                  240 en 5     |                    47.1
+     larga    300        10 |             158.7 |             155.8 |            72.8 |            64.3 |                  240 en 5     |                    32.7
+    normal     20        30 |             240.2 |             263.8 |           138.2 |           141.8 |                  640 en 5     |                    51.4
+    grande    100       100 |            1428.6 |            1547.5 |           835.6 |          1022.9 |                 2040 en 5     |                   222.9
+   extremo    100       300 |            3695.6 |            5249.2 |          2503.1 |          3581.4 |                 6040 en 5     |                   687.8
+
+action (part one)  = una acción del jugador con el historial activo, sin línea de tiempo
+action (timeline)  = la misma acción con la línea de tiempo anotando (un punto cada 10)
+undo               = revertir la última acción con el historial (con la línea: más el recorte)
+closures kept      = funciones de deshacer guardadas en total (máximo 5 cuadros)
+capture checkpoint = tomar un punto de control (reemplaza la copia completa con deepcopy, descartada)
+
+# python -m bench.bench_guardado   (unchanged scenarios; only the 4-byte v2 header differs, the timeline is not in the file)
+Guardado binario vs JSON (misma información en ambos)
+ salas | tamaño bin tamaño json | guardar bin guardar json | cargar todo bin cargar todo json | 1 sala bin 1 sala json
+    50 |     10.2KB      17.7KB |      1.22ms       2.30ms |          0.61ms           0.47ms |    0.124ms     0.303ms
+   500 |     56.8KB     115.0KB |      3.99ms      11.14ms |          5.00ms           2.87ms |    0.417ms     1.838ms
+  5000 |    540.7KB    1112.6KB |     40.02ms     139.75ms |         64.04ms          47.42ms |    3.941ms    16.648ms

@@ -11,3 +11,5 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["lenta: corrida a tamaño completo (spec 005 T069); se corre aparte con `-m lenta`"]
+addopts = "-m 'not lenta'"

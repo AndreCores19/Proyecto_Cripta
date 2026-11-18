@@ -40,7 +40,7 @@ Decisions the group has to know about (all argued in [research.md](./research.md
 5. **The default K is provisional (K = 50) until measured.** The code carries `K_POR_DEFECTO = 50`
    marked PROVISIONAL so a game starts without `--checkpoint-cada` from the first phase. It is
    replaced by the value chosen from `--bench` numbers (FR-026) in task T068 and recorded in
-   "Default K" below.
+   "Default K" below. Done: K = 10.
 
 ## Technical Context
 
@@ -134,7 +134,7 @@ model/
 ├── reproduccion_logica.py     # NEW  Reproductor: scratch world + forward re-simulation + stop rule
 ├── linea_tiempo_logica.py     # NEW  LineaTiempoPartida: iniciar, registrar_accion, tras_retroceso
 │                              #      (retags the ledger), anotar_poblacion,
-│                              #      K_POR_DEFECTO (provisional 50; fixed by T068)
+│                              #      K_POR_DEFECTO (10, measured by T068)
 └── partida_logica.py          # EDIT avanzar_hasta_jugador(limite=None) stop bound; Partida.desde_registro;
                                #      `diario_omitidos` appended at the exempt points (scroll on floor,
                                #      scroll picked up / dropped / consumed)
@@ -144,6 +144,8 @@ data/
 │                              #      (or none if already populated)
 ├── fabrica_reproduccion.py    # NEW  populate rooms in the scratch world from stored contents and
 │                              #      frozen fichas only (raises instead of asking the network)
+├── grafo_reutilizable.py      # NEW  (T068, R5 fallback) one scratch graph per service; limpio() resets
+│                              #      the fields a restore or a replay can change, on every room and exit
 └── repositorio_cripta.py      # EDIT pure skeleton builder (no write to repo.salas)
 service/
 ├── juego_service.py           # EDIT record hooks after each successful action; scroll → tras_retroceso;
@@ -199,12 +201,33 @@ much, is in R5.
 
 ## Default K
 
-**Status: provisional K = 50, pending measurement (T068).** Rule fixed now so the choice is not made after seeing the numbers:
+**Status: measured, K = 10 (T068, 2026-11-18).** Rule fixed now so the choice is not made after seeing the numbers:
 the default K is the **largest** K in the measured set (10, 50, 200, plus any added value) whose
 p99 on the reference world is ≤ 25 ms (half the FR-024 limit, to leave room for slower machines);
 the memory of every measured K is reported next to it, not used to choose. If no K meets the
 p99 condition, the group decides with the table in front of it. The chosen value, the table and the date are
-copied here by task T068 and into `docs/DECISIONES.md` §5.6.
+copied here by task T068 and into `docs/DECISIONES.md` §5.5.
+
+Measured with `python -m bench.bench_linea_tiempo --mundo referencia:5,10,50,200,none --mundo grande:10,50`
+(5 000 player actions, seed 7, 200 queries per row, 20 for `none`) on an 11th Gen Intel Core i5-1155G7 @ 2.50 GHz,
+Windows 11, Python 3.14.6, nothing else running. Full output: `specs/005-timeline/bench-linea-tiempo.txt`.
+K = 5 was added to the set. The query reuses one scratch graph per service, reset between queries (the R5
+fallback, `data/grafo_reutilizable.py`): building the graph was 50.9 % of a K = 10 query (p99 23.88 ms); after the
+change it is 6.3 %. Unlike the R5 wording, the reset does not track which rooms the previous query touched: it
+restores the changeable fields (room: knowledge, trail, floor objects, inactive enemies, traps, search marks;
+exit: closed, memory) on every room and exit, which is still O(R + E) but only assignments.
+
+| K (`referencia`) | checkpoints | memory checkpoints | memory actions + ledger | max re-played | p99 (ms) | mean (ms) | worst (ms) | p99 ≤ 25 ms |
+|---|---|---|---|---|---|---|---|---|
+| 5 | 1001 | 46 491.1 KB | 131.9 KB | 5 | 7.41 | 2.94 | 8.33 | yes |
+| **10** | **501** | **23 261.6 KB** | **127.3 KB** | **10** | **16.54** | **5.13** | **19.36** | **yes ← chosen** |
+| 50 | 101 | 4 676.4 KB | 124.1 KB | 50 | 27.85 | 11.94 | 32.76 | no |
+| 200 | 26 | 1 189.2 KB | 123.5 KB | 199 | 97.55 | 43.28 | 131.30 | no |
+| none | 1 | 14.2 KB | 123.3 KB | 5000 | 2777.59 | 1147.43 | 2777.59 | no |
+
+Chosen row: K = 10 (p99 16.54 ms, the largest K with p99 ≤ 25 ms; it also meets FR-024's 50 ms). The `grande`
+stress world (information only) gives p99 47.64 ms at K = 10 and 123.13 ms at K = 50. The cost of the choice is
+memory: about 23 MB of checkpoints at 5 000 actions, against 4.7 MB for K = 50.
 
 ## Decisions on the points for the spec
 

@@ -6,6 +6,7 @@ from dto.resumen_final_dto import ResumenFinalDTO
 from dto.viaje_dto import ViajeResultadoDTO
 from model.viaje_logica import Viaje
 from data.fabrica_reproduccion import FabricaReproduccion
+from data.grafo_reutilizable import GrafoReutilizable
 from service.historia_service import HistoriaService
 from service.lectura_partida import (enemigo_vista, enemigos_de_la_sala, jugador_vista, mapa_vista,
                                      objeto_inventario, objetos_del_inventario)
@@ -19,14 +20,21 @@ class JuegoService:
         self.linea_tiempo = linea_tiempo      #LineaTiempoPartida o None (sin línea de tiempo)
 
     def _historia(self):
-        #un servicio de consulta por llamada: no guarda nada de la partida viva
+        #el servicio de consulta y su grafo aparte se arman una vez y se reusan mientras la línea de tiempo,
+        #su constructor y la fábrica sean los mismos; no guarda nada de la partida viva
         if self.linea_tiempo is None:
             raise RuntimeError("Esta partida no tiene línea de tiempo")
+        clave = (self.linea_tiempo, self.linea_tiempo.constructor_mundo, self.fabrica)
+        cache = getattr(self, "_historia_cache", None)
+        if cache is not None and all(a is b for a, b in zip(cache[0], clave)):
+            return cache[1]
+        grafo = GrafoReutilizable(self.linea_tiempo.constructor_mundo)
 
         def armar_mundo():
-            salas = self.linea_tiempo.constructor_mundo()
-            return FabricaReproduccion.desde(self.fabrica, salas).armar_mundo()
-        return HistoriaService(self.linea_tiempo, armar_mundo)
+            return FabricaReproduccion.desde(self.fabrica, grafo.limpio()).armar_mundo()
+        historia = HistoriaService(self.linea_tiempo, armar_mundo)
+        self._historia_cache = (clave, historia)
+        return historia
 
     def historia_por_instante(self, t):
         #RespuestaHistoriaDTO: el estado en el instante t, o el motivo del rechazo

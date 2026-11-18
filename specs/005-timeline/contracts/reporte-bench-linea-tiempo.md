@@ -11,6 +11,7 @@ Seeds are printed. Same seed → same game (FR-025). No network, no view.
     200 | ...
    none | 1 (start) | ...                  | ...            | ...         | A (whole game)       | ...
 Default K: <value>   rule: largest K with p99 <= 25 ms; memory of every K shown in the table above   -> <table row>
+           (measured 2026-11-18, T068: "Default K: 10 ... -> row K=10 (p99 16.54 ms)"; specs/005-timeline/bench-linea-tiempo.txt)
 Linearity (K=<default>): A=<A> memory=<m1>  A=<2A> memory=<m2>  ratio=<m2/m1>   (expected ~2, not A*S)
 Scroll reads=<n>  ledger entries kept=<n>  checkpoints off the K grid=0
 Forward vs backward: re-simulate forward <x> us/action | invert backward <y> us/action |

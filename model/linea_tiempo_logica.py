@@ -8,7 +8,7 @@ from model.efectos_omitidos import CONTADOR, EfectoOmitido, POBLAR
 from model.registro_estado import capturar
 from structures.linea_tiempo import LineaTiempo
 
-K_POR_DEFECTO = 50  # PROVISIONAL: replaced by T068 with the value measured by the benchmark (plan.md, "Default K")
+K_POR_DEFECTO = 10  # medido (T068): el mayor K con p99 <= 25 ms en `referencia` (plan.md, "Default K")
 
 
 class LineaTiempoPartida:

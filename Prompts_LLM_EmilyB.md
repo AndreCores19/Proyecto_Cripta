@@ -661,6 +661,36 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: /speckit-implement Phases 10 and 11 only (T063–T072). Run the benchmarks one at a time. If p99 is over 50 ms for every K, stop and report before changing anything. Do not commit.
+- Uso: implementar las Fases 10 y 11 de tasks.md (T063 a T072) corriendo los benchmarks uno a la vez. Si p99 es mayor a 50 ms para cada K, detener y reportar antes de cambiar nada, sin hacer commit.
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Run each part-one benchmark three times: python -m bench.bench_agenda, bench.bench_inventario, bench.bench_historial, bench.bench_rastro, bench.bench_bitacora and bench.bench_ordenamientos. Before running, set PYTHONIOENCODING=utf-8 and the console output encoding to UTF-8. Save each run to docs/evidencia-p1/<bench>-corrida<N>.txt. Do not change any code. Then give me, for each benchmark, a table with the min and max of every number across the three runs, and point out any case where the winner of a comparison changed between runs.
+- Uso: ejecutar cada benchmark de la parte uno tres veces, guardando cada ejecución en docs/evidencia-p1/<bench>-corrida<N>.txt, sin cambiar ningún código, y luego dar una tabla con el mínimo y máximo de cada número a través de las tres ejecuciones, señalando cualquier caso donde el ganador de una comparación cambió entre ejecuciones
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Read the 18 files in docs/evidencia-p1/. For each benchmark, give me one table per measurement: the metric, then the min and max across the three runs. Mark with ⚠ every comparison where the fastest option is not the same in all three runs. Do not re-run anything and do not change any file.
+- Uso: leer los 18 archivos en docs/evidencia-p1/ y para cada benchmark dar una tabla por medición con la métrica, el mínimo y máximo a través de las tres ejecuciones, marcando con ⚠ cada comparación donde la opción más rápida no sea la misma en las tres ejecuciones, sin volver a ejecutar nada ni cambiar ningún archivo
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Do not change spec.md. Do not commit.
+1. Optimize the historia query: build the scratch room graph once per service and reuse it across queries, resetting only what a checkpoint restore and a replay can change, instead of rebuilding it from the DTOs every time. Profile the K=10 query on the referencia world before and after and report where the time goes.
+2. Run every oracle test and the full historia test files; all must pass.
+3. With nothing else running, rerun bench_linea_tiempo on referencia for K = 5, 10, 50, 200 and none, and on grande for K = 10 and 50. Save the output to specs/005-timeline/bench-linea-tiempo.txt, inside the repo.
+4. The plan's rule (p99 <= 25 ms) cannot be met. Change it in plan.md to "largest K with p99 <= 50 ms on referencia", note that the change was caused by these measurements, apply it, and replace K_POR_DEFECTO. If no K reaches 50 ms even after the optimization, stop and report.
+5. The T070 test that asserts part-one times stay within 3x of bench-antes.txt is flaky under load: remove the timing assertion from the test (keep the structural checks); the comparison stays in the benchmark report.
+- Uso: optimizar la consulta historia construyendo el grafo de salas una vez por servicio y reutilizándolo en las consultas, ejecutar todas las pruebas oráculo y los archivos completos de prueba de historia, volver a ejecutar bench_linea_tiempo en referencia y grande para los valores de K indicados y guardar la salida en bench-linea-tiempo.txt, cambiar la regla del plan a "largest K with p99 <= 50 ms on referencia" y reemplazar K_POR_DEFECTO, y quitar la aserción de tiempo de T070 manteniendo las comprobaciones estructurales, sin cambiar spec.md ni hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Keep the 25 ms rule as written. Set K_POR_DEFECTO = 10 and remove the PROVISIONAL marker. Regenerate the "Default K" line of specs/005-timeline/bench-linea-tiempo.txt under the 25 ms rule (rerun only the report, not the measurements, if possible). Update plan.md and the contract with the measured default. Run the full-size lenta test (T069) with K=10, then finish T068–T072 (final runs of the Phase 11 undo-history benchmark included). Report the T069 and Phase 11 results. Do not commit.
+- Uso: mantener la regla de 25 ms tal como está escrita, establecer K_POR_DEFECTO = 10 y quitar el marcador PROVISIONAL, regenerar la línea "Default K" de bench-linea-tiempo.txt bajo la regla de 25 ms, actualizar plan.md y el contrato con el valor por defecto medido, ejecutar la prueba completa lenta (T069) con K=10, luego terminar T068–T072 (incluyendo las ejecuciones finales del benchmark de historial de deshacer de la Fase 11), y reportar los resultados de T069 y la Fase 11, sin hacer commit 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt: 
 - Uso: 
 

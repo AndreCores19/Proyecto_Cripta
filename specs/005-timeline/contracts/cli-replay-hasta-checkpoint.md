@@ -5,7 +5,7 @@
 - Accepted with a normal game, a game started by name, and `--replay`; ignored by `--verificar`.
 - K must be a positive integer. Missing value, `0`, negative or non-numeric: argparse-style error,
   exit status 2, nothing runs, no request is made (FR-019).
-- Absent: the default K (`model/linea_tiempo_logica.K_POR_DEFECTO`, provisional 50, replaced by task T068 with the measured value; see
+- Absent: the default K (`model/linea_tiempo_logica.K_POR_DEFECTO`, 10, measured by task T068; see
   `plan.md`, "Default K").
 - Loading a game saved with K1 while `--checkpoint-cada K2` was typed and K2 ≠ K1: the game uses K1
   and shows "Se ignora --checkpoint-cada: esta partida se guardó con K=<K1>." (FR-017). If the option
