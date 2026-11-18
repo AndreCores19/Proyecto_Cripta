@@ -1,6 +1,11 @@
 from adapters.bitacora_partida import BitacoraPartida
 from adapters.lector_bitacora import LectorBitacora
 from controller.controlador import Controlador
+from model.jugador_logica import Jugador
+from model.partida_logica import Partida
+from service.juego_service import JuegoService
+from tests.estado_fijo import FabricaFalsa
+from view.vista_consola import VistaConsola
 from tests.mapas_cazador import cadena
 from tests.mapas_niebla import partida_en, servicio_en
 from tests.test_niebla_retroceso import instantanea_conocimiento
@@ -133,4 +138,41 @@ def test_repetir_los_movimientos_del_log_llega_al_mismo_estado(tmp_path):
     final = controlador.servicio.resumen_final()
     final2 = controlador2.servicio.resumen_final()
     assert vars(final) == vars(final2)
+    assert instantanea_conocimiento(salas2, partida2) == instantanea_conocimiento(salas, partida)
+
+
+# --- Replay sin vista (T044) -------------------------------------------------
+
+def _juego_con_semilla(semilla, carpeta=None, vista=None):
+    salas, pares = cadena([100, 100, 100])
+    jugador = Jugador(vida_max=10 ** 6, ataque=10, defensa=10 ** 6, velocidad=100,
+                      inventario_max=10, sala=salas[0])
+    partida = Partida(jugador, semilla=semilla)
+    bitacora = None
+    if carpeta is not None:
+        bitacora = BitacoraPartida(carpeta)
+        bitacora.abrir("cripta-prueba", "v1", "v1", semilla)
+    return salas, partida, Controlador(JuegoService(partida, FabricaFalsa()), vista, bitacora, None)
+
+
+def test_replay_de_un_viaje_y_un_mapa_sin_instanciar_ninguna_vista(tmp_path, monkeypatch):
+    """FR-014, FR-024, Constitución III · el replay usa vista None y reproduce el mismo estado"""
+    salas, partida, grabado = _juego_con_semilla(7, tmp_path, VistaSilenciosa())
+    for comando in ("d", "d", "d", "a", "a", "a", "mapa", "ir a 4", "mapa", "esperar"):
+        grabado.ejecutar(comando)
+    grabado.bitacora.cerrar()
+    assert partida.jugador.sala is salas[3]
+
+    def prohibido(self, *args, **kwargs):
+        raise AssertionError("vista instanciada durante el replay")
+
+    for clase in (VistaConsola, VistaSilenciosa):
+        monkeypatch.setattr(clase, "__init__", prohibido)
+    lector = LectorBitacora(tmp_path / "partida_cripta-prueba_7.log")
+    lector.leer()
+    assert "mapa" in lector.comandos and "ir a 4" not in lector.comandos
+    salas2, partida2, replay = _juego_con_semilla(lector.semilla)
+    for comando in lector.comandos:
+        replay.ejecutar(comando)
+    assert vars(replay.servicio.resumen_final()) == vars(grabado.servicio.resumen_final())
     assert instantanea_conocimiento(salas2, partida2) == instantanea_conocimiento(salas, partida)

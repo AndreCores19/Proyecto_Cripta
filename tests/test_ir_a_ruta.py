@@ -3,7 +3,7 @@ import random
 from model.ruta_conocida import RutaConocida
 from model.sala_logica import ABIERTA, AVISTADA, CERRADA, Sala, Salida
 from tests.mapas_cazador import _unir, cadena, cripta_aleatoria, grilla
-from tests.mapas_niebla import explorar_todo, partida_en, ruta_referencia
+from tests.mapas_niebla import explorar_todo, partida_en, ruta_referencia, servicio_en
 
 
 def _listo(salas, jugador):
@@ -184,3 +184,83 @@ def test_aleatorio_200_criptas_contra_el_oraculo():
                         salida.opuesta.memoria = 0
         assert (RutaConocida().siguiente_paso(partida, destino)
                 == _como_referencia(salas, partida, destino)), semilla
+
+
+# --- Propiedad de SC-002 y SC-003 (T050) -------------------------------------
+
+def _nombres_exploradas(salas):
+    return [s.nombre for s in salas if s.conocimiento == 2]
+
+
+def _comprobar_vistas(servicio, salas, semilla):
+    """(a) lo que muestran la sala actual y el mapa solo nombra e identifica salas exploradas."""
+    exploradas = _nombres_exploradas(salas)
+    ids_exploradas = [s.id for s in salas if s.conocimiento == 2]
+    estado = servicio.estado_vista()
+    assert estado.nombre_sala in exploradas, semilla
+    for salida in estado.salidas:
+        if salida.nombre_destino is not None:
+            assert salida.nombre_destino in exploradas, semilla      # una sala avistada solo sale como «sin explorar»
+    mapa = servicio.mapa_vista()
+    assert len(mapa.salas) == len(ids_exploradas), semilla
+    for sala in mapa.salas:
+        assert sala.id_sala in ids_exploradas and sala.nombre in exploradas, semilla
+        for salida in sala.salidas:
+            if salida.id_destino is None:
+                assert salida.nombre_destino is None, semilla
+            else:
+                assert salida.id_destino in ids_exploradas and salida.nombre_destino in exploradas, semilla
+
+
+def test_propiedad_la_vista_solo_muestra_lo_explorado_y_el_viaje_solo_usa_lo_conocido():
+    """FR-010, FR-017, FR-021 · SC-002, SC-003 · 100 criptas sembradas, órdenes al azar; falla con la semilla"""
+    for semilla in range(100):
+        azar = random.Random(semilla)
+        salas = cripta_aleatoria(semilla, azar.randint(5, 14))
+        partida = partida_en(salas, salas[0])
+        servicio = servicio_en(partida)
+        if semilla % 3 == 0:
+            partida.efectos.encender_antorcha(partida.jugador, 10 ** 6)
+        en_viaje = []
+        abrir = partida.abrir_puerta
+
+        def abrir_vigilado(direccion, abrir=abrir, en_viaje=en_viaje):
+            assert not en_viaje, "«ir a» abrió una puerta"
+            return abrir(direccion)
+
+        partida.abrir_puerta = abrir_vigilado
+        mover = servicio.mover
+
+        def mover_vigilado(direccion, mover=mover, partida=partida, en_viaje=en_viaje, semilla=semilla):
+            if en_viaje:                                  # (b) un paso del viaje
+                salida = partida.jugador.sala.salida(direccion)
+                assert salida is not None and not salida.cerrada, semilla
+                assert salida.origen.conocimiento == 2 and salida.destino.conocimiento == 2, semilla
+                assert partida.puerta_recordada(salida) == 1, semilla
+            resultado = mover(direccion)
+            assert partida.jugador.sala.conocimiento == 2, semilla
+            return resultado
+
+        servicio.mover = mover_vigilado
+        _comprobar_vistas(servicio, salas, semilla)
+        for _ in range(40):
+            if partida.terminada:
+                break
+            orden = azar.random()
+            sala = partida.jugador.sala
+            if orden < 0.45 and sala.salidas:
+                servicio.mover(azar.choice(sala.salidas).direccion)
+            elif orden < 0.6:
+                servicio.esperar()
+            elif orden < 0.75:
+                sala_cambia = azar.choice(salas)
+                if sala_cambia.salidas:
+                    salida = azar.choice(sala_cambia.salidas)
+                    partida._poner_cerrada(salida, not salida.cerrada)    # una puerta cambia sola
+            else:
+                en_viaje.append(True)
+                try:
+                    servicio.ir_a(str(azar.randint(1, len(salas) + 2)))
+                finally:
+                    en_viaje.clear()
+            _comprobar_vistas(servicio, salas, semilla)

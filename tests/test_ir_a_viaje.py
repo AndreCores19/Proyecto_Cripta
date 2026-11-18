@@ -1,9 +1,10 @@
 from model.enemigo_logica import Enemigo
 from model.objeto_logica import Objeto, PERGAMINO_RETROCESO
+from model.ruta_cazador import Busqueda
 from model.sala_logica import ABIERTA, CERRADA, Sala
 from model.trampa_logica import Trampa
 from model.viaje_logica import (DANO, ENEMIGOS, FIN_PARTIDA, LLEGADA, RETROCESO, SIN_RUTA, Viaje)
-from tests.mapas_cazador import _unir, cadena, grilla
+from tests.mapas_cazador import _unir, cadena, decision_referencia, grilla
 from tests.mapas_niebla import explorar_todo, partida_en, servicio_en
 from tests.test_niebla_retroceso import instantanea_conocimiento
 
@@ -348,3 +349,59 @@ def test_con_un_pergamino_real_del_inventario_el_viaje_se_detiene_por_retroceso(
     assert partida.jugador.sala is salas[1]
     assert viaje.paso() == RETROCESO
     assert partida.jugador.sala is salas[1]
+
+
+# --- La búsqueda guardada de los cazadores sobrevive a un viaje (T045) -------
+
+def _cazador_compartido(partida, sala, rango=1000):
+    cazador = _enemigo(sala, "cazador", rango=rango)
+    partida.activar_enemigo(cazador)
+    partida.agenda.cancelar(cazador.evento)         # decide solo cuando la prueba lo pide
+    return cazador
+
+
+def _decidir_y_comparar(partida, salas, cazador):
+    """La decisión del cazador (con su búsqueda guardada) es la del oráculo del cazador."""
+    esperada = decision_referencia(salas, partida.jugador.sala, cazador)
+    obtenida = partida.decisor_cazador.decidir(partida, cazador)
+    assert obtenida is esperada
+    return obtenida
+
+
+def test_un_paso_de_ir_a_entre_dos_turnos_del_cazador_obliga_a_recalcular_y_decide_bien():
+    """FR-017, FR-011 de la parte dos · la búsqueda de «ir a» comparte el contador de estampas"""
+    salas, _ = cadena([100, 100, 100, 100])
+    partida, servicio = _todo_conocido(salas, salas[0])
+    assert partida.decisor_cazador.modo == "compartido"
+    cazador = _cazador_compartido(partida, salas[4])
+    _decidir_y_comparar(partida, salas, cazador)
+    estampa_guardada = partida.decisor_cazador.estampa
+    assert estampa_guardada == Busqueda.ultima_estampa
+    # el jugador da un paso del viaje y vuelve, de modo que su sala y las puertas son las mismas
+    assert Viaje(partida, salas[2], servicio.mover).paso() is None
+    assert partida.jugador.sala is salas[1]
+    assert servicio.mover("O") is True
+    assert partida.jugador.sala is salas[0]
+    assert Busqueda.ultima_estampa != estampa_guardada      # «ir a» tomó estampas del mismo contador
+    antes = Busqueda.busquedas
+    _decidir_y_comparar(partida, salas, cazador)
+    assert Busqueda.busquedas == antes + 1                  # la búsqueda guardada se rehízo
+
+
+def test_un_ir_a_sin_ruta_tambien_invalida_la_busqueda_guardada_del_cazador():
+    """FR-017, FR-011 de la parte dos · aunque el jugador no se mueva ni pase tiempo"""
+    salas, pares = cadena([100, 100, 100, 100])
+    partida, servicio = _todo_conocido(salas, salas[0])
+    for cara in pares[2]:
+        cara.memoria = CERRADA                              # recordada cerrada (en realidad está abierta)
+    cazador = _cazador_compartido(partida, salas[2])
+    _decidir_y_comparar(partida, salas, cazador)
+    estampa_guardada = partida.decisor_cazador.estampa
+    reloj, sala = partida.reloj, partida.jugador.sala
+    resultado = servicio.ir_a("5")
+    assert resultado.aceptado is True and resultado.motivo == SIN_RUTA and resultado.pasos == 0
+    assert partida.reloj == reloj and partida.jugador.sala is sala
+    assert Busqueda.ultima_estampa != estampa_guardada      # la estampa se toma aunque no haya ruta
+    antes = Busqueda.busquedas
+    _decidir_y_comparar(partida, salas, cazador)
+    assert Busqueda.busquedas == antes + 1
