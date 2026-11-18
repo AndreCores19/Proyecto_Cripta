@@ -1,8 +1,11 @@
 import gc
+import os
 import random
 import sys
 import time
 
+from adapters.cliente_offline import ClienteOffline
+from data.repositorio_cripta import RepositorioCripta
 from model.enemigo_logica import Enemigo
 from model.jugador_logica import Jugador
 from model.partida_logica import Partida
@@ -22,6 +25,13 @@ ESCENARIOS = (
     ("cazadores", 100, 300, 30),
     ("cazadores_rango_total", 100, 300, 30),
 )
+#Cripta de referencia (FR-017, SC-007): (nombre, salas, cazadores, semilla); "offline" lee el paquete sin red
+CARPETA_OFFLINE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "offline")
+ESCENARIOS_REFERENCIA = (
+    ("referencia_cripta06", "cripta-06", 30, 1),
+    ("referencia_sintetica", None, 30, 1),
+)
+SALAS_SINTETICA = 300
 
 
 def armar_partida(num_salas, num_enemigos):
@@ -83,6 +93,26 @@ def armar_partida_cazadores(num_salas, num_enemigos, num_cazadores, semilla, ran
     return partida
 
 
+def armar_partida_referencia(id_cripta, num_cazadores, semilla, num_salas=SALAS_SINTETICA):
+    """Cazadores colocados al azar por semilla (sin repetir sala, fuera de la sala inicial), rango sorteado.
+    Con `id_cripta` carga el esqueleto y los costos del paquete sin conexión (sin red); sin él, cadena sintética."""
+    if id_cripta is None:
+        return armar_partida_cazadores(num_salas, num_cazadores, num_cazadores, semilla)
+    repo = RepositorioCripta(ClienteOffline(CARPETA_OFFLINE))
+    dtos = repo.cargar_esqueleto(id_cripta)
+    repo.construir_salas(dtos)
+    inicial = repo.salas.buscar(repo.datos.sala_inicial)
+    candidatas = [repo.salas.buscar(dto.id_sala) for dto in dtos if dto.id_sala != repo.datos.sala_inicial]
+    azar = random.Random(semilla)
+    elegidas = azar.sample(candidatas, num_cazadores)
+    jugador = Jugador(vida_max=10**9, ataque=10, defensa=10**6, velocidad=100, inventario_max=10, sala=inicial)
+    partida = Partida(jugador, semilla=semilla)
+    for k, sala in enumerate(elegidas):
+        rango = azar.choice(RANGOS_CAZADOR)
+        partida.activar_enemigo(Enemigo(f"c{k}", "x", f"Cazador {k}", 50, 50, 5, 0, 100, "cazador", sala, rango=rango))
+    return partida
+
+
 def medir_ciclos(partida):
     tiempos = []
     gc.disable()
@@ -97,6 +127,16 @@ def medir_ciclos(partida):
     finally:
         gc.enable()
     return tiempos
+
+
+def _informar(nombre, salas, enemigos, partida):
+    tiempos = medir_ciclos(partida)
+    ordenados = ordenar(tiempos, lambda t: t)
+    promedio = sum(tiempos) / len(tiempos)
+    p99 = ordenados[int(len(ordenados) * 0.99)]
+    peor = ordenados[-1]
+    veredicto = "cumple" if p99 <= LIMITE_MS else "NO cumple"
+    print(f"{nombre:>22} {salas:>6} {enemigos:>9} {promedio:>10.3f} {p99:>9.3f} {peor:>9.3f}   {veredicto}")
 
 
 def ejecutar(modo=None):
@@ -115,6 +155,11 @@ def ejecutar(modo=None):
         peor = ordenados[-1]
         veredicto = "cumple" if p99 <= LIMITE_MS else "NO cumple"
         print(f"{nombre:>22} {salas:>6} {enemigos:>9} {promedio:>10.3f} {p99:>9.3f} {peor:>9.3f}   {veredicto}")
+    for nombre, id_cripta, cazadores, semilla in ESCENARIOS_REFERENCIA:
+        partida = armar_partida_referencia(id_cripta, cazadores, semilla)
+        if modo is not None:
+            partida.decisor_cazador = DecisorCazador(modo)
+        _informar(nombre, SALAS_SINTETICA, cazadores, partida)
     print(f"\nLimite: {LIMITE_MS} ms por ciclo (veredicto sobre el percentil 99: p99 <= {LIMITE_MS} ms)")
 
 
