@@ -405,3 +405,37 @@ def test_un_ir_a_sin_ruta_tambien_invalida_la_busqueda_guardada_del_cazador():
     antes = Busqueda.busquedas
     _decidir_y_comparar(partida, salas, cazador)
     assert Busqueda.busquedas == antes + 1
+
+
+# --- Defensa del FR-028: el movimiento se rechaza (T055) -----------------------
+
+def test_si_el_movimiento_se_rechaza_el_viaje_se_detiene_sin_ruta_y_no_repite():
+    """FR-028, FR-022 · US7-11"""
+    salas, _, partida, servicio = _cadena_conocida()
+    llamadas = []
+
+    def rechaza(direccion):
+        llamadas.append(direccion)
+        return False
+
+    reloj, acciones, sala = partida.reloj, partida.acciones_jugador, partida.jugador.sala
+    viaje = Viaje(partida, salas[4], rechaza)
+    assert viaje.paso() == SIN_RUTA
+    assert llamadas == ["E"]                       # se intentó una sola vez: no hay bucle
+    assert viaje.direcciones == []                 # el paso rechazado no se anota
+    assert partida.reloj == reloj and partida.acciones_jugador == acciones
+    assert partida.jugador.sala is sala
+    assert viaje.paso() == SIN_RUTA                # un nuevo paso() vuelve a intentarlo una vez
+    assert llamadas == ["E", "E"]
+
+
+def test_ir_a_con_un_movimiento_rechazado_devuelve_sin_ruta_con_cero_pasos():
+    """FR-028, FR-022, FR-023 · US7-11 (por JuegoService.ir_a)"""
+    salas, _, partida, servicio = _cadena_conocida()
+    llamadas = []
+    servicio.mover = lambda direccion: llamadas.append(direccion) or False
+    reloj = partida.reloj
+    resultado = servicio.ir_a("5")
+    assert resultado.aceptado is True and resultado.motivo == SIN_RUTA
+    assert resultado.pasos == 0 and resultado.direcciones == []
+    assert len(llamadas) == 1 and partida.reloj == reloj
