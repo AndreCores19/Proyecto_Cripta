@@ -195,14 +195,15 @@ def resolver_referencia(salas, id_inicial, id_salida, id_llave_salida, llaves):
             for s in sala.salidas:
                 if s.destino.id == id_salida and s.llave == id_llave_salida:
                     ref.resoluble = True
-    # llaves inalcanzables: las de la lista sin tomar y las nombradas por una puerta (desde una sala alcanzada) o por la salida que la lista no da
+    # llaves inalcanzables: las de la lista sin tomar y las nombradas por una puerta de la frontera o por la salida que la lista no da
     pendientes = [x for x in unicas if x[0] not in tomadas]
     nombradas = []
     for i, sala in enumerate(salas):
         if not alc[i]:
             continue
         for s in sala.salidas:
-            if s.cerrada and s.llave is not None and s.llave not in ids_lista and s.llave not in nombradas:
+            if (s.cerrada and not alc[_posicion(salas, s.destino)] and s.llave is not None
+                    and s.llave not in ids_lista and s.llave not in nombradas):
                 nombradas.append(s.llave)
     if id_llave_salida is not None and id_llave_salida not in ids_lista and id_llave_salida not in nombradas:
         nombradas.append(id_llave_salida)

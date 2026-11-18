@@ -72,7 +72,6 @@ class Verificador:
         cola = Cola()
         obtenibles = MonticuloMinimo()
         sin_abrir = []                  # salidas cerradas que nadie puede abrir (sin llave, o llave que la lista no da)
-        nombradas_ausentes = []         # ids que esas salidas nombran y la lista no da
 
         alcanzada[pos_inicial] = True
         cola.encolar(pos_inicial)
@@ -97,7 +96,6 @@ class Verificador:
                         llave = vector_llaves.buscar(salida.llave)
                         if llave is None:
                             sin_abrir.append(salida)
-                            nombradas_ausentes.append(salida.llave)
                         elif llave.obtenida:
                             alcanzada[destino] = True
                             cola.encolar(destino)
@@ -117,6 +115,7 @@ class Verificador:
             llave.pendientes = []
 
         resultado.resoluble = self._decidir(salas, alcanzada, id_salida, id_llave_salida, vector_llaves)
+        self._informe(resultado, salas, alcanzada, unicas, sin_abrir, id_llave_salida, vector_llaves)
         return resultado
 
     @staticmethod
@@ -142,3 +141,81 @@ class Verificador:
             if entrada.llave == id_llave_salida and alcanzada[salas.posicion(entrada.origen.id)]:
                 return True
         return False
+
+    def _informe(self, resultado, salas, alcanzada, unicas, sin_abrir, id_llave_salida, vector_llaves):
+        sin_tomar = [llave for llave in unicas if not llave.obtenida]
+        # frontera: las salidas que esperan una llave sin tomar y las que nadie puede abrir, hacia salas no alcanzadas
+        frontera = []
+        puertas_con_llave = []
+        nombradas = []                  # ids que las puertas de la frontera nombran y la lista no da
+        for llave in sin_tomar:
+            for salida in llave.pendientes:
+                if not alcanzada[salas.posicion(salida.destino.id)]:
+                    frontera.append(salida)
+                    puertas_con_llave.append((llave, salida))
+        for salida in sin_abrir:
+            if not alcanzada[salas.posicion(salida.destino.id)]:
+                frontera.append(salida)
+                if salida.llave is not None:
+                    nombradas.append(salida.llave)
+        resultado.frontera = ordenar(frontera, lambda s: (s.origen.id, s.direccion))
+        # ids nombrados por una puerta de la frontera (o la salida) que la lista no da: entradas que nunca se obtienen
+        nombres = ordenar(nombradas, lambda x: x)
+        if id_llave_salida is not None and vector_llaves.buscar(id_llave_salida) is None:
+            nombres = ordenar(nombres + [id_llave_salida], lambda x: x)
+        ausentes = []
+        for nombre in nombres:
+            if not ausentes or ausentes[-1].id != nombre:
+                ausentes.append(LlaveLogica(nombre, None, None))
+        resultado.inalcanzables = ordenar(sin_tomar + ausentes, lambda k: k.id)
+        resultado.ciclos = self._ciclos(salas, alcanzada, sin_tomar, puertas_con_llave)
+
+    @staticmethod
+    def _ciclos(salas, alcanzada, sin_tomar, puertas_con_llave):
+        """Barrido lineal sobre las salas que la pasada no alcanzó: la guardiana de cada llave sin tomar es la
+        menor llave de la frontera que llega a su sala ignorando las cerraduras; luego se siguen las guardianas."""
+        if not sin_tomar:
+            return []
+        n = salas.tamano()
+        etiqueta_llave = [None] * n
+        etiqueta_puerta = [None] * n
+        puertas = ordenar(puertas_con_llave, lambda x: (x[0].id, x[1].origen.id, x[1].direccion))
+        for llave, puerta in puertas:
+            inicio = salas.posicion(puerta.destino.id)
+            if etiqueta_llave[inicio] is not None:
+                continue
+            etiqueta_llave[inicio] = llave
+            etiqueta_puerta[inicio] = puerta
+            pila = [inicio]
+            while pila:
+                pos = pila.pop()
+                for salida in salas.valores[pos].salidas:
+                    vecina = salas.posicion(salida.destino.id)
+                    if not alcanzada[vecina] and etiqueta_llave[vecina] is None:
+                        etiqueta_llave[vecina] = llave
+                        etiqueta_puerta[vecina] = puerta
+                        pila.append(vecina)
+        for llave in sin_tomar:
+            pos = salas.posicion(llave.id_sala)
+            if pos != -1 and etiqueta_llave[pos] is not None:
+                llave.guardia = etiqueta_llave[pos]
+                llave.puerta_guardia = etiqueta_puerta[pos]
+        ciclos = []
+        for inicio in sin_tomar:            # ya ordenadas por id
+            if inicio.visita is not None:
+                continue
+            camino = []
+            actual = inicio
+            while actual is not None and actual.visita is None:
+                actual.visita = inicio.id
+                camino.append(actual)
+                actual = actual.guardia
+            if actual is not None and actual.visita == inicio.id:
+                ciclo = camino[camino.index(actual):]
+                menor = 0
+                for i in range(len(ciclo)):
+                    if ciclo[i].id < ciclo[menor].id:
+                        menor = i
+                ciclo = ciclo[menor:] + ciclo[:menor]
+                ciclos.append([Eslabon(llave, llave.guardia, llave.puerta_guardia) for llave in ciclo])
+        return ordenar(ciclos, lambda c: c[0].id_llave)
