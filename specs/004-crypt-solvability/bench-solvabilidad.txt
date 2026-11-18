@@ -1,0 +1,51 @@
+--- corrida 1 ---
+Benchmark de la verificación de resolubilidad (semilla 1; milisegundos)
+
+Cripta con la forma de la mayor publicada (300 salas, 4 llaves), 200 corridas
+                     prom       p99       max   (ms)
+  resoluble         2.466     5.022     5.628
+  no resoluble      1.958     4.018     4.798
+Veredicto con 300 salas: máximo = 5.628 ms; límite <= 200 ms: cumple
+
+Crecimiento con llaves encadenadas (una llave por 50 salas); la ingenua, una pasada completa por llave, solo hasta 10000 salas y 200 llaves
+    salas  llaves   verif ms  ingenua ms  razón v.  razón i.  salas vis.  salidas ex.
+       99       2      0.346       0.888         -         -          99          196
+      987      20      4.555      59.403      13.2      66.9         987         1972
+     9849     200     68.513    8506.163      15.0     143.2        9849        19696
+    98049    2000   1506.574           -      22.0         -       98049       196096
+
+(razón v. e i.: tiempo de la fila contra el de la anterior; las salas y salidas visitadas crecen con el tamaño de la cripta, no con las llaves)
+--- corrida 2 ---
+Benchmark de la verificación de resolubilidad (semilla 1; milisegundos)
+
+Cripta con la forma de la mayor publicada (300 salas, 4 llaves), 200 corridas
+                     prom       p99       max   (ms)
+  resoluble         1.445     3.272     3.596
+  no resoluble      1.781     7.222    22.793
+Veredicto con 300 salas: máximo = 22.793 ms; límite <= 200 ms: cumple
+
+Crecimiento con llaves encadenadas (una llave por 50 salas); la ingenua, una pasada completa por llave, solo hasta 10000 salas y 200 llaves
+    salas  llaves   verif ms  ingenua ms  razón v.  razón i.  salas vis.  salidas ex.
+       99       2      0.301       0.576         -         -          99          196
+      987      20      4.492      57.584      14.9     100.0         987         1972
+     9849     200     71.761    7438.169      16.0     129.2        9849        19696
+    98049    2000   1134.423           -      15.8         -       98049       196096
+
+(razón v. e i.: tiempo de la fila contra el de la anterior; las salas y salidas visitadas crecen con el tamaño de la cripta, no con las llaves)
+--- corrida 3 ---
+Benchmark de la verificación de resolubilidad (semilla 1; milisegundos)
+
+Cripta con la forma de la mayor publicada (300 salas, 4 llaves), 200 corridas
+                     prom       p99       max   (ms)
+  resoluble         1.527     3.903     3.924
+  no resoluble      1.495     3.135     3.560
+Veredicto con 300 salas: máximo = 3.924 ms; límite <= 200 ms: cumple
+
+Crecimiento con llaves encadenadas (una llave por 50 salas); la ingenua, una pasada completa por llave, solo hasta 10000 salas y 200 llaves
+    salas  llaves   verif ms  ingenua ms  razón v.  razón i.  salas vis.  salidas ex.
+       99       2      0.331       0.692         -         -          99          196
+      987      20      5.072      67.526      15.3      97.6         987         1972
+     9849     200     69.008    8081.420      13.6     119.7        9849        19696
+    98049    2000   1364.612           -      19.8         -       98049       196096
+
+(razón v. e i.: tiempo de la fila contra el de la anterior; las salas y salidas visitadas crecen con el tamaño de la cripta, no con las llaves)

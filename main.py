@@ -27,12 +27,12 @@ def main():
                            bench_historial, bench_inventario,
                            bench_ordenamientos, bench_rastro,
                            bench_guardado, bench_cache, bench_fichas, bench_replay,
-                           bench_precarga, bench_catalogo, bench_cazador, bench_ir_a)
+                           bench_precarga, bench_catalogo, bench_cazador, bench_ir_a, bench_solvabilidad)
         for modulo in (bench_ciclo, bench_historial, bench_agenda,
                        bench_inventario, bench_bitacora, bench_ordenamientos,
                        bench_rastro, bench_cache, bench_guardado, bench_fichas,
                        bench_replay, bench_precarga, bench_catalogo, bench_cazador,
-                       bench_ir_a):
+                       bench_ir_a, bench_solvabilidad):
             modulo.ejecutar()
             print()
             if modulo is bench_ciclo:
