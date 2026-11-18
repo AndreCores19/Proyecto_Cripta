@@ -94,3 +94,8 @@ class ClienteHttp:
         )
 
     
+
+    def llaves(self, id_cripta):
+        #dónde está cada llave de la cripta (FR-002); cuenta como cualquier otra solicitud (FR-004)
+        return self._get(f"/criptas/{id_cripta}/llaves",
+                         operacion=f"obtener llaves de {id_cripta}")

@@ -56,3 +56,6 @@ class ClienteOffline:
             if entidad["id"] in ids:
                 elegidas.append(entidad)
         return {"entidades": elegidas}
+
+    def llaves(self, id_cripta):
+        return self._leer(id_cripta, "llaves.json")
