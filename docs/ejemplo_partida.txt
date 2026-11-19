@@ -1,12 +1,13 @@
 CRIPTA-LOG 1
-cripta: cripta-04
-version_cripta: d6727c7f4950
-version_catalogo: be68d322d2f5
-semilla: 3591134417
+cripta: cripta-02
+version_cripta: 52532a77ee04
+version_catalogo: 4b9e75a42be5
+semilla: 2284794062
 ---
+recoger 1
+usar
 w
 recoger 2
-usar
 equipar
 recoger 3
 w
@@ -15,67 +16,12 @@ sig
 sig
 equipar
 w
-recoger 5
-w
-abrir d
-d
-w
-w
-w
-recoger 7
-w
-a
-a
-a
-a
+mapa
+# ir a 1
+s
+s
+s
+# ir a 4
 w
 w
 w
-a
-a
-a
-abrir a
-a
-w
-w
-atacar ----------------------------------------
-solicitudes realizadas: 8 de 52
-presupuesto restante: 44
-aciertos: 33, fallos: 0
-porcentaje de aciertos: 100.00%
-atacar e-rata-cripta-04-1
-atacar e-rata-cripta-04-1
-recoger 10
-usar 10
-inv
-sig
-sig
-sig
-sig
-sig
-usar
-abrir d
-d
-w
-w
-w
-recoger 12
-a
-a
-a
-abrir a
-a
-w
-recoger 14
-w
-recoger 15
-w
-atacar e-rata-cripta-04-2
-atacar e-rata-cripta-04-2
-recoger 16
-sig
-sig
-sig
-usar
-w
-atacar e-rata-cripta-04-4
