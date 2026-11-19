@@ -108,18 +108,40 @@ class VistaConsola:
         nombre = input("Nombre del jugador: ").strip()
         return nombre if nombre else "Jugador"
 
+    @staticmethod
+    def numero_de_cripta(id_cripta, posicion):
+        """Número de una cripta: el sufijo numérico de «cripta-NN»; si el id no sigue ese patrón, su posición en la lista."""
+        texto = str(id_cripta).strip().lower()
+        if texto.startswith("cripta-") and texto[7:].isdigit():
+            return int(texto[7:])
+        return posicion
+
+    @staticmethod
+    def buscar_cripta(criptas, texto):
+        """Id de la cripta que el texto nombra («2», «02» o «cripta-02»), o None si no hay ninguna."""
+        texto = texto.strip().lower()
+        if texto.startswith("cripta-"):
+            texto = texto[7:]
+        for i, c in enumerate(criptas, 1):
+            if texto.isdigit() and int(texto) == VistaConsola.numero_de_cripta(c["id"], i):
+                return c["id"]
+            if texto == str(c["id"]).strip().lower() or "cripta-" + texto == str(c["id"]).strip().lower():
+                return c["id"]
+        return None
+
     def elegir_cripta(self, criptas):
         print("Criptas disponibles:")
         for i, c in enumerate(criptas, 1):
-            print(f"  {i}. {c['nombre']} ({c['id']}) - "
+            print(f"  {self.numero_de_cripta(c['id'], i)}. {c['nombre']} ({c['id']}) - "
                   f"{c['salas']} salas, dificultad {c['dificultad']}")
         while True:
             texto = input("Elige una cripta (número, o 'salir'): ").strip().lower()
             if texto == "salir":
                 return None
-            if texto.isdigit() and 1 <= int(texto) <= len(criptas):
-                return criptas[int(texto) - 1]["id"]
-            print("Opción no válida.")
+            id_cripta = self.buscar_cripta(criptas, texto)
+            if id_cripta is not None:
+                return id_cripta
+            print("No existe esa cripta. Elegí un número de la lista.")
 
     def mostrar_puntajes(self, puntajes):
         print("Tabla de puntajes:")
