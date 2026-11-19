@@ -11,7 +11,7 @@ y que tocan a las estructuras ya decididas. La numeración es la de la sección 
 | 5.2 | Invalidación de la ruta | `specs/002-hunter-enemy/` |
 | 5.3 (y 5.3.1) | «ir a» y su rendimiento | `specs/003-fog-of-war/` |
 | 5.4 | Resolubilidad | `specs/004-crypt-solvability/` |
-| 5.5 | Línea de tiempo | `specs/005-*` |
+| 5.5 | Línea de tiempo | `specs/005-timeline/` |
 | 5.6 | Revisión de las decisiones de la primera parte | `specs/001-exit-costs/` y `specs/002-hunter-enemy/` |
 
 El razonamiento completo de las secciones 5.3 y 5.4, con las alternativas descartadas, está en
@@ -19,6 +19,12 @@ El razonamiento completo de las secciones 5.3 y 5.4, con las alternativas descar
 [`specs/004-crypt-solvability/research.md`](../specs/004-crypt-solvability/research.md) (R4 y R5).
 
 ## 5.1 Ruta del cazador
+
+**Problema.** Las salidas tienen costos distintos, así que contar salas no da la ruta más barata. La decisión de un
+cazador de rango pequeño debe costar según la región dentro de su rango, no según el tamaño de la cripta. Habrá
+decenas de cazadores a la vez persiguiendo al mismo jugador, y hay que medir si conviene un cálculo por cazador o
+uno compartido, y cuándo cambia esa respuesta. Las estructuras auxiliares de la búsqueda son propias, y el
+desempate de §3.2 se cumple siempre, también con muchas rutas del mismo costo.
 
 **Decisión.** El cazador decide con una búsqueda de Dijkstra **hacia atrás desde la sala del jugador**, sobre
 las salidas entrantes (`Sala.entradas`, cada salida conoce su `origen`), acotada por un límite de costo
@@ -96,6 +102,12 @@ modo por defecto es `compartido`. Ninguna medición hizo cambiar una decisión.
 
 ## 5.2 Invalidación de la ruta del cazador
 
+**Problema.** Entre dos turnos de un cazador pueden abrirse o cerrarse puertas, moverse el jugador, cambiar de sala
+otros actores y cambiar velocidades. La decisión tiene que ser siempre la misma que daría un cálculo desde cero:
+reutilizar un cálculo anterior solo vale si se demuestra que no cambia la respuesta. Hay que decir qué eventos
+invalidan qué información y cuánto trabajo se ahorra de verdad, y medirlo en `--bench` con puertas que cambian
+seguido, con puertas que casi nunca cambian y contra recalcular siempre.
+
 **Decisión.** En el modo `compartido` la búsqueda guardada se reutiliza solo mientras se cumplan **las cuatro**
 condiciones siguientes (`DecisorCazador`, `model/ruta_cazador.py`):
 
@@ -158,6 +170,13 @@ reutilizar gana en ambas filas (reglas fijadas de antemano) y no cambiaron nada.
 
 ## 5.3 Búsqueda de «ir a» separada de la del cazador
 
+**Problema.** Saber si una sala está explorada, avistada o desconocida, y cómo recuerda el jugador una puerta, se
+consulta en cada vista, en cada paso de «ir a» y en cada actualización por antorcha. Explorar debe costar según
+las salas que se revelan, no según el tamaño del mapa conocido. El pergamino revierte el mapa conocido y la línea
+de tiempo lo reconstruye, así que registrar e invertir sus cambios tiene que ser barato. La ruta de «ir a» se
+calcula sobre el subgrafo conocido, y hay que justificar si comparte implementación con la búsqueda del cazador o
+si conviene separarlas.
+
 **Decisión.** «ir a» tiene su propia clase de búsqueda, `RutaConocida` (`model/ruta_conocida.py`), que
 recorre el subgrafo que el jugador conoce: las salas exploradas y las salidas que recuerda abiertas.
 **No** reutiliza la búsqueda del cazador (`Busqueda.calcular`), que recorre el mapa completo. Lo que sí
@@ -198,6 +217,36 @@ comparten:
 **Por qué el montículo sí se comparte.** Es una estructura genérica (prioridad y valor) que no sabe nada
 del grafo. Reutilizarlo evita una segunda implementación y se vacía (`vaciar()`) al comenzar cada
 búsqueda, porque la búsqueda se detiene en cuanto sale la sala del jugador y deja entradas sin extraer.
+
+**Complejidad** (`specs/003-fog-of-war/plan.md`, «Complexity (engine)»).
+
+- Un paso de «ir a»: O(V_k log V_k + E_k) sobre la región conocida más cercana al destino que el jugador, más
+  O(grado) para el desempate entre las salidas de la sala del jugador.
+- Un viaje recalcula la ruta en cada paso y no guarda nada entre pasos (FR-020), así que un viaje de p pasos hace
+  p búsquedas.
+- Explorar al moverse: O(grado) sin antorcha y O(grado²) con antorcha, más O(grado) para la memoria de puertas.
+- Deshacer: las escrituras nuevas van al cuadro del movimiento en el historial, O(grado) u O(grado²) entradas más.
+
+**Coincidencia con el `plan.md` original.** La decisión de esta sección, sí. El `plan.md` de antes de implementar
+(commit `6166666`) ya tenía la búsqueda hacia atrás desde el destino en una clase propia, la regla A de estampas
+(tomada lo primero, antes de cualquier retorno), el montículo compartido con `vaciar()` y el veredicto de p99 ≤ 5
+ms. Lo que cambió durante la implementación (commit `f429f82`; el plan se sincronizó en `8243510`):
+
+- el tamaño del veredicto pasó de 100 salas (el escenario más grande de `bench_ciclo`) a 300 salas, el tamaño de
+  cripta-06, la mayor publicada (`research.md`, R7); 100, 500 y 1000 salas quedan como información;
+- la primera medición con 300 salas no dejaba el margen buscado, así que se optimizaron las comparaciones del
+  montículo y el bucle de la ruta (5.3.1). La medición no cambió la decisión de separar las búsquedas ni la regla A.
+
+**Límites conocidos.**
+
+- El costo crece con la región conocida: con 1000 salas el p99 de la ruta es de 8.58 a 9.29 ms y con 500, de 4.11
+  a 4.82 ms (`specs/003-fog-of-war/bench-ir-a.txt`). Esos tamaños son solo información, pero con 1000 salas una
+  cripta así no cumpliría 5 ms.
+- La medición usa una cripta sintética de 300 salas, toda explorada y con todas las puertas recordadas abiertas,
+  no cripta-06 misma. Si el curso publica otra cripta de referencia, la medición se repite con ella (R7).
+- Por la regla A, cada paso de «ir a» invalida la búsqueda guardada de los cazadores y cuesta una búsqueda más
+  en el siguiente turno de un cazador, mientras haya cazadores activos (R6).
+- Un viaje no reutiliza la búsqueda entre pasos: cada paso paga la búsqueda completa sobre la región conocida.
 
 ### 5.3.1 Rendimiento de «ir a» con 300 salas
 
@@ -250,6 +299,13 @@ algunas corridas) que vienen de la máquina y no del algoritmo; no entran en el 
 
 ## 5.4 Verificación de resolubilidad: una pasada y no una por llave
 
+**Problema.** Obtener una llave puede abrir una región entera, y repetir el recorrido completo por cada llave no
+cumple: el costo total debe crecer de forma aproximadamente lineal con salas, salidas y llaves. El reporte de una
+cripta no resoluble necesita la frontera bloqueada y las dependencias entre llaves, y eso debe salir del mismo
+recorrido. Los ciclos de dependencia se detectan de forma determinista y se reporta el ciclo concreto. El
+`--bench` mide la alternativa ingenua de un recorrido por llave con criptas sintéticas de muchas llaves
+encadenadas.
+
 Esto complementa el [Documento de Decisiones de la primera parte](Documento_de_Decisiones.pdf). El razonamiento
 completo, con las alternativas, está en [`specs/004-crypt-solvability/research.md`](../specs/004-crypt-solvability/research.md)
 (R4 y R5) y los números en `specs/004-crypt-solvability/bench-solvabilidad.txt`.
@@ -286,11 +342,182 @@ El crecimiento de la verificación es un poco más que lineal (13 a 22 veces por
 binaria y por la memoria, y el trabajo visto no depende de las llaves: las salas y las salidas visitadas son siempre las de la
 cripta (por ejemplo 98 049 salas y 196 096 salidas con 2 000 llaves).
 
+**Coincidencia con el `plan.md` original.** Sí. El `plan.md` de antes de implementar (commit `6bb5d63`, la versión
+corregida tras el análisis de la primera, `0698354`) es el mismo que el final: no cambió durante la implementación.
+La corrección de `6bb5d63`, todavía antes de implementar, cambió el costo escrito de `O(V + E log K + K log K)` a
+`O((V + E) log V + K log K)` (por buscar la posición de cada sala en el vector ordenado) y limitó la alternativa
+de una pasada por llave a 10 000 salas y 200 llaves. Las mediciones no hicieron cambiar nada: el máximo con 300
+salas queda muy por debajo de 200 ms.
+
+**Límites conocidos.**
+
+- El crecimiento es un poco más que lineal: la verificación tarda de 13.2 a 22.0 veces más por cada ×10 salas
+  (`specs/004-crypt-solvability/bench-solvabilidad.txt`), por el `log V` y la memoria. Con 100 000 salas y 2 000
+  llaves tarda de 1.13 a 1.51 s.
+- La cripta de 300 salas es sintética, con la forma de cripta-06 (300 salas, 4 llaves), no cripta-06 misma.
+- El máximo con 300 salas varía entre corridas (5.628, 22.793 y 3.924 ms); sigue muy por debajo de 200 ms.
+- La alternativa de una pasada por llave no se mide con 100 000 salas (serían unos 2×10⁸ recorridos de sala).
+- Cuando varias llaves de la frontera llegan a la misma región, la guardiana es la de menor id: es una elección
+  fija, no una prueba de que la región solo se pueda abrir con esa llave (`research.md`, R5).
+- `--replay` y cargar una partida guardada dentro de una sesión ya abierta no vuelven a verificar (FR-014).
+
 ## 5.5 Línea de tiempo
 
-*Pendiente: se completa cuando se termine la spec 005.*
+**Problema.** Consultar cualquier instante no debe obligar a aplicar o deshacer los cambios de más de K acciones
+del jugador. La memoria debe crecer con los cambios ocurridos más un punto de control cada K acciones, nunca con
+acciones por tamaño del estado. Ubicar el punto de control más cercano a un instante es una búsqueda frecuente
+cuyo costo pesa en partidas largas, y un pergamino debe recortar la línea sin recorrer toda la historia. Hay que
+mostrar con mediciones cómo cambian la memoria y el tiempo de consulta con al menos tres valores de K, justificar
+el K por defecto y documentar con evidencia si se reconstruye hacia adelante o hacia atrás.
+
+Especificación: [`specs/005-timeline/spec.md`](../specs/005-timeline/spec.md). Plan:
+[`specs/005-timeline/plan.md`](../specs/005-timeline/plan.md). Razonamiento completo, con las alternativas:
+[`specs/005-timeline/research.md`](../specs/005-timeline/research.md) (R1 a R12).
+
+**Decisión.** La línea de tiempo guarda, por cada acción del jugador que sigue en la partida, un registro pequeño
+(número, reloj de la decisión y la acción ya resuelta: tipo y objetivo; `research.md`, R3) y, cada K acciones, un
+**punto de control**: un registro escrito a mano con solo los campos que cambian, con las entidades por id,
+incluido el estado del generador aleatorio y el mapa conocido (`model/registro_estado.py`, R2). Para responder
+`historia t` o `historia #k` toma el punto de control anterior, arma con él un mundo aparte y **reproduce hacia
+adelante** a lo más K acciones del jugador con los métodos reales de `Partida`, deteniéndose según la regla del
+instante t (R7). El mundo aparte es otro grafo de objetos: la consulta no toca la partida en vivo, su historial de
+deshacer, `partida.log`, el reloj, la red ni el presupuesto de peticiones (R5, R8). Además:
+
+- **Pergamino** (R6). Leer un pergamino recorta la línea desde el final: borra los registros de acción con número
+  mayor que n (las acciones que quedan) y los puntos de control de límite mayor que n. No toma ni reemplaza ningún
+  punto de control, así que sigue habiendo a lo más uno cada K acciones (FR-019). Lo que el deshacer de la parte
+  uno deja fuera a propósito (el pergamino consumido, los pergaminos que entran o salen del suelo o del
+  inventario, el contador de instancias de la fábrica y las salas pobladas por movimientos revertidos) se guarda
+  en el **libro de efectos que el deshacer omite**, etiquetado con el punto de retroceso; una consulta aplica esas
+  entradas cuando la reproducción pasa por ese punto.
+- **Guardado** (R9). El formato pasa a la versión 2: la cabecera agrega K y el archivo sigue guardando los
+  comandos, no la línea de tiempo. Cargar reejecuta los comandos, como en la parte uno, y eso reconstruye la
+  partida, el historial, los registros de acción, los puntos de control y el libro. Al cargar manda el K
+  guardado; un `--checkpoint-cada` distinto se ignora con un aviso. Un archivo de la versión 1 se rechaza como
+  incompatible.
+- **K por defecto**: 10, elegido con las mediciones (5.5.1).
+
+**Por qué se descartaron las alternativas** (`research.md`, R1, R6 y R9):
+
+| Alternativa | Por qué no |
+|---|---|
+| Invertir hacia atrás con el historial de deshacer | Los cierres del historial escriben sobre los objetos de la partida en vivo, y una consulta no puede modificar la partida (FR-006, FR-008). Los cierres no se pueden escribir en el archivo binario (FR-017). La parte uno guarda solo 5 cuadros; guardarlos todos dejaría 83.0 cierres por acción, unos 178 115 KB a 5 000 acciones (tamaño superficial de los cierres). El deshacer omite a propósito efectos de los pergaminos (§2.11), así que invertir miles de acciones acumularía esa diferencia. Invertir sí es más barato por acción (157.9 µs contra 635.7 µs de reproducir hacia adelante, `specs/005-timeline/bench-linea-tiempo.txt`), pero lo que lo descarta es lo anterior, no el tiempo. |
+| Sin puntos de control (solo el estado inicial; reproducir desde el comienzo) | Rompe FR-020: una consulta reproduce hasta toda la partida. Medido en `referencia`: hasta 5 000 acciones reproducidas y p99 2777.59 ms. |
+| Una copia completa en cada acción | FR-021 lo prohíbe: la memoria crecería con acciones por tamaño del estado. «Copiar todo» cuesta de 588.5 a 12 650.6 µs por copia (`specs/005-timeline/bench-antes.txt`); por 5 000 acciones son entre 2.9 y 63 s (calculado con esas cifras). Además `deepcopy` copiaría los cierres del historial por referencia (la copia desharía la partida en vivo) y, a través de `creador_objetos`, el catálogo, la caché y el cliente HTTP (R2). |
+| Un punto de control extra en el punto de retroceso de un pergamino | Es exacto, pero agrega una copia fuera de la cuadrícula de K, que FR-019 no permite (R6). |
+| Guardar los registros y los puntos de control en el archivo | Duplica lo que la carga ya recalcula al reejecutar los comandos y necesitaría un formato para el registro de estado (R9). |
+
+**Complejidad** (`specs/005-timeline/plan.md`, «Data Structures and Complexity»). A = acciones del jugador que
+quedan, K = separación de los puntos de control, R y E = salas y salidas, S = tamaño del estado que cambia, c =
+costo de una acción, r = acciones que revierte un pergamino.
+
+- Registrar una acción: O(1) amortizado (agregar a tres vectores paralelos).
+- Tomar un punto de control: O(S), una vez cada K acciones.
+- Ubicar el punto de control de un límite b (acciones ya hechas): O(1), la casilla `b // K`.
+- Ubicar la acción de un instante t: O(log A), búsqueda binaria propia sobre el vector de relojes
+  (`ultimo_menor_o_igual`, R4); los relojes crecen estrictamente porque el intervalo del jugador es al menos 1.
+- Recortar tras un pergamino: O(r + puntos de control descartados + entradas del libro reetiquetadas); no depende
+  de A (FR-011).
+- Una consulta: O(R + E) para limpiar el grafo reutilizado, O(S) para restaurar el punto y a lo más K·c para
+  reproducir (FR-020).
+- Memoria: A registros de acción + (A/K)·S de puntos de control + el libro (los efectos omitidos de las últimas 5
+  acciones y los que guardó cada pergamino). Nunca A·S (FR-021). Medido: la memoria crece con razón 2.05 de
+  A = 5 000 a 2A (K = 50).
+
+**¿Se cumple el límite de 50 ms del enunciado?** FR-024 pide p99 ≤ 50 ms con el K por defecto, en una partida de
+al menos 5 000 acciones.
+
+- **Se cumple** en el mundo `referencia` (esqueleto de cripta-06 y 30 cazadores) con K = 5 (p99 7.41 ms), K = 10
+  (16.54 ms en la corrida de T068, 14.54 ms en la prueba de tamaño completo T069 y 15.35 ms en la corrida
+  completa de `python main.py --bench`) y K = 50 (27.85 ms). El peor caso con K = 10 fue 19.36 ms (T068) y
+  36.33 ms (T069).
+- **No se cumple** en `referencia` con K = 200 (97.55 ms) ni sin puntos de control (2777.59 ms).
+- **No se cumple** en el mundo de esfuerzo `grande` (100 salas, 100 enemigos) con K = 10, el K por defecto: en la
+  corrida completa de `--bench` el p99 fue **54.31 ms**, por encima de 50 ms. En la corrida de T068 había dado
+  47.64 ms. Con K = 50 en `grande` el p99 es 123.13 ms. El veredicto de FR-024 se toma en `referencia` (plan.md),
+  pero con el K por defecto una consulta en una cripta como `grande` puede pasar de 50 ms.
+
+Fuentes: `specs/005-timeline/bench-linea-tiempo.txt` (T068), `specs/005-timeline/tasks.md` (T069) y
+`specs/005-timeline/quickstart.md` (corrida completa de `--bench`). Las tablas completas están en 5.5.1 y en 5.6.2.
+La corrección se prueba con un oráculo que es la propia partida: una partida sembrada guarda el resumen en vivo en
+cada decisión y después se consulta cada instante y cada `#k` (`tests/test_linea_tiempo_oraculo.py`, R12).
+
+**Coincidencia con el `plan.md` original.** En lo principal, sí. El `plan.md` de antes de implementar (commit
+`21f70fd`) ya tenía la reproducción hacia adelante desde puntos de control, los registros de estado escritos a mano,
+el libro de efectos omitidos, el formato v2 con los comandos y K, y la regla para elegir K (el mayor K con p99 ≤ 25
+ms en `referencia`), que se mantuvo sin cambios. Lo que cambió:
+
+- **Después de la primera medición** se agregó el grafo de salas reutilizable (`data/grafo_reutilizable.py`), que
+  el plan dejaba como alternativa en R5 si armar el grafo pasaba de un tercio de la consulta: era el 50.9 % con
+  K = 10 (p99 23.88 ms). Con el grafo reutilizado bajó a 6.3 % y el p99 a 16.54 ms. A diferencia de R5, la limpieza
+  no sigue qué salas tocó la consulta anterior: limpia todas las salas y salidas.
+- K = 5 se agregó al conjunto medido, y el K provisional de 50 del plan se reemplazó por el medido, 10.
+- **Antes de implementar** se descartaron dos ideas de un borrador anterior, y el plan del commit `21f70fd` ya no
+  las tiene: volver a anclar la línea en el pergamino con un punto de control extra en el punto de retroceso
+  (decisión 2 del grupo, por FR-019) y guardar los puntos de control en el archivo de guardado (decisión 3).
+
+**Límites conocidos.**
+
+- En `grande` con K = 10 el límite de 50 ms no se cumple (54.31 ms en la corrida completa de `--bench`), como se
+  dice arriba. Bajar K lo mejoraría a cambio de memoria, pero no se midió K < 10 en `grande`.
+- Las corridas varían en la misma máquina: `grande` con K = 10 dio 47.64 y 54.31 ms; `referencia` con K = 10, 16.54,
+  14.54 y 15.35 ms.
+- La memoria es el precio de K = 10: 23 261.6 KB de puntos de control a 5 000 acciones en `referencia` (24 061.5 KB
+  en `grande`), contra 4 676.4 KB con K = 50.
+- Reproducir hacia adelante cuesta unas 4 veces más por acción que invertir (635.7 contra 157.9 µs). Lo que queda
+  del tiempo de una consulta es sobre todo reproducir las acciones, en especial los turnos de los cazadores.
+- La limpieza del grafo reutilizado recorre todas las salas y salidas en cada consulta, O(R + E), aunque solo sean
+  asignaciones.
+- Cargar una partida reejecuta todos los comandos con la grabación activa, así que el tiempo de carga crece con la
+  partida; no se midió por separado (R9).
+- Las entradas que guarda un pergamino en el libro se quedan para siempre: el libro crece con los pergaminos leídos
+  (en la medición, 6 lecturas y 6 entradas guardadas).
+- La posición de un objeto dentro de la lista del suelo puede diferir de la partida en vivo después de un
+  pergamino (R6, riesgo residual). El suelo no está en el resumen de FR-004 y `recoger` busca por id, así que no
+  cambia una respuesta.
+- El mundo `extremo` (100 salas, 300 enemigos) no tiene cifras de la línea de tiempo en
+  `specs/005-timeline/bench-linea-tiempo.txt`.
+
+### 5.5.1 K por defecto (un punto de control cada K acciones)
+
+**Decisión.** `K_POR_DEFECTO = 10` (`model/linea_tiempo_logica.py`). La regla se fijó en
+`specs/005-timeline/plan.md` («Default K») antes de medir: el **mayor** K medido cuyo p99 de `historia` en el mundo
+`referencia` sea ≤ 25 ms (la mitad del límite de 50 ms de FR-024, para dejar margen a máquinas más lentas); la
+memoria de cada K se informa al lado y no se usa para elegir.
+
+**Evidencia empírica** (`specs/005-timeline/bench-linea-tiempo.txt`; 2026-11-18, Intel Core i5-1155G7 @ 2.50 GHz,
+Windows 11, Python 3.14.6, sin otra carga; 5 000 acciones del jugador, semilla 7, 200 consultas por fila y 20 en
+`none`):
+
+| K (`referencia`) | Puntos | Memoria de puntos | Memoria de acciones + libro | Máx. reproducidas | p99 (ms) | Promedio (ms) | Peor (ms) |
+|---|---|---|---|---|---|---|---|
+| 5 | 1001 | 46 491.1 KB | 131.9 KB | 5 | 7.41 | 2.94 | 8.33 |
+| **10** | **501** | **23 261.6 KB** | **127.3 KB** | **10** | **16.54** | **5.13** | **19.36** |
+| 50 | 101 | 4 676.4 KB | 124.1 KB | 50 | 27.85 | 11.94 | 32.76 |
+| 200 | 26 | 1 189.2 KB | 123.5 KB | 199 | 97.55 | 43.28 | 131.30 |
+| none (solo el punto 0) | 1 | 14.2 KB | 123.3 KB | 5000 | 2777.59 | 1147.43 | 2777.59 |
+
+K = 10 es el mayor con p99 ≤ 25 ms; K = 50 queda en 27.85 ms. En el mundo de esfuerzo `grande` (solo información)
+K = 10 da p99 47.64 ms y K = 50, 123.13 ms. La prueba de tamaño completo (T069: K = 10, 5 000 acciones en
+`referencia`) dio p99 14.54 ms, peor 36.33 ms, promedio 5.11 ms. La memoria crece lineal con las acciones (razón
+2.05 de A = 5 000 a 2A, medida con K = 50).
+
+**Lo que cuesta.** Unos 23 MB de puntos de control a 5 000 acciones, contra 4.7 MB con K = 50: el precio de
+consultas más rápidas.
+
+**Cambio necesario para llegar.** Armar el grafo aparte en cada consulta era el 50.9 % del tiempo con K = 10 (p99
+23.88 ms). Como prevé la investigación R5 de la spec, la consulta ahora reusa un solo grafo por servicio y lo limpia
+entre consultas (`data/grafo_reutilizable.py`): devuelve a su valor del esqueleto los campos que un punto
+restaurado o una acción reproducida pueden cambiar (de cada sala, conocimiento, rastro, objetos, inactivos, trampas y
+marcas de búsqueda; de cada salida, cerrada y memoria). Con eso el armado bajó a 6.3 % del tiempo y el p99 de K = 10,
+a 16.54 ms. Lo que queda es reproducir las acciones (sobre todo los turnos de los cazadores).
 
 ## 5.6 Revisión de las decisiones de la primera parte
+
+**Problema.** Los cazadores, los costos variables de movimiento y la línea de tiempo cambian la carga sobre
+estructuras que ya existían, sobre todo la agenda de eventos y el historial de retroceso. Hay que repetir las
+mediciones de la primera parte con esa carga nueva: si una decisión deja de servir, se cambia y se documenta el
+antes y el después; si sigue sirviendo, se muestra con datos.
 
 ### 5.6.1 Agenda de eventos
 
@@ -341,7 +568,7 @@ modelo de incremento variable de `specs/001-exit-costs/bench-parte2.txt` (tamañ
 | 3000 | 300 | 1412.2 | 3000 | 1237.4 |
 
 `cancelar` y `reprogramar` valen 0.0 en todas las filas. Los cazadores agregan entre 1.9 % y 15.5 % de operaciones por
-acción (cálculo mío con las cifras de la tabla: 142.1 / 123.0 con 300 enemigos y 30 cazadores; 1260.7 / 1237.4 con 3000 y 30; con 100 y 300 cazadores, 14.6 % y 14.1 %; el `plan.md` de la 002 redondea a «2 % y 15 %»); la forma de la carga no cambia, porque
+acción (calculado con las cifras de la tabla: 142.1 / 123.0 con 300 enemigos y 30 cazadores; 1260.7 / 1237.4 con 3000 y 30; con 100 y 300 cazadores, 14.6 % y 14.1 %; el `plan.md` de la 002 redondea a «2 % y 15 %»); la forma de la carga no cambia, porque
 sigue habiendo un evento pendiente por actor.
 
 | µs por extraer y programar, modelo de incremento variable (tres corridas) | 300 pendientes | 1000 | 3000 |
@@ -366,4 +593,40 @@ fue el más rápido en todos los tamaños ≥ 300 (en la 002, en las tres corrid
 
 ### 5.6.2 Historial de deshacer
 
-*Pendiente: se revisa en la spec 005.*
+**Decisión.** El historial de deshacer se queda como en la primera parte (`structures/historial.py`: cierres en un
+anillo de 5 cuadros). La línea de tiempo de la spec 005 no lo reemplaza ni lo agranda: el pergamino sigue
+deshaciendo con él, y la consulta del pasado reproduce hacia adelante desde un punto de control
+(`specs/005-timeline/research.md`, R1). La columna «copiar todo» de la primera parte (copia completa con
+`deepcopy`, que no se usa en el juego) se reemplazó por «capturar punto», que es lo que la línea de tiempo copia de verdad.
+
+**Evidencia empírica** (`specs/005-timeline/bench-despues.txt`: tres corridas seguidas de `bench_historial`,
+K = 10; antes: `specs/005-timeline/bench-antes.txt`). µs por operación; «parte uno» se mide en vivo en la misma
+corrida, sin línea de tiempo:
+
+| Escenario (salas, enemigos) | Acción antes | Acción parte uno | Acción con línea | Deshacer antes | Deshacer parte uno | Deshacer con línea | Copiar todo antes | Capturar punto | Cierres guardados |
+|---|---|---|---|---|---|---|---|---|---|
+| pequeño (10, 10) | 84.3 | 85.9 – 122.5 | 87.2 – 210.5 | 55.7 | 61.5 – 88.2 | 52.6 – 123.1 | 588.5 | 36.0 – 77.9 | 240 en 5 (igual) |
+| larga (300, 10) | 120.8 | 82.1 – 204.8 | 96.0 – 155.8 | 106.0 | 50.3 – 90.9 | 57.5 – 75.2 | 12 650.6 | 32.7 – 80.5 | 240 en 5 (igual) |
+| normal (20, 30) | 236.7 | 240.2 – 472.6 | 254.1 – 428.3 | 163.0 | 138.2 – 277.5 | 141.8 – 174.8 | 1 441.5 | 51.4 – 91.7 | 640 en 5 (igual) |
+| grande (100, 100) | 865.0 | 1 239.7 – 1 498.6 | 1 481.2 – 2 002.4 | 609.4 | 835.6 – 986.7 | 691.3 – 1 022.9 | 5 929.6 | 93.3 – 222.9 | 2 040 en 5 (igual) |
+| extremo (100, 300) | 3 158.9 | 3 568.7 – 4 374.1 | 4 284.3 – 5 249.2 | 2 327.8 | 2 503.1 – 3 333.0 | 2 897.5 – 3 581.4 | 11 528.2 | 235.2 – 687.8 | 6 040 en 5 (igual) |
+
+*Adelante contra atrás* (`specs/005-timeline/bench-linea-tiempo.txt`, `referencia`, 1 000 acciones): reproducir
+hacia adelante cuesta 635.7 µs por acción e invertir hacia atrás con el historial, 157.9 µs; una acción deja 83.0
+cierres en el historial, que serían unos 178 115 KB (tamaño superficial) si se guardaran las 5 000 acciones en vez de
+5 cuadros.
+
+**Lectura.**
+
+- Los cierres guardados son los mismos con y sin línea de tiempo (el benchmark lo comprueba en cada escenario): la
+  línea no cambia lo que guarda el historial.
+- Lo que la línea agrega por acción es anotar un registro y, cada K = 10 acciones, capturar un punto: entre 3.3 y 69
+  µs por acción repartidos (la décima parte de «capturar punto»). Eso queda por debajo de la diferencia entre
+  corridas: la misma columna cambia hasta 2 veces de una corrida a otra (acción parte uno en `larga`: 82.1 a 204.8
+  µs), y en algunas filas la columna con línea sale más rápida que la de la parte uno. Por eso estas cifras no
+  permiten dar un porcentaje de sobrecosto; solo muestran que está dentro del ruido de la máquina.
+- La columna «parte uno» de hoy está entre 0.47 y 2.0 veces la de `bench-antes.txt` (máquina ruidosa y el código de
+  `Partida` que la spec 005 editó); la comparación vale dentro de una corrida, no contra los µs de otra.
+- Invertir hacia atrás es unas 4 veces más barato por acción que reproducir hacia adelante, pero solo cubre 5 cuadros
+  y no se puede guardar en el archivo; para leer cualquier instante, la línea de tiempo reproduce a lo más K = 10
+  acciones desde un punto, y para deshacer se sigue usando el historial.
