@@ -1,0 +1,24 @@
+ Rastro (microsegundos por operación) 
+
+Decisión de un rastreador (el resto de la cripta es un recorrido largo con rastro):
+  salidas     10 salas    100 salas   1000 salas   5000 salas
+        1         1.35         1.28         1.42         2.01
+        2         2.41         1.86         2.26         0.97
+        3         1.76         1.44         1.77         1.51
+        4         2.02         1.70         1.95         2.94
+
+Un ciclo con muchos rastreadores actuando (cripta de 100 salas):
+ rastreadores       ciclo  por rastreador
+           10       176.4           17.64
+          100       826.3            8.26
+         1000     13315.9           13.32
+
+Costo de mantener el rastro en cada movimiento del jugador:
+    salas  al consultar  con evento  con barrido
+      100          0.18        4.51         2.55
+     1000          0.19       17.40        59.73
+     5000          0.37        7.98       140.45
+
+al consultar = lo que hace el programa (anotar el instante)
+con evento   = programar y cancelar un evento de caducidad por sala
+con barrido  = recorrer todas las salas en cada acción

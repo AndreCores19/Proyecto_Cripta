@@ -7,9 +7,29 @@ Integrantes:
 - Emily Benavides Rodríguez.
 - Andrea Cordero Espinoza.
 
+### Desarrollo con spec-kit (segunda parte)
+
+La segunda parte se desarrolló con especificaciones ejecutables (GitHub spec-kit):
+
+- **Versión de spec-kit:** 1.2.3 (instalada con `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3`).
+- **Agente de programación:** Claude Code.
+- **Constitución:** `.specify/memory/constitution.md`.
+- **Flujo por capacidad:** `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement`. Cada spec se confirmó en Git antes que su código.
+
+| Spec | Capacidad |
+|---|---|
+| `specs/001-exit-costs/` | Terreno: costo de las salidas |
+| `specs/002-hunter-enemy/` | El cazador |
+| `specs/003-fog-of-war/` | Niebla de guerra e «ir a» |
+| `specs/004-crypt-solvability/` | Verificación de resolubilidad |
+| `specs/005-timeline/` | Línea de tiempo |
+
+Cada carpeta tiene `spec.md` (reglas, escenarios y requisitos FR-xxx), `plan.md` (estructuras y mediciones), `tasks.md`
+(tareas, cada una con su FR, y al final la tabla de trazabilidad escenario → prueba) y los archivos de resultados de los benchmarks.
+
 ## 1. ¿Qué se necesita para ejecutarlo?
 
-- Python 3.11.
+- Python 3.11 o superior.
 - Conexión a internet para consultar la API de criptas (salvo que esté usando el modo `--offline`).
 - Instalar las dependencias con `pip install -r requirements.txt`. Estas contienen Requests (lo utilizado para la comunicación HTTP) y Pytest (para las pruebas automáticas). No se usan otras librerías externas.
 
@@ -22,8 +42,11 @@ Desde un entorno limpio, en la carpeta del proyecto:
 Activar el entorno:
 
 - Windows (PowerShell): `.venv\Scripts\Activate.ps1`
-- pip install -r requirements.txt
 - Linux/macOS: `source .venv/bin/activate`
+
+Instalar las dependencias:
+
+`pip install -r requirements.txt`
 
 El proyecto también incluye pyproject.toml y uv.lock. 
 Si ya está uv instalado, es opcional usarlo en lugar de los pasos anteriores:
@@ -46,6 +69,8 @@ Opciones:
 |---|---|
 | `--cache-size N` | Fichas máximas guardadas en memoria (por defecto 25). |
 | `--replay LOG` | Reproduce una partida grabada en un archivo de bitácora. |
+| `--replay LOG --hasta T` | Reproduce la partida hasta el instante `T` e imprime el resumen de ese instante (el mismo de `historia T`), sin vista. Si `T` es posterior al final, imprime el estado final y `La partida terminó antes (instante N).` |
+| `--checkpoint-cada K` | Un punto de control de la línea de tiempo cada `K` acciones del jugador (entero positivo; por defecto 10, elegido con las mediciones de `docs/DECISIONES.md` §5.5). Al cargar una partida manda la `K` con la que se guardó. |
 | `--offline` | Lee las respuestas del paquete de la carpeta `offline/` en lugar de la red. No cuenta solicitudes. Para generar el paquete: `python grabar_offline.py`. |
 | `--verificar CRIPTA` | Verifica si la cripta se puede ganar, imprime el reporte y termina, sin vista y sin jugar. Sale con estado 0 si se puede ganar y 1 si no se puede o si falla la comunicación. |
 | `--forzar` | Juega aunque la cripta no se pueda ganar (sin esta opción, una cripta que no se puede ganar no arranca y se muestra el reporte). |
@@ -65,9 +90,22 @@ Comandos del juego:
 | `inv peso`, `inv valor`, `inv nombre` | Vista ordenada del inventario (no cambia el orden real). |
 | `mapa` | Ver el mapa conocido: las salas exploradas con sus salidas, costos y estado recordado de las puertas. No consume tiempo. |
 | `ir a <id>` | Viajar automáticamente a una sala ya explorada (por el id que muestra `mapa`), un paso normal a la vez. |
+| `historia <t>` | Muestra el estado de la partida en el instante `t`: reloj, sala, vida y estadísticas, inventario, efectos, enemigos de la sala y mapa conocido. No consume tiempo, no se graba en la bitácora y no cambia el retroceso. |
+| `historia #k` | Lo mismo, justo antes de la acción número `k` del jugador. |
 | `retroceder` | Usar el pergamino de retroceso (también funciona seleccionando el pergamino en inventario y escribir usar). |
 | `guardar [nombre]`, `cargar [nombre]` | Guardar o cargar la partida (nombre por defecto: `partida`). |
 | `salir` | Terminar la sesión. |
+
+### Terreno y cazadores
+
+Cada salida tiene un costo (100 si la cripta no lo declara), igual en los dos sentidos. Moverse por una salida tarda
+`max(1, costo * 100 // velocidad)`, para el jugador y para todos los enemigos. La vista muestra el costo de cada salida
+de la sala actual.
+
+El **cazador** es un enemigo que persigue al jugador por la ruta más barata (sumando costos y usando solo puertas abiertas
+en ese instante). Si comparte sala con el jugador, ataca; si no hay ruta o la ruta cuesta más que su `rango`, espera;
+si no, da un paso. Entre varias vecinas igual de buenas va a la de menor id. Conoce todo el mapa, no abre puertas y se
+activa como los demás enemigos. En la vista aparece con la marca `(cazador)` después del nombre.
 
 ### Niebla de guerra y viaje automático
 
@@ -102,9 +140,35 @@ al servicio (`/criptas/<id>/llaves`) que cuenta en el presupuesto de solicitudes
 la versión de la cripta no cambie. `--replay` y cargar una partida no vuelven a verificar. Con `--offline` las
 ubicaciones salen de `llaves.json` en el paquete de cada cripta.
 
+### Línea de tiempo
+
+`historia <t>` y `historia #k` consultan cualquier instante desde el inicio, sin modificar la partida. Las acciones
+revertidas con un pergamino dejan de existir en la línea, y no se puede consultar un instante posterior al reloj actual.
+Cada `K` acciones se guarda un punto de control (una copia del estado) y entre puntos solo las acciones; una consulta
+parte del punto más cercano y vuelve a jugar a lo más `K` acciones. Guardar y cargar conserva la línea completa. El
+formato de guardado pasó a la versión 2 (guarda también la `K`); un archivo de la primera parte se rechaza como
+incompatible y nunca se carga en silencio.
+
 ## 4. Pruebas automáticas
 
 `python -m pytest`
+
+La suite completa tarda unos 4 minutos. La prueba de tamaño completo de la línea de tiempo (5000 acciones) está marcada
+como lenta y se corre aparte:
+
+`python -m pytest -m lenta`
+
+**Pruebas de aceptación.** Cada escenario de aceptación de las specs tiene al menos una prueba, y la prueba cita en su
+docstring el escenario y su requisito (FR-xxx). La tabla escenario → prueba de cada capacidad está al final de su
+`specs/<NNN>/tasks.md`. Para correr solo las de una capacidad:
+
+- Terreno (001): `python -m pytest tests/test_costos_salida.py tests/test_costos_datos.py tests/test_vista_costos.py tests/test_replay_costos.py`
+- Cazador (002): `python -m pytest tests/test_monticulo.py tests/test_puertas.py tests/test_catalogo_cazador.py tests/test_cazador_decision.py tests/test_cazador_equivalencia.py tests/test_cazador_conocimiento.py tests/test_vista_cazador.py tests/test_replay_cazador.py tests/test_bench_cazador.py`
+- Línea de tiempo (005): `python -m pytest tests/test_linea_tiempo_*.py tests/test_registro_estado.py tests/test_grafo_reutilizable.py tests/test_bench_linea_tiempo.py`
+
+Las pruebas del cazador y de la línea de tiempo comparan contra **oráculos independientes**: una relajación repetida
+sobre listas para la ruta del cazador (`tests/mapas_cazador.py`) y una partida instrumentada que anota el estado real
+antes de cada acción y después de cada evento, para la línea de tiempo (`tests/linea_tiempo_apoyo.py`).
 
 Las pruebas están en `tests/` y cubren: inventario, puertas, efectos (veneno y regeneración),
 botín de enemigos, ordenamientos, bitácora, servicio y una prueba aleatoria del retroceso que
@@ -135,9 +199,12 @@ También se puede correr uno solo, desde la carpeta del proyecto y con `-m`:
 
 | Comando | Qué mide |
 |---|---|
-| `python -m bench.bench_ciclo` | Ciclo completo del juego (esperar y retroceder) contra el límite de 20 ms. |
-| `python -m bench.bench_historial` | Retroceso con funciones de deshacer contra copiar el estado completo. |
-| `python -m bench.bench_agenda` | Agenda de eventos (heap) contra listas sin ordenar y ordenada. |
+| `python -m bench.bench_ciclo` | Ciclo completo del juego contra el límite de 20 ms (p99), con escenarios de 30 cazadores y la cripta de referencia (cripta-06). |
+| `python -m bench.bench_ciclo --modos` | El mismo ciclo una vez por cada modo de decisión del cazador (`individual`, `compartido_sin_reuso`, `compartido`). |
+| `python -m bench.bench_cazador` | Ruta del cazador: un cazador contra muchos, rango chico contra grande, búsqueda por cazador contra compartida y reutilizar contra recalcular, con puertas estables e inestables. |
+| `python -m bench.bench_linea_tiempo` | Línea de tiempo: memoria y tiempo de `historia` (p99 <= 50 ms, 5000 acciones) con K = 5, 10, 50, 200 y sin puntos de control, y reproducir hacia adelante contra deshacer hacia atrás. |
+| `python -m bench.bench_historial` | Retroceso con funciones de deshacer, sin y con la línea de tiempo activa, y el costo de capturar un punto de control. |
+| `python -m bench.bench_agenda` | Agenda de eventos (heap) contra listas sin ordenar y ordenada, también con costos variables y con cazadores. |
 | `python -m bench.bench_inventario` | Lista doblemente enlazada con cursor contra arreglo. |
 | `python -m bench.bench_bitacora` | Buffer circular de 20 mensajes contra lista que desplaza y contra guardar todo. |
 | `python -m bench.bench_ordenamientos` | Inserción, mergesort y la función híbrida `ordenar`. |
@@ -163,7 +230,7 @@ El programa crea estas carpetas y archivos al ejecutarse (todos se pueden borrar
 
 | Ruta | Qué contiene |
 |---|---|
-| `saves/<nombre>.sav` | Partida guardada con `guardar [nombre]`, en el formato binario propio. |
+| `saves/<nombre>.sav` | Partida guardada con `guardar [nombre]`, en el formato binario propio (versión 2: incluye la `K` de la línea de tiempo). |
 | `saves/partida_<cripta>_<semilla>.log` | Bitácora de la partida (texto, un comando por línea, más comentarios `# ir a <id>`) para `--replay`. |
 | `saves/puntajes.txt` | Tabla de puntajes local, una línea por partida terminada. |
 | `cache/catalogo/` | Fichas del catálogo descargadas (un `.json` por ficha) y `version.txt`. Si cambia la versión del catálogo, se borra y se vuelve a descargar. |
@@ -178,18 +245,19 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
 
 | Carpeta | Contenido |
 |---|---|
-| `model/` | Lógica del juego: partida, jugador, enemigos, salas, objetos, trampas, efectos, inventario, reloj, la ruta de «ir a» y el viaje. No conoce la red ni los archivos. |
-| `structures/` | Estructuras de datos propias: agenda (heap), historial (buffer circular de cuadros), bitácora (buffer circular), lista doblemente enlazada, ordenamientos, caché y cola. |
+| `model/` | Lógica del juego: partida, jugador, enemigos, salas, objetos, trampas, efectos, inventario, reloj, la ruta del cazador, la ruta de «ir a», el viaje, la resolubilidad y la línea de tiempo (registro del estado, reproducción y efectos que el retroceso no deshace). No conoce la red ni los archivos. |
+| `structures/` | Estructuras de datos propias: agenda (heap), montículo mínimo genérico, historial (buffer circular de cuadros), línea de tiempo, bitácora (buffer circular), lista doblemente enlazada, ordenamientos, caché y cola. |
 | `service/` | `JuegoService`: fachada entre los controladores y el modelo. |
 | `data/`, `dto/`, `adapters/` | Acceso a la API, lectura de fichas y archivos. |
 | `controller/`, `view/` | Entrada del usuario y pantalla. |
 | `bench/` | Benchmarks. |
 | `tests/` | Pruebas automáticas. |
+| `specs/`, `.specify/` | Especificaciones, planes y tareas de spec-kit, y la constitución. |
 
 ## 8. Documentación
 
 - **Documento de Decisiones de Diseño:** [docs/Documento_de_Decisiones.pdf](docs/Documento_de_Decisiones.pdf)
-- **Decisiones de la niebla de guerra y «ir a»** (complementa al documento anterior): [docs/DECISIONES.md](docs/DECISIONES.md)
+- **Decisiones de la segunda parte** (complementa al documento anterior): [docs/DECISIONES.md](docs/DECISIONES.md)
 - **Bitácora de prompts a LLM:** `Prompts_LLM_EmilyB.md` y `Prompts_LLM_AndreaC.md`.
 
 ## 9. Decisiones de diseño resumidas 
@@ -213,9 +281,9 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
   un lote de hasta 10 salas cercanas (recorrido en anchura); si ya está, no se pide nada.
 - **Catálogo:** las fichas de todas las salas de un lote se resuelven juntas, en lotes de 10 ids;
   se guardan en `cache/catalogo` y se invalidan si cambia la versión del catálogo.
-- **Guardado:** archivo binario propio con encabezado, versión del formato, índice de salas al
-  final para leer una sala sin leer el resto, y los comandos del jugador. Al cargar se valida la
-  cripta, su versión y la del catálogo.
+- **Guardado:** archivo binario propio con encabezado, versión del formato (ahora 2, con la `K` de la
+  línea de tiempo), índice de salas al final para leer una sala sin leer el resto, y los comandos del
+  jugador. Al cargar se valida el archivo completo, la cripta, su versión y la del catálogo.
 - **Bitácora de partida:** archivo de texto de solo anexado, con flush en cada comando; el
   encabezado lleva cripta, versiones y semilla. `--replay` se niega a reproducir si las versiones
   no coinciden.
@@ -226,5 +294,14 @@ Para probar `--replay` sin jugar antes, se incluye una partida de ejemplo:
   recargar una partida lo reconstruye al reejecutar los comandos.
 - **«ir a»:** búsqueda propia (`RutaConocida`) hacia atrás desde el destino sobre lo conocido, con el montículo propio
   y las estampas del cazador; ver [docs/DECISIONES.md](docs/DECISIONES.md).
+- **Costos de las salidas:** el intervalo de cada movimiento sale de la fórmula de la primera parte con el costo de
+  la salida; la agenda siguió siendo el heap (medido de nuevo con la carga nueva, `docs/DECISIONES.md` §5.6).
+- **Cazador:** una sola búsqueda de Dijkstra hacia atrás desde la sala del jugador, acotada por el rango, sirve a
+  todos los cazadores; usa el montículo propio y marcas por estampa en cada sala (sin `dict` ni limpieza entre
+  búsquedas). El resultado se reutiliza solo si el jugador no se movió, ninguna puerta cambió, ninguna otra búsqueda
+  corrió y llega hasta el rango del cazador; si no, se recalcula. Ver `docs/DECISIONES.md` §5.1 y §5.2.
+- **Línea de tiempo:** un punto de control cada `K` acciones (por defecto 10) y reproducción hacia adelante de a lo más
+  `K` acciones; tras un pergamino se recorta desde el final y se anotan los efectos que el retroceso no deshace. Ver
+  `docs/DECISIONES.md` §5.5.
 - **Puntajes:** archivo de texto; al mostrarse se ordenan con `ordenar` (victorias primero, luego
   más enemigos derrotados y menos tiempo).

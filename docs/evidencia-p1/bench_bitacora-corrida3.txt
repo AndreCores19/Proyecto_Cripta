@@ -1,0 +1,18 @@
+ Bitácora 
+
+Memoria usada después de agregar N mensajes (KB):
+  mensajes  buffer circular   guarda todo
+      1000              2.6          98.7
+    100000              2.6       10136.0
+    500000              2.6       51704.7
+
+Tiempo por mensaje agregado, con la bitácora llena (microsegundos):
+ capacidad  buffer circular   desplazando
+        20            0.204         0.219
+       200            0.178         0.317
+      2000            0.199         1.294
+     20000            0.233        13.110
+
+buffer circular = lo que hace el programa
+guarda todo     = guardar todos los mensajes y mostrar los últimos 20
+desplazando     = lista que, al llenarse, saca el primero y corre los demás

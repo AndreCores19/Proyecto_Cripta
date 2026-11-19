@@ -691,6 +691,38 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
+- Prompt: /speckit-implement Phase 12 only (T073–T078). Do not commit.
+- Uso: implementar la Fase 12 de tasks.md (T073 a T078) sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Yes: apply E1, I2 (reword the finished tasks and plan.md to the final K = 10, keeping a short note that 50 was provisional), I4 and I5 (pointers in research.md to where the numbers and the final reset behavior are). Then finish T076–T078. Report the final full-suite count against the 374-test baseline. Do not commit.
+- Uso: que aplicara E1, I2 (reescribir las tareas terminadas y plan.md al K final = 10, manteniendo una nota corta de que 50 era provisional), I4 e I5 (pointers en research.md a donde están los números y el comportamiento final de reset), luego terminar T076–T078, y reportar el conteo final de la suite completa contra la línea base de 374 pruebas, sin hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Edit docs/DECISIONES.md. Report every change. Do not change any other file. Do not commit.
+1. Complete section 5.5 from specs/005-timeline/ (spec.md, plan.md, research.md and the bench files), keeping 5.5.1: problem; alternatives considered (backward inversion with the undo history, no checkpoints, a full copy every action) with why each was rejected, including that a query cannot modify the live game, the undo closures cannot be saved to the binary file, and part one keeps only 5 frames, although undoing costs 157.9 vs 635.7 us per action; the decision (checkpoints every K, forward replay of at most K actions, the ledger of effects the undo skips after a scroll, the save file stores commands and K); complexity (query, locating the checkpoint and the action for an instant, trim after a scroll, memory); known limits, including the stress world "grande" with K=10 giving p99 47.64 ms and 54.31 ms in the full --bench run; links to the spec and plan; whether the decision matches the original plan.md (the 25 ms rule was kept; the reusable room graph was added after the first measurement; the scroll re-anchor and storing checkpoints in the save file were dropped before implementation).
+2. Sections 5.1 to 5.6 each start with a short "Problema" paragraph taken from the assignment's section 5.
+3. Sections 5.3 and 5.4: add the missing parts required by the assignment's 7.1 (complexity in 5.3; match with the original plan.md and known limits in both), taken only from specs/003-fog-of-war/ and specs/004-crypt-solvability/. Do not change what Andrea already wrote.
+4. In the table at the top, specs/005-* becomes specs/005-timeline/. In 5.6.1, "cálculo mío" becomes "calculado con las cifras de la tabla". In 5.6.2, say deepcopy is not used in the game instead of calling it forbidden.
+5. Check every number you add against its file.
+6. In 5.5, state plainly whether the 50 ms limit from the assignment is met: say in which scenarios and values of K it is met, and say explicitly that the stress world "grande" with K=10 exceeds it (54.31 ms in the full --bench run). Do not soften this.
+7. In 5.5, cite commit 21f170f as the original plan.md.
+- Uso: ya con la Fase 12 implementada, editar docs/DECISIONES.md completando la sección 5.5 con el problema, las alternativas consideradas y por qué se rechazaron, la decisión final, la complejidad, los límites conocidos, los enlaces al spec y plan, y si la decisión coincide con el plan original; agregando un párrafo de "Problema" al inicio de cada sección 5.1 a 5.6; completando las secciones 5.3 y 5.4 con las partes faltantes requeridas por el enunciado; revisando la tabla superior y haciendo cambios menores en 5.6.1 y 5.6.2; verificando cada número agregado contra su archivo; indicando claramente si se cumple el límite de 50 ms del enunciado; y citando el commit 21f170f como plan.md original, sin cambiar ningún otro archivo ni hacer commit
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: Ayudeme a mejorar la redacción de DECISIONES.md, manteniendo el contenido y los números, pero haciéndolo más claro y conciso, ya que el profesor nos pidió algo más robusto, entonces ayudeme a mejorarlo. No cambie ningún número ni contenido.
+- Uso: Mejorar el archivo viejo de decisiones.
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
+- Prompt: 
+- Uso: 
+
+### 18 de Noviembre, 2026
+- Herramienta: Claude
 - Prompt: 
 - Uso: 
 

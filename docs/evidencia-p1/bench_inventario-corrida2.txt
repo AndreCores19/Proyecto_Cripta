@@ -1,0 +1,22 @@
+ Inventario 
+Operaciones reales en 4757 acciones al azar del jugador:
+    agregar             224  (0.047 por acción)
+    quitar_nodo         202  (0.042 por acción)
+    mover_al_frente      19  (0.004 por acción)
+    siguiente           181  (0.038 por acción)
+    anterior            199  (0.042 por acción)
+    objetos en el inventario a la vez (máximo): 3
+
+Soltar el objeto que se ve y volver a recogerlo (microsegundos):
+  objetos    lista enlazada     arreglo
+       10              1.61        0.22
+      100              1.33        0.13
+     1000              3.66        0.72
+    10000              2.31        2.87
+
+Llevar al frente el objeto que se ve, como al equipar (microsegundos):
+  objetos    lista enlazada     arreglo
+       10              0.85        0.21
+      100              0.69        0.34
+     1000              2.23        1.09
+    10000              1.59       25.45

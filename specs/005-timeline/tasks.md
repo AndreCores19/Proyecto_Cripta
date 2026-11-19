@@ -89,7 +89,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 ### Implementation
 
-- [X] T013 [US6] Create `model/linea_tiempo_logica.py` with `LineaTiempoPartida`: `iniciar(partida, constructor_mundo, k)` (takes checkpoint 0), `registrar_accion(partida, tipo, argumento, reloj_antes)` (appends the record with `numero` = actions taken after the action; takes a checkpoint when that number is a multiple of K), `reloj_final`, read access for queries. Define the constant `K_POR_DEFECTO = 50  # PROVISIONAL: replaced by T068 with the value measured by the benchmark (plan.md, "Default K")` so that starting a game without `--checkpoint-cada` works from this phase on; tests and the benchmark still pass K explicitly — FR-019, FR-021, FR-023
+- [X] T013 [US6] Create `model/linea_tiempo_logica.py` with `LineaTiempoPartida`: `iniciar(partida, constructor_mundo, k)` (takes checkpoint 0), `registrar_accion(partida, tipo, argumento, reloj_antes)` (appends the record with `numero` = actions taken after the action; takes a checkpoint when that number is a multiple of K), `reloj_final`, read access for queries. Define the constant `K_POR_DEFECTO` (final value 10, measured by T068; it started as a provisional 50 marked PROVISIONAL) so that starting a game without `--checkpoint-cada` works from this phase on; tests and the benchmark still pass K explicitly — FR-019, FR-021, FR-023
 - [X] T014 [US6] Edit `service/juego_service.py`: after each **successful** action (`mover`, `esperar`, `atacar`, `recoger_objeto`, `soltar_objeto`, `equipar_objeto`, `usar_objeto`, `abrir_puerta`) call `registrar_accion` with the resolved target and the clock read **before** the call. The target is resolved from state before calling the model: the direction; the enemy id the service already chose (`atacar`); the object instance id (`recoger_objeto`); for `usar_objeto`, `soltar_objeto` and `equipar_objeto`, the `id_instancia` of the object under the inventory cursor (`inv.actual`) read before the call. **Success rule**: the call is recorded as an action only when `acciones_jugador` went up by exactly one **and** `partida.retrocesos` did not change; a call after which `retrocesos` changed read a scroll (see T034) and is never recorded as an action. `ir_a` records through `mover` unchanged; the service receives the `LineaTiempoPartida` in its constructor (default `None` keeps every existing test untouched) — FR-003, FR-006, FR-002
 - [X] T015 [US6] Edit `aplicacion.py` (`_sesion` and `reproducir`) to create the `LineaTiempoPartida` for the new `Partida` with the world builder from the repository's pure builder and the K in use, and pass it to `JuegoService`; the K comes from a parameter (wired to the command line in Phase 9) — FR-019, FR-017
 
@@ -105,7 +105,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 - [X] T016 [US1] Write `tests/test_linea_tiempo_consulta.py` (fails first), one test per scenario, each citing its FR: US1-1 `t` in 0..T gives the state after executing every event with time ≤ t (compare with the live state captured when the clock first reached ≥ t and with an independent replay by the oracle) — FR-001, FR-002, FR-004; US1-2 `#k` gives the state just before action k — FR-003, FR-004; US1-3 `t` > clock is rejected with reason `despues_del_reloj` and nothing changes — FR-005; **US1-4 "several events at the same instant"**: build a world where two enemies act at the same instant t and the player has **no** decision at t; the state at t includes both — FR-001; **US1-5 and US1-9, decision wins**: an instant at which the player has a decision gives the state just before it, and events of that instant that come later in agenda order `(tiempo, num_sec)` are **not** shown (plan, "Decisions on the points for the spec" 1) — FR-001, FR-009; US1-6 every summary has the FR-004 fields and the known map shows nothing unknown at that instant (a room first seen at clock 500 is absent from `t=499`) — FR-004; US1-7 `t=0` is the initial state — FR-002, FR-004; US1-8 malformed, negative, `#0`, `#x`, missing argument are rejected with `argumento_invalido` — FR-005
 - [X] T017 [P] [US1] In the same file: edge cases — `t` equal to the clock is accepted and equals the live state; `#k` with k = actions taken + 1 rejected with `accion_inexistente`; a game with no actions: only `t=0`; a finished game (death) accepts every instant up to the end; K = 1 and K larger than the game give identical answers (only the counters differ); an instant exactly on a checkpoint and one K actions after it equal a reconstruction from checkpoint 0 — FR-002, FR-003, FR-005, FR-019, FR-020
-- [X] T018 [P] [US2] Add service-level tests: after any mix of accepted and rejected queries the live clock, the full live `resumen_plano`, `acciones_jugador`, the agenda (events and sequence numbers), the random generator state and the undo allowance (the scroll reverts the same actions in the same order) are identical to those of the same seeded game without queries (US2-1, US2-3, US2-4); two games with the same world, seed and commands, one with queries in the middle, end identical (US2-5) — FR-006, FR-008, FR-009
+- [X] T018 [P] [US2] Add service-level tests: after any mix of accepted and rejected queries the live clock, the full live `resumen_plano`, `acciones_jugador`, the agenda (events and sequence numbers), the random generator state and the undo allowance (the scroll reverts the same actions in the same order) are identical to those of the same seeded game without queries (US2-1, US2-3, US2-4); two games with the same world, seed and commands, one with queries in the middle, end identical (US2-5) — FR-006, FR-008, FR-009, SC-003
 - [X] T019 [P] [US2] Add the "never touches the network" test (the `FakeCliente` raises on any call, the `FakeCatalogo` has 2 fichas so evictions happen): run 100 queries on a 1 000-action game that entered 30 rooms; no call, the request counter does not move, and a ficha evicted long ago is still found — FR-006, FR-009 (research R8)
 - [X] T020 Write `tests/test_linea_tiempo_oraculo.py` **mode 1, plain**: for K = 1, 3, 7 and K larger than the game, on a seeded 400-action game with hunters, poison, speed potion, traps, doors with automatic closing and a death: capture the live summary before every player action with `capturar_vivo`, run the same seed and commands in the second live game with `PartidaInstrumentada` to get the per-event snapshots, then check with `oraculo` that `#k` gives exactly the captured summaries and that `t` gives, at every t from 0 to the end, the summary the oracle expects (the decision's capture when t is a decision clock, otherwise the last snapshot with time ≤ t) — SC-002, FR-001, FR-002, FR-003, FR-004
 
@@ -176,7 +176,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 ### Tests (write first)
 
-- [X] T048 [P] [US4] Write `tests/test_linea_tiempo_replay.py` (fails first): US4-1 the lines printed for `--hasta t` inside the game equal the lines `historia t` produces in the live game with the same crypt, seed and commands (record a seeded game's log with `BitacoraPartida`, replay it with a fake offline client) — FR-013, FR-014; US4-2 `t` greater than the final clock prints the final state, then a line saying the game ended earlier with the final clock — FR-015; US4-3 `Aplicacion.reproducir` with `--hasta` creates no view: every class in `view/` is patched to raise on construction and the run still succeeds — FR-016; US4-4 malformed or negative `--hasta` reports an error, exit status 1, and prints **no** state; `--hasta` without `--replay` is an argparse error; a log the game did not write correctly reports the error as in earlier specs and prints no state — FR-013; US4-5 a log with scroll readings gives the summary of the game as it ended up (equal to the live `historia`) — FR-010, FR-014
+- [X] T048 [P] [US4] Write `tests/test_linea_tiempo_replay.py` (fails first): US4-1 the lines printed for `--hasta t` inside the game equal the lines `historia t` produces in the live game with the same crypt, seed and commands (record a seeded game's log with `BitacoraPartida`, replay it with a fake offline client) — FR-013, FR-014; US4-2 `t` greater than the final clock prints the final state, then a line saying the game ended earlier with the final clock — FR-015; US4-3 `Aplicacion.reproducir` with `--hasta` creates no view: every class in `view/` is patched to raise on construction and the run still succeeds — FR-016; US4-4 malformed or negative `--hasta` reports an error, exit status 1, and prints **no** state; `--hasta` without `--replay` is an argparse error; a log the game did not write correctly reports the error as in earlier specs and prints no state — FR-013; US4-5 a log with scroll readings gives the summary of the game as it ended up (equal to the live `historia`) — FR-010, FR-014, SC-010
 - [X] T049 [P] [US4] Same file: the replay stops executing commands as soon as the clock is ≥ t or the commands end, then answers from the timeline; the number of executed commands is smaller than the log's when t is early; the request counter is the one of a plain `--replay` of the same prefix (the query adds none) — FR-013, FR-006
 
 ### Implementation
@@ -214,14 +214,14 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 
 ### Tests (write first)
 
-- [X] T060 [P] [US6] Write `tests/test_linea_tiempo_opciones.py` (fails first): US6-6 `--checkpoint-cada` with no value, `0`, `-5`, `abc`, `2.5` exits with status 2 and an error message, runs nothing and makes no request (the fake client raises on any call) — FR-019; US6-7 with no option the game starts and uses `K_POR_DEFECTO` (provisional 50 until T068; the test reads the constant instead of repeating the number, so T068 needs no test change) — FR-019, FR-026; US6-8 loading a game saved with K1 under `--checkpoint-cada K2` keeps K1 and shows the notice "`--checkpoint-cada` ignored: this game was saved with K=<K1>" — FR-017, FR-019; the option is also accepted with `--replay` and ignored by `--verificar` — FR-019
+- [X] T060 [P] [US6] Write `tests/test_linea_tiempo_opciones.py` (fails first): US6-6 `--checkpoint-cada` with no value, `0`, `-5`, `abc`, `2.5` exits with status 2 and an error message, runs nothing and makes no request (the fake client raises on any call) — FR-019; US6-7 with no option the game starts and uses `K_POR_DEFECTO` (10 since T068, a provisional 50 before; the test reads the constant instead of repeating the number, so T068 needed no test change) — FR-019, FR-026; US6-8 loading a game saved with K1 under `--checkpoint-cada K2` keeps K1 and shows the notice "`--checkpoint-cada` ignored: this game was saved with K=<K1>" — FR-017, FR-019; the option is also accepted with `--replay` and ignored by `--verificar` — FR-019
 
 ### Implementation
 
-- [X] T061 [US6] Edit `main.py`: `--checkpoint-cada K` (type validated as a positive integer; any other value is refused through `parser.error`, exit status 2, before anything runs), default `None` meaning "not typed" so the load notice appears only when it was typed; pass K and "typed" to `Aplicacion`; when not typed, K is `K_POR_DEFECTO` (provisional, T013) — FR-019, FR-017
+- [X] T061 [US6] Edit `main.py`: `--checkpoint-cada K` (type validated as a positive integer; any other value is refused through `parser.error`, exit status 2, before anything runs), default `None` meaning "not typed" so the load notice appears only when it was typed; pass K and "typed" to `Aplicacion`; when not typed, K is `K_POR_DEFECTO` (10, measured by T068; a provisional 50 until then) — FR-019, FR-017
 - [X] T062 [US6] Edit `aplicacion.py` so `jugar`, `reproducir` and the load path use the K from the option, the default or the saved file, and print the notice through the view (`mostrar_mensaje`) at the start of the loaded session; run T060 until green — FR-017, FR-019
 
-**Checkpoint**: the option is validated, the saved K wins with a notice, and a game started without the option uses the provisional default K = 50.
+**Checkpoint**: the option is validated, the saved K wins with a notice, and a game started without the option uses the default K (10, measured by T068; it was a provisional 50 when this phase was done).
 
 ## Phase 10: Benchmark — K = 10, 50, 200 and no checkpoints; the default K (US7, US8, US6)
 
@@ -237,7 +237,7 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 ### Implementation
 
 - [X] T065 [US7] Create `bench/juego_sintetico.py`: given world, seed and length, return the same command sequence every time (moves among open exits chosen with a seeded generator, waits, attacks when an enemy is present, pick-ups and drops when objects exist, a few scroll reads including one right after entering a new room); worlds `referencia` (cripta-06 skeleton from the offline pack + 30 hunters, as `bench_ciclo.armar_partida_referencia`), `grande` (100 rooms, 100 enemies), `extremo` (100 rooms, 300 enemies, information only); ≥ 5 000 player actions each — FR-025, FR-024
-- [X] T066 [US7] Create `bench/bench_linea_tiempo.py` with `ejecutar()`: for each world and each K in (10, 50, 200) plus the no-checkpoint alternative report checkpoints, memory of checkpoints, memory of actions + ledger (`tracemalloc` on the timeline alone, game excluded), graph-build time share, maximum actions re-played, p99 / mean / worst of the query set; the linearity row; scroll reads, ledger entries kept and checkpoints off the K grid (must be 0); the forward-vs-backward section; the "Default K" line chosen by the plan's rule (largest K in the set with p99 ≤ 25 ms on `referencia`, memory of every K printed next to it; if none qualifies, print the table and "the group decides") — FR-024, FR-025, FR-026, FR-021
+- [X] T066 [US7] Create `bench/bench_linea_tiempo.py` with `ejecutar()`: for each world and each K in (10, 50, 200) plus the no-checkpoint alternative report checkpoints, memory of checkpoints, memory of actions + ledger (`tracemalloc` on the timeline alone, game excluded), graph-build time share, maximum actions re-played, p99 / mean / worst of the query set; the linearity row; scroll reads, ledger entries kept and checkpoints off the K grid (must be 0); the forward-vs-backward section; the "Default K" line chosen by the plan's rule (largest K in the set with p99 ≤ 25 ms on `referencia`, memory of every K printed next to it; if none qualifies, print the table and "the group decides") — FR-024, FR-025, FR-026, FR-021, SC-007, SC-009
 - [X] T067 [US7] Register `bench_linea_tiempo` in `main.py --bench` (after `bench_historial`), with no network and no view; make T063–T064 green — FR-016, FR-026
 - [X] T068 [US7] **Measure and decide**: run `python -m bench.bench_linea_tiempo` on the reference world with ≥ 5 000 actions; apply the plan's rule; replace the provisional `K_POR_DEFECTO = 50` in `model/linea_tiempo_logica.py` with the chosen value and remove the PROVISIONAL marker from the code; copy the table, the machine, Python version, date and the chosen row into `specs/005-timeline/plan.md` ("Default K": replace "provisional, pending measurement") and into `docs/DECISIONES.md` (new section for the timeline); save the full output as `specs/005-timeline/bench-despues-linea.txt`. If p99 > 50 ms at the chosen K on `referencia`, stop and report to the group instead of choosing — FR-019, FR-024, FR-026
   - Done 2026-11-18: K = 10 (p99 16.54 ms, the largest K with p99 ≤ 25 ms; K = 5 added to the set); table in `plan.md` and `docs/DECISIONES.md` §5.5.1. The output was saved as `specs/005-timeline/bench-linea-tiempo.txt` (name chosen by the group instead of `bench-despues-linea.txt`). Reaching it needed the R5 fallback: one scratch graph per service, reset between queries (`data/grafo_reutilizable.py`, `tests/test_grafo_reutilizable.py`).
@@ -258,19 +258,25 @@ Single-project layered layout at the repo root: `dto/`, `data/`, `model/`, `serv
 ### Implementation
 
 - [X] T071 [US8] Edit `bench/bench_historial.py`: run each scenario twice (`LineaTiempoPartida` absent / active, same seed, same actions); the benchmark drives `Partida` directly, so in the active run it creates the `LineaTiempoPartida` after the world is set up (`iniciar`) and calls `registrar_accion` after each `esperar_jugador` and `tras_retroceso` after each `retroceder`, exactly as `JuegoService` does, print the side-by-side table of `contracts/reporte-bench-linea-tiempo.md` ("Part one under the new load"); keep the original columns and their meaning — FR-027
-- [X] T072 [US8] Run `python -m bench.bench_historial` and `python -m bench.bench_guardado` (the latter unchanged, only to show the 4-byte header change moves nothing, as agreed on 2026-11-18; no timeline section exists to compare); save both outputs as `specs/005-timeline/bench-despues.txt`; add the §5.6 table to `docs/DECISIONES.md` next to the part-one values, with the forward-vs-backward numbers of T066 — FR-027, FR-026
+- [X] T072 [US8] Run `python -m bench.bench_historial` and `python -m bench.bench_guardado` (the latter unchanged, only to show the 4-byte header change moves nothing, as agreed on 2026-11-18; no timeline section exists to compare); save both outputs as `specs/005-timeline/bench-despues.txt`; add the §5.6 table to `docs/DECISIONES.md` next to the part-one values, with the forward-vs-backward numbers of T066 — FR-027, FR-026, SC-009
   - Done 2026-11-18 with K = 10: `bench_historial` run three times in a row (the run-to-run spread is as large as the timeline's added cost, so the table gives ranges), `bench_guardado` once (sizes identical to the baseline).
 
 **Checkpoint**: §5.6 is repeated with the timeline active and shown next to the "before" values.
 
 ## Phase 12: Polish and cross-cutting
 
-- [ ] T073 [P] Add `tests/test_linea_tiempo_estructura.py::test_modulos_sin_prohibidos`: scan `structures/linea_tiempo.py`, `model/registro_estado.py`, `model/reproduccion_logica.py`, `model/linea_tiempo_logica.py`, `model/efectos_omitidos.py`, `data/fabrica_reproduccion.py`, `service/historia_service.py` for imports of `heapq`, `bisect`, `collections`, `copy`, and for `dict(`, `{}` used as an index, `set(`; and check that no file under `model/` or `structures/` imports from `view/` or `controller/` — FR-028, FR-029, SC-001
-- [ ] T074 [P] Add a layer test: with every class in `view/` patched to raise on construction, run `--replay ... --hasta` and `--bench` end to end (small sizes) — FR-016
-- [ ] T075 [P] Add a determinism test: the same crypt, seed and commands run twice give identical timelines (vectors, checkpoints' records, ledger) and identical answers to a fixed query list, with and without interleaved queries — FR-009, SC-011
-- [ ] T076 Run the quickstart (`specs/005-timeline/quickstart.md`) sections 1–8 against the real offline pack and fix what it shows; record the result at the end of `quickstart.md` — all FRs
-- [ ] T077 Run `python -m pytest` and compare with the T002 reference: every old test still passes and the new ones pass; run `/speckit-analyze` (constitution Structures, Architecture and Process gates, every task cites an FR, every acceptance scenario has a test citing its FR) and fix findings — FR-028, FR-029, SC-001
-- [ ] T078 Traceability check: build the table "acceptance scenario → test function" for US1-1…US8-5 and "FR-001…FR-029 → task" and add it to the end of this file; any scenario or FR without a test or task blocks the merge — SC-001
+- [X] T073 [P] Add `tests/test_linea_tiempo_estructura.py::test_modulos_sin_prohibidos`: scan `structures/linea_tiempo.py`, `model/registro_estado.py`, `model/reproduccion_logica.py`, `model/linea_tiempo_logica.py`, `model/efectos_omitidos.py`, `data/fabrica_reproduccion.py`, `service/historia_service.py` for imports of `heapq`, `bisect`, `collections`, `copy`, and for `dict(`, `{}` used as an index, `set(`; and check that no file under `model/` or `structures/` imports from `view/` or `controller/` — FR-028, FR-029, SC-001
+  - Done 2026-11-18: `test_modulos_sin_prohibidos` (parametrized over the seven listed modules plus `data/grafo_reutilizable.py` and `data/fichas_congeladas.py`) checks with the AST, so f-strings and comments do not count: imports of heapq/bisect/collections/copy, dict/set literals and comprehensions, and `dict(`/`set(`/`frozenset(` calls; `..._model_y_structures_no_importan_view_ni_controller` covers every file under `model/` and `structures/`; a control test shows the detector finds each form.
+- [X] T074 [P] Add a layer test: with every class in `view/` patched to raise on construction, run `--replay ... --hasta` and `--bench` end to end (small sizes) — FR-016
+  - Done 2026-11-18: `tests/test_linea_tiempo_capas.py` — `main.main()` with `--offline --replay LOG --hasta T` on a log of the real pack (cripta-02, recorded headless in a temporary folder with a copy of `offline/`) and `--bench` with every benchmark shrunk (constants and helper sizes patched; about 5 s); view classes and `ClienteHttp` raise on construction.
+- [X] T075 [P] Add a determinism test: the same crypt, seed and commands run twice give identical timelines (vectors, checkpoints' records, ledger) and identical answers to a fixed query list, with and without interleaved queries — FR-009, SC-003, SC-011
+  - Done 2026-11-18: `tests/test_linea_tiempo_determinismo.py` — two runs give the same vectors, checkpoint records, ledger, live state and answers to a fixed query list (K = 1, 3, 10, with scroll readings); with more than 400 interleaved queries the live game (including its random state), the timeline and the answers are unchanged. `comparaciones` is left out on purpose: it counts query work.
+- [X] T076 Run the quickstart (`specs/005-timeline/quickstart.md`) sections 1–8 against the real offline pack and fix what it shows; record the result at the end of `quickstart.md` — all FRs
+  - Done 2026-11-18: sections 1–8 against the real offline pack; 24 scripted checks on the real game passed; results recorded at the end of `quickstart.md`. Fixed: §2 named `cripta-01` (not in the pack; now cripta-02), and the summary printed a player name the scratch game and the log do not have ("Jugador: Jugador"), now removed (`adapters/formato_historia.py`, regression test in `test_linea_tiempo_comando.py`).
+- [X] T077 Run `python -m pytest` and compare with the T002 reference: every old test still passes and the new ones pass; run `/speckit-analyze` (constitution Structures, Architecture and Process gates, every task cites an FR, every acceptance scenario has a test citing its FR) and fix findings — FR-028, FR-029, SC-001
+  - Done 2026-11-18: 610 passed, 1 deselected (the `lenta` T069, run on its own: passed), 0 failed, 256 s. T002 had not written its count down; it was reconstructed by running the suite at `9ca6d36` (Phase 1, no spec-005 code) in a temporary worktree: 374 passed in 64.10 s. All 374 of those test ids pass now; 236 tests are new. `/speckit-analyze`: the Structures, Architecture and Process gates pass (an AST scan of the 23 source files spec 005 touched finds no forbidden import or dict/set), 0 critical; findings E1, I2, I4, I5 applied, the others recorded.
+- [X] T078 Traceability check: build the table "acceptance scenario → test function" for US1-1…US8-5 and "FR-001…FR-029 → task" and add it to the end of this file; any scenario or FR without a test or task blocks the merge — SC-001
+  - Done 2026-11-18: tables at the end of this file; 46/46 scenarios with a test citing one of their FRs (US8-3 tagged), 29/29 FRs with tasks.
 
 **Checkpoint**: all gates pass, results and the default K are recorded, and the table of traceability is complete.
 
@@ -314,3 +320,98 @@ Phases 7 and 8 both need Phase 6 and are independent of each other; if two peopl
 - **Third increment**: Phases 9–11 — the option, the measurements, the default K and §5.6 — US6-6/7/8, US7, US8.
 - **Stop conditions**: if the oracle (T020, T029, T042, T056) fails, no later phase starts; if T068 finds p99 > 50 ms on the reference world at every K, report to the group before choosing.
 - Commit order (Constitution VII): `spec.md` is already committed; commit this `tasks.md` and the plan documents before the first code task; each phase is committed on its own.
+
+## Traceability (T078)
+
+Built 2026-11-18 from `spec.md` (46 acceptance scenarios, FR-001…FR-029), the docstrings of the spec-005 test
+files (`tests/test_linea_tiempo_*.py`, `tests/test_bench_linea_tiempo.py`, `tests/test_grafo_reutilizable.py`;
+a test counts for a scenario when its docstring names the scenario and at least one FR the scenario cites) and
+the FR citations of the tasks above. Result: every scenario has a test citing one of its FRs (US8-3 was only
+covered untagged by the T070 test; the tag was added), every FR has at least one task, and every task cites an
+FR or "all FRs" (T001, T002, T076). There is no T036: the numbering skips it since the first version of this
+file (`21f70fd`); no task is missing. Up to three tests are listed per scenario; "(+n)" counts the others.
+
+### Acceptance scenario → test
+
+| Scenario | FRs it cites | Test(s) citing the scenario and one of its FRs |
+|---|---|---|
+| US1-1 | FR-001, FR-002, FR-004 | `test_linea_tiempo_comando.py::test_historia_por_instante_y_por_accion_devuelven_el_dto_con_exactamente_sus_campos`; `test_linea_tiempo_comando.py::test_el_resumen_del_instante_actual_es_el_estado_vivo`; `test_linea_tiempo_comando.py::test_las_consultas_aceptadas_se_muestran_por_mostrar_historia` (+1) |
+| US1-2 | FR-003, FR-004 | `test_linea_tiempo_comando.py::test_historia_por_instante_y_por_accion_devuelven_el_dto_con_exactamente_sus_campos`; `test_linea_tiempo_comando.py::test_las_consultas_aceptadas_se_muestran_por_mostrar_historia`; `test_linea_tiempo_consulta.py::test_historia_por_accion_da_el_estado_justo_antes_de_esa_accion` |
+| US1-3 | FR-005 | `test_linea_tiempo_comando.py::test_las_consultas_rechazadas_devuelven_el_dto_sin_resumen`; `test_linea_tiempo_comando.py::test_un_instante_posterior_al_reloj_y_una_accion_inexistente_se_rechazan_con_su_motivo`; `test_linea_tiempo_consulta.py::test_un_instante_posterior_al_reloj_se_rechaza_y_no_cambia_nada` |
+| US1-4 | FR-001 | `test_linea_tiempo_consulta.py::test_varios_eventos_en_el_mismo_instante_se_ven_todos` |
+| US1-5 | FR-001 | `test_linea_tiempo_consulta.py::test_con_decision_del_jugador_en_t_gana_la_decision` |
+| US1-6 | FR-004 | `test_linea_tiempo_consulta.py::test_el_resumen_tiene_los_campos_y_el_mapa_no_muestra_lo_desconocido` |
+| US1-7 | FR-002, FR-004 | `test_linea_tiempo_consulta.py::test_el_instante_cero_es_el_estado_inicial` |
+| US1-8 | FR-005 | `test_linea_tiempo_comando.py::test_las_consultas_rechazadas_devuelven_el_dto_sin_resumen`; `test_linea_tiempo_comando.py::test_formas_mal_escritas_se_rechazan_con_las_formas_aceptadas_y_nada_cambia`; `test_linea_tiempo_consulta.py::test_instantes_mal_formados_se_rechazan_con_argumento_invalido` (+1) |
+| US1-9 | FR-001 | `test_linea_tiempo_consulta.py::test_con_decision_del_jugador_en_t_gana_la_decision` |
+| US2-1 | FR-006 | `test_linea_tiempo_consulta.py::test_las_consultas_no_cambian_el_juego_ni_el_historial_de_deshacer` |
+| US2-2 | FR-007 | `test_linea_tiempo_comando.py::test_la_consulta_no_queda_en_la_bitacora_ni_en_los_comandos_guardados` |
+| US2-3 | FR-008 | `test_linea_tiempo_comando.py::test_tras_las_consultas_el_pergamino_revierte_las_mismas_acciones_en_el_mismo_orden`; `test_linea_tiempo_consulta.py::test_las_consultas_no_cambian_el_juego_ni_el_historial_de_deshacer` |
+| US2-4 | FR-005, FR-006, FR-007, FR-008 | `test_linea_tiempo_comando.py::test_la_consulta_no_queda_en_la_bitacora_ni_en_los_comandos_guardados`; `test_linea_tiempo_comando.py::test_tras_las_consultas_el_pergamino_revierte_las_mismas_acciones_en_el_mismo_orden`; `test_linea_tiempo_consulta.py::test_las_consultas_no_cambian_el_juego_ni_el_historial_de_deshacer` |
+| US2-5 | FR-006, FR-009 | `test_linea_tiempo_consulta.py::test_las_consultas_no_cambian_el_juego_ni_el_historial_de_deshacer` |
+| US3-1 | FR-010 | `test_linea_tiempo_retroceso.py::test_tras_un_pergamino_ninguna_consulta_muestra_lo_revertido_ni_lo_nuevo_falta` |
+| US3-2 | FR-005, FR-010 | `test_linea_tiempo_retroceso.py::test_tras_el_pergamino_un_instante_posterior_y_una_accion_revertida_se_rechazan` |
+| US3-3 | FR-010 | `test_linea_tiempo_retroceso.py::test_tras_un_pergamino_ninguna_consulta_muestra_lo_revertido_ni_lo_nuevo_falta` |
+| US3-4 | FR-003, FR-010 | `test_linea_tiempo_retroceso.py::test_tras_el_pergamino_un_instante_posterior_y_una_accion_revertida_se_rechazan`; `test_linea_tiempo_retroceso.py::test_la_numeracion_sigue_desde_la_ultima_accion_que_sobrevivio` |
+| US3-5 | FR-011 | `test_linea_tiempo_retroceso.py::test_el_trabajo_de_un_pergamino_no_depende_del_largo_del_juego` |
+| US3-6 | FR-012 | `test_linea_tiempo_retroceso.py::test_el_pergamino_sigue_revirtiendo_como_maximo_cinco_y_la_linea_responde_lo_mas_viejo` |
+| US4-1 | FR-013, FR-014 | `test_linea_tiempo_capas.py::test_replay_hasta_de_punta_a_punta_sin_vistas_en_la_cripta_real`; `test_linea_tiempo_comando.py::test_la_salida_de_replay_imprime_las_mismas_lineas_que_la_vista`; `test_linea_tiempo_comando.py::test_el_resumen_no_muestra_el_nombre_del_jugador_que_el_replay_no_conoce` (+1) |
+| US4-2 | FR-015 | `test_linea_tiempo_replay.py::test_hasta_despues_del_final_imprime_el_estado_final_y_avisa_que_termino_antes`; `test_linea_tiempo_replay.py::test_hasta_tras_una_muerte_avisa_con_el_reloj_de_la_muerte` |
+| US4-3 | FR-016 | `test_linea_tiempo_capas.py::test_replay_hasta_de_punta_a_punta_sin_vistas_en_la_cripta_real`; `test_linea_tiempo_replay.py::test_hasta_dentro_del_juego_imprime_lo_mismo_que_historia_en_el_juego` |
+| US4-4 | FR-013 | `test_linea_tiempo_replay.py::test_hasta_mal_formado_o_negativo_es_un_error_con_estado_1_y_no_imprime_estado`; `test_linea_tiempo_replay.py::test_hasta_sin_replay_es_un_error_de_argparse`; `test_linea_tiempo_replay.py::test_un_log_mal_escrito_informa_el_error_y_no_imprime_estado` |
+| US4-5 | FR-010, FR-014 | `test_linea_tiempo_replay.py::test_hasta_con_lecturas_de_pergamino_da_el_juego_como_quedo` |
+| US5-1 | FR-017 | `test_linea_tiempo_guardado.py::test_guardar_y_cargar_da_las_mismas_respuestas_de_historia` |
+| US5-2 | FR-010, FR-017 | `test_linea_tiempo_guardado.py::test_guardar_tras_un_pergamino_y_cargar_sigue_sin_las_acciones_revertidas` |
+| US5-3 | FR-018 | `test_linea_tiempo_guardado.py::test_un_archivo_v1_se_rechaza_como_incompatible` |
+| US5-4 | FR-018 | `test_linea_tiempo_guardado.py::test_una_carga_rechazada_no_cambia_el_juego_ni_el_archivo` |
+| US5-5 | FR-018 | `test_linea_tiempo_guardado.py::test_archivos_vacios_cortados_aleatorios_o_con_k_cero_son_ilegibles` |
+| US6-1 | FR-019 | `test_linea_tiempo_registro.py::test_un_punto_de_control_cada_k_acciones` |
+| US6-2 | FR-020 | `test_linea_tiempo_registro.py::test_el_punto_para_cada_frontera_es_la_casilla_y_deja_menos_de_k_acciones` |
+| US6-3 | FR-021 | `test_bench_linea_tiempo.py::test_la_memoria_crece_lineal_con_las_acciones`; `test_linea_tiempo_registro.py::test_la_memoria_crece_con_las_acciones_y_no_con_acciones_por_estado` |
+| US6-4 | FR-022 | `test_linea_tiempo_registro.py::test_el_punto_para_cada_frontera_es_la_casilla_y_deja_menos_de_k_acciones` |
+| US6-5 | FR-023 | `test_linea_tiempo_registro.py::test_cada_punto_guarda_el_azar_y_restaurarlo_da_los_mismos_numeros` |
+| US6-6 | FR-019 | `test_linea_tiempo_opciones.py::test_un_k_invalido_sale_con_2_sin_correr_nada_ni_pedir_nada` |
+| US6-7 | FR-019, FR-026 | `test_linea_tiempo_opciones.py::test_sin_la_opcion_la_aplicacion_recibe_none_y_la_linea_de_tiempo_usa_el_k_por_defecto` |
+| US6-8 | FR-017, FR-019 | `test_linea_tiempo_opciones.py::test_k_para_carga_gana_el_guardado_y_avisa_solo_si_la_opcion_se_escribio_y_difiere`; `test_linea_tiempo_opciones.py::test_al_cargar_gana_el_k_guardado_y_se_avisa_que_la_opcion_se_ignora`; `test_linea_tiempo_opciones.py::test_al_cargar_sin_la_opcion_o_con_el_mismo_k_no_hay_aviso` |
+| US7-1 | FR-024 | `test_bench_linea_tiempo.py::test_p99_con_el_k_por_defecto_en_5000_acciones_de_referencia` |
+| US7-2 | FR-016, FR-024 | `test_bench_linea_tiempo.py::test_el_benchmark_no_pide_nada_a_la_red_ni_crea_vistas` |
+| US7-3 | FR-025 | `test_bench_linea_tiempo.py::test_la_partida_sintetica_es_la_misma_con_la_misma_semilla_y_otra_con_otra` |
+| US8-1 | FR-026 | `test_bench_linea_tiempo.py::test_el_reporte_tiene_una_fila_por_k_la_fila_none_las_columnas_y_la_linea_del_k_por_defecto` |
+| US8-2 | FR-026 | `test_bench_linea_tiempo.py::test_el_reporte_tiene_una_fila_por_k_la_fila_none_las_columnas_y_la_linea_del_k_por_defecto` |
+| US8-3 | FR-027 | `test_bench_linea_tiempo.py::test_el_historial_imprime_la_parte_uno_junto_a_la_linea_de_tiempo` |
+| US8-4 | FR-026 | `test_bench_linea_tiempo.py::test_el_reporte_tiene_una_fila_por_k_la_fila_none_las_columnas_y_la_linea_del_k_por_defecto` |
+| US8-5 | FR-025 | `test_bench_linea_tiempo.py::test_la_partida_sintetica_es_la_misma_con_la_misma_semilla_y_otra_con_otra` |
+
+### FR → task
+
+| FR | Tasks |
+|---|---|
+| FR-001 | T009, T010, T016, T020, T022, T024, T078 |
+| FR-002 | T011, T014, T016, T017, T020, T078 |
+| FR-003 | T011, T014, T016, T017, T020, T022, T024, T025, T078 |
+| FR-004 | T007, T016, T020, T023, T037, T041, T042, T043, T044, T045, T047, T078 |
+| FR-005 | T016, T017, T023, T024, T025, T038, T042, T046, T078 |
+| FR-006 | T009, T010, T011, T014, T018, T019, T021, T022, T023, T040, T046, T049, T078 |
+| FR-007 | T039, T046, T054, T078 |
+| FR-008 | T018, T023, T040, T078 |
+| FR-009 | T004, T007, T009, T016, T018, T019, T022, T075, T078 |
+| FR-010 | T025, T027, T028, T029, T030, T031, T032, T033, T034, T035, T048, T054, T078 |
+| FR-011 | T005, T025, T026, T028, T033, T078 |
+| FR-012 | T025, T033, T034, T078 |
+| FR-013 | T048, T049, T050, T051, T052, T078 |
+| FR-014 | T041, T045, T047, T048, T051, T078 |
+| FR-015 | T048, T050, T051, T078 |
+| FR-016 | T048, T050, T051, T052, T063, T067, T074, T078 |
+| FR-017 | T015, T039, T054, T055, T056, T057, T058, T059, T060, T061, T062, T078 |
+| FR-018 | T053, T054, T057, T058, T059, T078 |
+| FR-019 | T005, T006, T011, T013, T015, T017, T027, T033, T055, T060, T061, T062, T068, T078 |
+| FR-020 | T012, T017, T022, T027, T035, T063, T078 |
+| FR-021 | T006, T008, T011, T013, T028, T063, T066, T078 |
+| FR-022 | T005, T006, T012, T078 |
+| FR-023 | T007, T008, T011, T013, T021, T027, T030, T032, T035, T078 |
+| FR-024 | T063, T065, T066, T068, T069, T078 |
+| FR-025 | T004, T063, T065, T066, T078 |
+| FR-026 | T003, T060, T063, T064, T066, T067, T068, T072, T078 |
+| FR-027 | T003, T064, T070, T071, T072, T078 |
+| FR-028 | T006, T008, T073, T077, T078 |
+| FR-029 | T037, T043, T044, T073, T077, T078 |

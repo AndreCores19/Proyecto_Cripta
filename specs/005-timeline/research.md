@@ -2,7 +2,8 @@
 
 Each entry: **Decision**, **Rationale**, **Alternatives considered**, and **Evidence** (what is already
 measured in `bench-antes.txt`, and what `--bench` must still measure; no claim without a number,
-constitution VI). Numbers marked *to measure* are not known yet.
+constitution VI). Numbers marked *to measure* were not known when this was written; the ones measured
+since are noted in place (*Measured afterwards*, R1 and R5).
 
 ## R1 — Forward re-simulation from checkpoints vs backward inversion with the part-one history
 
@@ -18,6 +19,11 @@ before the target and re-simulate forward (≤ K player actions).
   scenario that is about 6 million closures; a Python closure with its cell is on the order of
   100–200 bytes, so about 1 GB (*to measure* with `tracemalloc`). It grows with actions × activity,
   which is what FR-021 forbids.
+  *Measured afterwards (T066/T068):* on `referencia` one action leaves 83.0 closures in `Historial`,
+  extrapolated to 178 115 KB at 5 000 actions; that figure is the shallow `sys.getsizeof` size of the
+  closures and their cells, not a `tracemalloc` total. Re-simulating forward costs 635.7 µs per action and
+  inverting backward 157.9 µs. Numbers: `specs/005-timeline/bench-linea-tiempo.txt` ("Forward vs
+  backward") and `docs/DECISIONES.md` §5.6.2.
 - Closures cannot be written to the save file (FR-017) and cannot be dropped from the middle; a
   scroll must trim from the end (FR-011) and the part-one history already does so by popping frames.
 - Inversion depends on a *perfect* inverse for every mutation; the undo of part one is deliberately
@@ -120,6 +126,15 @@ per query is O(R + E) for the graph. For cripta-06 (300 rooms) this is *to measu
 a third of the budget, the fallback (not the plan) is a pooled scratch graph reset only on the rooms
 the previous query touched. The bench reports graph-build time separately so the choice is made from
 numbers.
+
+*Measured afterwards (T068):* building the graph was 50.9 % of a K = 10 query on `referencia` (p99
+23.88 ms), more than a third, so the fallback was adopted: `data/grafo_reutilizable.py` keeps one scratch
+graph per service and resets it between queries (graph share 6.3 %, p99 16.54 ms). The final reset does
+not track which rooms the previous query touched: it restores the changeable fields of **every** room
+(knowledge, trail, floor objects, inactive enemies, traps, search marks) and exit (closed, memory), still
+O(R + E) but only assignments, and moves `Salida.epoca_puertas` once as a fresh build did. Numbers and
+reasoning: `plan.md` ("Default K"), `docs/DECISIONES.md` §5.5.1, `specs/005-timeline/bench-linea-tiempo.txt`;
+equivalence with a fresh graph: `tests/test_grafo_reutilizable.py`.
 
 **Side effects checked and accepted.**
 

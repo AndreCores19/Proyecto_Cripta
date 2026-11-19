@@ -21,7 +21,7 @@ compares a query with the live summary at every decision for K = 1, 3, 7 and K >
 ## 2. Consult in a game (US1, US2)
 
 ```bash
-python main.py cripta-01 --offline --checkpoint-cada 5
+python main.py cripta-02 --offline --checkpoint-cada 5
 ```
 
 Play ~20 commands (moves, an attack, a pick-up), then:
@@ -90,3 +90,31 @@ In a seeded test game, pick an instant at which two or more non-player events ru
 enemies acting) and the player has no decision. `historia <t>` must show the state after all of them.
 Then pick an instant at which the player has a decision: the state is the one just before it and
 events of that instant that come later in agenda order are not shown ("the decision wins").
+
+## Result of the run (T076, 2026-11-18)
+
+Run against the real offline pack (`offline/`, a copy in a scratch folder so `saves/` and `cache/` stayed out of
+the repo), Windows 11, Python 3.14.6. Sections 2–5 were played by a script that drives `main.py` through its
+standard input and reads each answer, so every check below compares real output; 24 checks, 24 passed.
+
+| § | What was checked | Result |
+|---|---|---|
+| 1 | `python -m pytest tests -k "linea_tiempo"` | 220 passed (inside the full run of T077: 610 passed) |
+| 2 | cripta-02, 17 commands (moves, an attack, pick-ups): `historia 0`, `historia #3`, `historia <clock>`; `historia <clock+1>`, `historia #<n+1>`, `historia`, `historia -2` rejected with nothing changed; no `historia` line in `saves/partida_*.log` | pass |
+| 3 | 3 waits and a move into a never-entered room, then `retroceder`: the reverted action is gone (`#21` rejected), `historia <now>` equals the game, the consumed scroll is in neither inventory; re-entering the room and picking up its object gives the same object ids in `historia` as in the game | pass |
+| 4 | `--replay LOG --hasta 620` equals `historia 620` typed in the game; `--hasta 99999999` prints the final state and "La partida terminó antes"; `--hasta -1` exits 1 with an error and no state | pass |
+| 5 | `guardar prueba`, quit, start again, `cargar prueba`: the same answers at 0, 150, 400 and the final clock (the game had read a scroll); with `--checkpoint-cada 7` the notice "Se ignora --checkpoint-cada: esta partida se guardó con K=5." and the same answers; `guardado_v1.sav` → "Formato de guardado incompatible", file untouched, game unchanged; empty file → "El archivo está truncado"; random bytes → "No es un archivo de guardado de Cripta" | pass |
+| 6 | `bench_linea_tiempo`, `bench_historial`, `bench_guardado`: see `bench-linea-tiempo.txt`, `bench-despues.txt`, `plan.md` ("Default K") and `docs/DECISIONES.md` §5.5.1 and §5.6.2. `python main.py --bench` ran end to end (exit 0, 2 557 s) and printed "Default K: 10" (`referencia` K = 10: p99 15.35 ms). The non-timing columns (checkpoints, memory of checkpoints and of actions + ledger, max actions re-played, linearity, scroll reads, ledger entries, off-grid checkpoints) are identical on two runs of the same seed in separate processes; repeated inside one process the actions + ledger memory moves by 0.1 KB (`tracemalloc` noise), the game figures do not | pass |
+| 7 | `tests/test_linea_tiempo_capas.py` (views and HTTP client raise; `--replay --hasta` and `--bench`), `test_linea_tiempo_consulta.py::test_las_consultas_no_tocan_la_red_ni_el_catalogo_aunque_la_ficha_se_haya_desalojado` (100 queries), `test_linea_tiempo_comando.py::test_la_consulta_no_queda_en_la_bitacora_ni_en_los_comandos_guardados` (log byte for byte) | pass |
+| 8 | `test_linea_tiempo_consulta.py::test_varios_eventos_en_el_mismo_instante_se_ven_todos` and `::test_con_decision_del_jugador_en_t_gana_la_decision` | pass |
+
+What the run showed, and what was fixed:
+
+- §2 named `cripta-01`, which is not in the offline pack (it has cripta-02 … cripta-06); changed to cripta-02.
+- The summary printed "Jugador: Jugador" while the game showed the player's own name: the scratch game never
+  had the name, and the log does not record it, so `--replay --hasta` could not print it either (FR-014). The
+  name is not one of the summary's fields (contract `comando-historia.md`), so `adapters/formato_historia.py`
+  no longer prints it ("Jugador (Vida: …)"); test
+  `test_linea_tiempo_comando.py::test_el_resumen_no_muestra_el_nombre_del_jugador_que_el_replay_no_conoce`.
+- Information, not a failure: in the stress world `grande` (not the verdict world) K = 10 gave p99 54.31 ms in the
+  full `--bench` run, against 47.64 ms in the T068 run; `referencia` stays far below the 25 ms rule.

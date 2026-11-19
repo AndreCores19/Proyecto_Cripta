@@ -1,3 +1,5 @@
+import ast
+import os
 import random
 
 import pytest
@@ -128,6 +130,74 @@ def test_k_debe_ser_un_entero_positivo(k):
     """FR-011 · K inválido"""
     with pytest.raises(ValueError):
         LineaTiempo(k)
+
+
+MODULOS_LINEA_TIEMPO = ("structures/linea_tiempo.py", "model/registro_estado.py", "model/reproduccion_logica.py",
+                        "model/linea_tiempo_logica.py", "model/efectos_omitidos.py", "data/fabrica_reproduccion.py",
+                        "service/historia_service.py", "data/grafo_reutilizable.py", "data/fichas_congeladas.py")
+MODULOS_PROHIBIDOS = ("heapq", "bisect", "collections", "copy")
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _arbol(ruta):
+    with open(os.path.join(RAIZ, ruta), encoding="utf-8") as f:
+        return ast.parse(f.read(), filename=ruta)
+
+
+def _importados(arbol):
+    """Los módulos que importa un archivo (`import a.b` y `from a.b import c` dan "a.b")."""
+    nombres = []
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.Import):
+            nombres.extend(alias.name for alias in nodo.names)
+        elif isinstance(nodo, ast.ImportFrom) and nodo.module is not None:
+            nombres.append(nodo.module)
+    return nombres
+
+
+def _usos_prohibidos(arbol):
+    """dict/set: literales, comprensiones y llamadas a `dict(` / `set(` (lo que podría servir de índice)."""
+    usos = []
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.Dict, ast.Set, ast.DictComp, ast.SetComp)):
+            usos.append((type(nodo).__name__, nodo.lineno))
+        elif (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)
+              and nodo.func.id in ("dict", "set", "frozenset")):
+            usos.append((nodo.func.id + "(", nodo.lineno))
+    return usos
+
+
+@pytest.mark.parametrize("ruta", MODULOS_LINEA_TIEMPO)
+def test_modulos_sin_prohibidos(ruta):
+    """FR-028, FR-029, SC-001 · los módulos de la línea de tiempo no importan heapq, bisect, collections ni copy
+    y no usan dict ni set (literal, comprensión o llamada)"""
+    arbol = _arbol(ruta)
+    for nombre in _importados(arbol):
+        assert nombre.split(".")[0] not in MODULOS_PROHIBIDOS, (ruta, nombre)
+    assert _usos_prohibidos(arbol) == [], ruta
+
+
+def test_modulos_sin_prohibidos_model_y_structures_no_importan_view_ni_controller():
+    """FR-029 · ningún archivo de model/ ni de structures/ importa de view/ ni de controller/"""
+    revisados = 0
+    for carpeta in ("model", "structures"):
+        for nombre in sorted(os.listdir(os.path.join(RAIZ, carpeta))):
+            if not nombre.endswith(".py"):
+                continue
+            ruta = f"{carpeta}/{nombre}"
+            for importado in _importados(_arbol(ruta)):
+                assert importado.split(".")[0] not in ("view", "controller"), (ruta, importado)
+            revisados += 1
+    assert revisados > 10
+
+
+def test_el_detector_de_prohibidos_ve_lo_que_debe():
+    """FR-028 · control del detector: encuentra cada forma prohibida en un texto de ejemplo"""
+    ejemplo = ast.parse("import heapq\nfrom collections import deque\nfrom copy import deepcopy\n"
+                        "a = {}\nb = {1}\nc = dict()\nd = set()\ne = {k: k for k in x}\nf = {k for k in x}\n"
+                        "g = f'{a:>3}'\n")
+    assert [n.split(".")[0] for n in _importados(ejemplo)] == ["heapq", "collections", "copy"]
+    assert [u[0] for u in _usos_prohibidos(ejemplo)] == ["Dict", "Set", "dict(", "set(", "DictComp", "SetComp"]
 
 
 def test_sin_dict_set_ni_modulos_prohibidos_en_la_estructura():

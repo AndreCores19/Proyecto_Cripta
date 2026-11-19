@@ -29,7 +29,9 @@ def lineas_historia(resumen):
         "-" * 40,
         f"Historia en el instante {resumen.reloj}",
         f"Sala {resumen.id_sala}: {resumen.nombre_sala}",
-        f"Jugador: {j.nombre} (Vida: {j.vida}/{j.vida_max})",
+        #sin el nombre: no es parte del estado (contrato comando-historia) y el log no lo guarda, así que --replay
+        #no lo sabe; con él, `historia` y `--hasta` dirían nombres distintos (FR-014)
+        f"Jugador (Vida: {j.vida}/{j.vida_max})",
         f"  Ataque: {j.ataque}  Defensa: {j.defensa}  Velocidad: {j.velocidad}",
         f"  Arma: {j.arma if j.arma is not None else 'ninguna'}",
         f"  Armadura: {j.armadura if j.armadura is not None else 'ninguna'}",

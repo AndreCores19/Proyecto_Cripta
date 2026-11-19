@@ -1,0 +1,13 @@
+ Historial de retroceso: parte uno y bajo la nueva carga (microsegundos; K=50) 
+ escenario  salas  enemigos | action (part one) | action (timeline) | undo (part one) | undo (timeline) | closures kept (max 5 frames) | capture checkpoint (us)
+   pequeño     10        10 |             145.7 |             189.1 |            81.0 |            66.5 |                  240 en 5     |                    38.6
+     larga    300        10 |             144.9 |             105.7 |            74.2 |            49.5 |                  240 en 5     |                    40.0
+    normal     20        30 |             337.8 |             214.3 |           151.3 |           134.7 |                  640 en 5     |                    49.0
+    grande    100       100 |            1105.9 |            1242.2 |           789.6 |           607.4 |                 2040 en 5     |                   102.0
+   extremo    100       300 |            3203.4 |            3952.9 |          2931.2 |          2707.2 |                 6040 en 5     |                  1028.5
+
+action (part one)  = una acción del jugador con el historial activo, sin línea de tiempo
+action (timeline)  = la misma acción con la línea de tiempo anotando (un punto cada 50)
+undo               = revertir la última acción con el historial (con la línea: más el recorte)
+closures kept      = funciones de deshacer guardadas en total (máximo 5 cuadros)
+capture checkpoint = tomar un punto de control (reemplaza la copia completa con deepcopy, descartada)

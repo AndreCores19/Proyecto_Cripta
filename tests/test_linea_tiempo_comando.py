@@ -358,6 +358,17 @@ def test_el_mapa_del_resumen_tiene_el_formato_del_comando_mapa(capsys):
     assert capsys.readouterr().out == "".join(linea + "\n" for linea in lineas_mapa(mapa))
 
 
+def test_el_resumen_no_muestra_el_nombre_del_jugador_que_el_replay_no_conoce():
+    """FR-004, FR-014 · US4-1 · el nombre no es parte del estado y el log no lo guarda: el resumen no lo muestra,
+    así `historia t` en un juego con nombre y `--replay ... --hasta t` imprimen lo mismo (hallado en T076)"""
+    resumen = _resumen_de_ejemplo()
+    resumen.jugador.nombre = "Nombre-Que-El-Log-No-Guarda"
+    lineas = lineas_historia(resumen)
+    assert not any("Nombre-Que-El-Log-No-Guarda" in linea for linea in lineas)
+    j = resumen.jugador
+    assert f"Jugador (Vida: {j.vida}/{j.vida_max})" in lineas
+
+
 def test_la_vista_silenciosa_no_imprime_nada(capsys):
     """FR-004 · la vista silenciosa también acepta `mostrar_historia` y no imprime nada"""
     VistaSilenciosa().mostrar_historia(_resumen_de_ejemplo())

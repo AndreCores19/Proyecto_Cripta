@@ -1,0 +1,46 @@
+ Agenda de eventos 
+Operaciones reales por acción del jugador (100 salas, 300 enemigos):
+    programar       301.0
+    extraer         301.0
+    cancelar          0.0
+    reprogramar       0.0
+    eventos pendientes a la vez (máximo): 300
+
+ Extraer el próximo y programar otro (microsegundos por operación):
+ pendientes                heap   lista sin ordenar      lista ordenada
+        100                 5.0                12.3                17.0
+        300                 6.4                39.4                45.0
+       1000                 6.9                98.6               135.9
+       3000                11.6               584.9               325.2
+
+ Extraer y programar: incremento fijo (randint 1..200) | variable (intervalo costo/velocidad):
+ pendientes               heap fijo               heap var.  lista sin ordenar fijo  lista sin ordenar var.     lista ordenada fijo     lista ordenada var.
+        100                     8.2                     7.0                    16.9                    14.2                    21.1                    18.0
+        300                    12.8                    13.4                    28.4                    34.0                    45.2                    22.0
+       1000                     6.2                     7.5                   115.3                   115.6                   139.9                    92.1
+       3000                     9.9                     8.7                   348.2                   345.2                   304.5                   381.4
+
+Operaciones por acción con costos variables (100 salas, enemigos errantes):
+ enemigos    modelo  programar   extraer  cancelar  reprogr.  máx.pend.
+      300      fijo      301.0     301.0       0.0       0.0        300
+      300  variable      123.0     123.0       0.0       0.0        300
+     1000      fijo     1001.0    1001.0       0.0       0.0       1000
+     1000  variable      414.8     414.8       0.0       0.0       1000
+     3000      fijo     3001.0    3001.0       0.0       0.0       3000
+     3000  variable     1237.4    1237.4       0.0       0.0       3000
+
+Operaciones por acción con cazadores (100 salas, costos variables):
+ enemigos  cazadores  programar   extraer  cancelar  reprogr.  máx.pend.
+      300         30      142.1     142.1       0.0       0.0        300
+      300         30      142.1     142.1       0.0       0.0        300
+     1000         30      435.7     435.7       0.0       0.0       1000
+     1000        100      475.4     475.4       0.0       0.0       1000
+     3000         30     1260.7    1260.7       0.0       0.0       3000
+     3000        300     1412.2    1412.2       0.0       0.0       3000
+
+Cancelar un evento cualquiera y programar otro (microsegundos):
+ pendientes                heap   lista sin ordenar      lista ordenada
+        100                 3.7                 2.8                20.1
+        300                 3.5                 5.6                45.3
+       1000                 5.2                20.5               155.3
+       3000                11.9                98.5               479.4

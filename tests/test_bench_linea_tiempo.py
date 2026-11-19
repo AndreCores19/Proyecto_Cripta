@@ -168,7 +168,7 @@ def _antes():
 
 
 def test_el_historial_imprime_la_parte_uno_junto_a_la_linea_de_tiempo(capsys, monkeypatch):
-    """FR-027 · bench_historial: por escenario, la parte uno (sin línea de tiempo, medida en vivo) junto a la
+    """FR-027 · US8-3 · bench_historial: por escenario, la parte uno (sin línea de tiempo, medida en vivo) junto a la
     línea de tiempo activa (acción, deshacer, cierres guardados, máximo 5 cuadros) y "capture checkpoint (us)"
     en lugar de "copiar todo". Solo estructura: la comparación de tiempos con bench-antes.txt queda en el
     reporte del benchmark (un umbral de tiempo aquí fallaba con la máquina cargada)"""

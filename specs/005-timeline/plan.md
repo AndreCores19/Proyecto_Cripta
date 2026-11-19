@@ -37,10 +37,9 @@ Decisions the group has to know about (all argued in [research.md](./research.md
    header; a v1 file is reported as incompatible by the existing check, which is moved ahead of the
    header read so a short v1 file cannot be reported as "truncated". Load re-executes the commands
    (as in part one) and that rebuilds the whole timeline: actions, checkpoints and ledger.
-5. **The default K is provisional (K = 50) until measured.** The code carries `K_POR_DEFECTO = 50`
-   marked PROVISIONAL so a game starts without `--checkpoint-cada` from the first phase. It is
-   replaced by the value chosen from `--bench` numbers (FR-026) in task T068 and recorded in
-   "Default K" below. Done: K = 10.
+5. **The default K is 10, measured.** `K_POR_DEFECTO = 10` was chosen from the `--bench` numbers
+   (FR-026) by the rule in "Default K" below (task T068). Until that measurement the code carried a
+   provisional 50 so a game could start without `--checkpoint-cada` from the first phase.
 
 ## Technical Context
 
