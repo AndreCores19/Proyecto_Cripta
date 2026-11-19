@@ -177,48 +177,48 @@ de tiempo lo reconstruye, así que registrar e invertir sus cambios tiene que se
 calcula sobre el subgrafo conocido, y hay que justificar si comparte implementación con la búsqueda del cazador o
 si conviene separarlas.
 
-**Decisión.** «ir a» tiene su propia clase de búsqueda, `RutaConocida` (`model/ruta_conocida.py`), que
-recorre el subgrafo que el jugador conoce: las salas exploradas y las salidas que recuerda abiertas.
-**No** reutiliza la búsqueda del cazador (`Busqueda.calcular`), que recorre el mapa completo. Lo que sí
-comparten:
+**Alternativas consideradas** (`research.md`, R1, R2 y R6).
 
-- el **montículo mínimo** escrito a mano (`structures/monticulo.py`), y
+| Alternativa | Por qué no |
+|---|---|
+| Reutilizar `Busqueda.calcular` con un indicador «solo lo conocido» | Añade una rama a la ruta caliente de los cazadores (se ejecuta en cada turno de cada cazador) para servir a una función de uso manual y poco frecuente. Además, las dos búsquedas no recorren lo mismo (abajo). |
+| Dijkstra hacia adelante desde el jugador, llevando el primer paso de cada ruta | Los empates entre rutas de igual costo obligan a comparar rutas en cada entrada de la cola: más estado para el mismo costo. |
+| Búsqueda en anchura | Incorrecta: los costos de las salidas son distintos. |
+| Campos propios de «ir a» en `Sala` (regla B) | Dos enteros más en cada sala sin mejor resultado. Queda como reserva si la medición muestra que la búsqueda extra del cazador pasa del umbral de 10 % del ciclo. |
+| El conocimiento en un objeto aparte, indexado por id | Necesitaría un diccionario (prohibido) o una búsqueda, y su propio código de deshacer. |
+
+**Decisión.** El conocimiento del jugador vive en dos enteros de objetos que el modelo ya tiene
+(`Sala.conocimiento` y `Salida.memoria`) más una lista de salas descubiertas en `Partida`; toda escritura pasa por
+el historial, así que el pergamino y la línea de tiempo lo revierten con el mismo mecanismo que el resto (R1).
+«ir a» tiene su propia clase de búsqueda, `RutaConocida` (`model/ruta_conocida.py`): Dijkstra **hacia atrás desde el
+destino** sobre el subgrafo que el jugador conoce (salas exploradas y salidas que recuerda abiertas), que se detiene
+en cuanto sale del montículo la sala del jugador. **No** reutiliza `Busqueda.calcular`, que recorre el mapa
+completo. Lo que sí comparten:
+
+- el **montículo mínimo** escrito a mano (`structures/monticulo.py`): una estructura genérica que no sabe nada del
+  grafo. El cazador crea uno local por búsqueda; `RutaConocida` guarda uno y lo vacía (`vaciar()`) al empezar cada
+  búsqueda, porque se detiene antes de extraer todo y deja entradas sin sacar; y
 - el **contador de estampas** de `Busqueda.nueva_estampa()`, con el que se marcan las salas
-  (`busq_marca` / `busq_dist`), de modo que la búsqueda guardada de los cazadores se reconoce como
-  vieja y se recalcula.
+  (`busq_marca` / `busq_dist`), de modo que la búsqueda guardada de los cazadores se reconoce como vieja y se
+  recalcula.
 
-**Por qué no se reutiliza `Busqueda.calcular`** (research R2):
+**Las dos búsquedas no recorren lo mismo.** El cazador mira el mundo real (las puertas tal como están y todas las
+salas) y busca desde el jugador hasta un límite de `rango`. «ir a» mira lo que el jugador sabe (solo salas exploradas,
+puertas según la memoria, o según el estado en vivo si tocan su sala) y busca desde el destino hasta sacar la sala del
+jugador. Buscar hacia atrás da de una vez la distancia de todos los vecinos de la sala del jugador; el desempate
+`(id de destino, dirección)` es el mismo que el del cazador, pero se aplica sobre otro grafo.
 
-1. Pasarle un indicador («solo lo conocido») añadiría una rama a la ruta caliente de los cazadores,
-   que se ejecuta en cada turno de cada cazador, solo para servir a una función que se usa a mano y
-   poco. Una clase aparte son unas pocas líneas y deja intacto el camino de los cazadores.
-2. Las dos búsquedas **no recorren lo mismo**. El cazador mira el mundo real (las puertas tal como están
-   y todas las salas) y busca desde el jugador hasta un límite de rango. «ir a» mira lo que el jugador
-   sabe (solo salas exploradas, puertas según la memoria o según el estado en vivo si tocan su sala) y busca
-   desde el destino hasta sacar del montículo la sala del jugador. Con una sola clase habría dos
-   conjuntos de reglas de recorrido dentro del mismo bucle.
-3. La búsqueda hacia atrás desde el destino da, de una vez, la distancia de todos los vecinos de la
-   sala del jugador; el desempate (`(id de destino, dirección)`) es el mismo que usa el cazador, pero
-   se aplica sobre otro grafo.
+**Estampas: la regla A.**
 
-**Estampas: la regla A** (research R6). La alternativa era darle a «ir a» campos propios en `Sala`
-(regla B). Se eligió que tome su estampa del mismo contador que el cazador:
+- *Qué cuesta:* tras cada paso de «ir a», la búsqueda guardada del cazador queda invalidada y se hace una búsqueda
+  más en el siguiente turno del cazador. Solo ocurre mientras haya cazadores activos. La estampa se toma lo primero,
+  antes de cualquier retorno temprano, así que incluso un «ir a» sin ruta invalida esa caché (hay una prueba de cada
+  caso en `tests/test_ir_a_viaje.py`).
+- *Qué se evita:* los dos campos de la regla B.
+- Es la condición 4 de la reutilización de la búsqueda guardada de la sección 5.2: ninguna otra búsqueda puede haber
+  escrito las marcas de `Sala` desde entonces.
 
-- *Qué cuesta:* tras cada paso de «ir a», la búsqueda guardada del cazador queda invalidada y se hace
-  una búsqueda más en el siguiente turno del cazador. Solo ocurre mientras haya cazadores activos.
-  La estampa se toma lo primero, antes de cualquier retorno temprano, así que incluso un «ir a» sin ruta
-  invalida esa caché (hay una prueba de cada caso en `tests/test_ir_a_viaje.py`).
-- *Qué se evita:* dos campos enteros más en cada sala para ningún resultado mejor. La regla B queda como
-  alternativa si la medición mostrara que esa búsqueda extra pasa del umbral de 10 % del ciclo.
-- *Qué la respalda:* la medición del ciclo antes y después (`specs/003-fog-of-war/bench-antes-ciclo.txt`
-  y `specs/003-fog-of-war/bench-despues-ciclo.txt`) no muestra ninguna lentitud mayor al 10 %, y el benchmark propio
-  (`specs/003-fog-of-war/bench-ir-a.txt`) da un p99 de la ruta con 100 salas muy por debajo de 5 ms.
-
-**Por qué el montículo sí se comparte.** Es una estructura genérica (prioridad y valor) que no sabe nada
-del grafo. Reutilizarlo evita una segunda implementación y se vacía (`vaciar()`) al comenzar cada
-búsqueda, porque la búsqueda se detiene en cuanto sale la sala del jugador y deja entradas sin extraer.
-
-**Complejidad** (`specs/003-fog-of-war/plan.md`, «Complexity (engine)»).
+**Complejidad** (`plan.md`, «Complexity (engine)»).
 
 - Un paso de «ir a»: O(V_k log V_k + E_k) sobre la región conocida más cercana al destino que el jugador, más
   O(grado) para el desempate entre las salidas de la sala del jugador.
@@ -227,139 +227,181 @@ búsqueda, porque la búsqueda se detiene en cuanto sale la sala del jugador y d
 - Explorar al moverse: O(grado) sin antorcha y O(grado²) con antorcha, más O(grado) para la memoria de puertas.
 - Deshacer: las escrituras nuevas van al cuadro del movimiento en el historial, O(grado) u O(grado²) entradas más.
 
+**Evidencia empírica.**
+
+- *Costo de la regla A en el ciclo de eventos:* `bench_ciclo` antes y después de la función
+  (`specs/003-fog-of-war/bench-antes-ciclo.txt` y `bench-despues-ciclo.txt`, tres corridas cada una). Comparando la
+  mejor de las tres corridas de cada escenario, ningún escenario es más de 10 % más lento, ni en p99 ni en promedio.
+  El p99 más alto es el de `extremo` (11.68 ms antes; 9.84 ms después) y todos cumplen el límite de 20 ms.
+- *Costo de la ruta:* con 300 salas (el tamaño de cripta-06) el p99 de la ruta es de 2.6 a 3.0 ms contra el límite de
+  5 ms (`specs/003-fog-of-war/bench-ir-a.txt`). El detalle y la optimización que hizo falta están en 5.3.1.
+
 **Coincidencia con el `plan.md` original.** La decisión de esta sección, sí. El `plan.md` de antes de implementar
 (commit `6166666`) ya tenía la búsqueda hacia atrás desde el destino en una clase propia, la regla A de estampas
-(tomada lo primero, antes de cualquier retorno), el montículo compartido con `vaciar()` y el veredicto de p99 ≤ 5
-ms. Lo que cambió durante la implementación (commit `f429f82`; el plan se sincronizó en `8243510`):
-
-- el tamaño del veredicto pasó de 100 salas (el escenario más grande de `bench_ciclo`) a 300 salas, el tamaño de
-  cripta-06, la mayor publicada (`research.md`, R7); 100, 500 y 1000 salas quedan como información;
-- la primera medición con 300 salas no dejaba el margen buscado, así que se optimizaron las comparaciones del
-  montículo y el bucle de la ruta (5.3.1). La medición no cambió la decisión de separar las búsquedas ni la regla A.
+(tomada lo primero, antes de cualquier retorno), el montículo compartido con `vaciar()` y el veredicto de p99 ≤ 5 ms
+de la ruta. Lo que cambió durante la implementación fue la medición, no la decisión: el tamaño del veredicto pasó de
+100 salas a 300, y se optimizó el montículo y el bucle de la ruta (5.3.1; código en `f429f82`, plan sincronizado en
+`8243510`).
 
 **Límites conocidos.**
 
-- El costo crece con la región conocida: con 1000 salas el p99 de la ruta es de 8.58 a 9.29 ms y con 500, de 4.11
-  a 4.82 ms (`specs/003-fog-of-war/bench-ir-a.txt`). Esos tamaños son solo información, pero con 1000 salas una
-  cripta así no cumpliría 5 ms.
-- La medición usa una cripta sintética de 300 salas, toda explorada y con todas las puertas recordadas abiertas,
-  no cripta-06 misma. Si el curso publica otra cripta de referencia, la medición se repite con ella (R7).
-- Por la regla A, cada paso de «ir a» invalida la búsqueda guardada de los cazadores y cuesta una búsqueda más
-  en el siguiente turno de un cazador, mientras haya cazadores activos (R6).
+- Por la regla A, cada paso de «ir a» invalida la búsqueda guardada de los cazadores y cuesta una búsqueda más en el
+  siguiente turno de un cazador, mientras haya cazadores activos.
 - Un viaje no reutiliza la búsqueda entre pasos: cada paso paga la búsqueda completa sobre la región conocida.
+- El costo crece con la región conocida; los números por tamaño están en 5.3.1.
+- La medición del ciclo con la regla A (`bench-despues-ciclo.txt`, commit `edca9b8`) es anterior a la optimización del
+  montículo de `f429f82`, que el cazador también usa. No se volvió a medir `bench_ciclo` después de ese cambio; solo
+  están las pruebas de equivalencia del cazador (`tests/test_cazador_equivalencia.py`) y las del montículo.
+
+**Enlaces.** Spec: [`specs/003-fog-of-war/spec.md`](../specs/003-fog-of-war/spec.md). Plan:
+[`specs/003-fog-of-war/plan.md`](../specs/003-fog-of-war/plan.md) («The route search» y «Complexity (engine)»).
+Investigación: [`research.md`](../specs/003-fog-of-war/research.md), R1, R2, R6 y R7.
 
 ### 5.3.1 Rendimiento de «ir a» con 300 salas
 
-**Qué se mide.** La cripta publicada más grande (cripta-06) tiene 300 salas, así que el veredicto de
-`bench_ir_a` (p99 de un cálculo de ruta <= 5 ms) se mide con una cripta sintética sembrada de **300 salas**,
-todas exploradas y con todas las puertas recordadas abiertas. Los tamaños de 100, 500 y 1000 salas quedan
-como información. Se imprimen promedio, p99 y máximo de la ruta sola y del paso completo (ruta, movimiento y
-ciclo de eventos). Se pidió además un margen: p99 del paso completo <= 3 ms.
+**Problema.** FR-026 exige que el cálculo de la ruta de un paso de «ir a» tome a lo sumo 5 ms en el p99, sobre el
+mapa conocido completo de la cripta de referencia. La mayor publicada (cripta-06) tiene 300 salas, así que el
+veredicto de `bench_ir_a` se mide con una cripta sintética sembrada de **300 salas**, todas exploradas y con todas las
+puertas recordadas abiertas; 100, 500 y 1000 salas son solo información (R7). Se imprimen promedio, p99 y máximo de la
+ruta sola y del paso completo (ruta, movimiento y ciclo de eventos). Además se quería un margen propio, que no está en
+la spec: p99 del paso completo ≤ 3 ms. La primera medición con 300 salas no lo dejaba (ver «Evidencia»).
 
-**Antes de optimizar (300 salas, dos corridas).** p99 de la ruta 5.965 y 4.469 ms (máximo 9.757 y 5.775 ms);
-p99 del paso completo 6.131 y 4.712 ms. Pasaba o no el límite de 5 ms según la corrida y el margen de 3 ms no se cumplía.
+**Alternativas consideradas.**
 
-**Qué se revisó primero (sin cambios).**
+- *Cambiar el algoritmo.* No hacía falta. Antes de optimizar se revisó que la búsqueda ya se detiene en cuanto sale la
+  sala del jugador, y que no hay trabajo proporcional a todo el mapa conocido en cada paso: no se limpian marcas (las
+  estampas lo evitan), no se reconstruye ningún subgrafo y no se guarda nada entre pasos (FR-020). El trabajo es el de
+  la región conocida más cercana al destino que el jugador; con pares lejanos en 300 salas es casi todo el mapa, y por
+  eso el costo se nota.
+- *Guardar la ruta entre pasos.* Lo prohíbe FR-020: la ruta se recalcula con el conocimiento de cada momento.
+- *Bajar el costo por operación sin cambiar el comportamiento.* Es lo que se hizo. El perfil con `cProfile` mostró
+  que el tiempo se iba sobre todo en las llamadas a `_antes` del montículo (el resto, en el bucle de `siguiente_paso`,
+  `partida.puerta_recordada` y la propiedad `Salida.costo`); la salida de ese perfil no se guardó.
 
-- La búsqueda ya se detiene en cuanto sale del montículo la sala del jugador. Es seguro para el desempate:
-  cualquier vecina `v` con `costo(v) + dist(v) = d` tiene `dist(v) < d`, así que ya es definitiva.
-- No hay trabajo proporcional a todo el mapa conocido en cada paso: no se limpian marcas (las estampas lo
-  evitan), no se reconstruye ningún subgrafo y no se guarda nada entre pasos (FR-020). El trabajo es el de la
-  región conocida más cercana al destino que el jugador; con pares lejanos en una cripta de 300 salas esa región
-  es casi todo el mapa, y por eso el costo se nota.
+**Decisión** (detalle de implementación, sin cambiar la especificación).
 
-**Dónde se iba el tiempo** (perfil con `cProfile`): cerca del 60 % en el montículo (`extraer`, `insertar` y
-unos 9 millones de llamadas a `_antes`) y el resto en el bucle de `siguiente_paso`, la llamada a
-`partida.puerta_recordada` y la propiedad `Salida.costo`.
+1. `structures/monticulo.py`: `insertar` y `extraer` comparan en línea, con la misma regla que `_antes` (prioridad y
+   luego secuencia), en vez de llamar a un método por cada comparación. El comportamiento es idéntico (lo cubren
+   `tests/test_monticulo.py` y las pruebas de equivalencia del cazador, que lo comparte).
+2. `model/ruta_conocida.py`: la puerta recordada se lee en línea (en vivo si toca la sala del jugador, si no `memoria`),
+   se lee `costo_declarado` con el mismo valor por defecto que `Salida.costo`, y no se inserta en el montículo una sala
+   cuya distancia ya no puede dar una ruta mejor que la hallada hasta el jugador (`nd >= dist(jugador)`). Una vecina
+   útil tiene `dist < d`, así que el desempate no cambia.
 
-**Qué se cambió (detalle de implementación, sin cambiar la especificación).**
+**Complejidad.** Sin cambio asintótico: sigue siendo O(V_k log V_k + E_k) por paso. Bajan las constantes; la poda
+de salas no mejora el peor caso.
 
-1. `structures/monticulo.py`: `insertar` y `extraer` comparan en línea, con la misma regla que `_antes`
-   (prioridad y luego secuencia), en vez de llamar a un método por cada comparación. El comportamiento es
-   idéntico (lo cubren `tests/test_monticulo.py` y las pruebas de equivalencia del cazador, que lo comparten).
-2. `model/ruta_conocida.py`: la lectura de la puerta recordada se hace en línea (en vivo si toca la sala del jugador, si no
-   `memoria`), se lee `costo_declarado` con el mismo valor por defecto que `Salida.costo`, y no se inserta en el montículo
-   una sala cuya distancia ya no puede dar una ruta mejor que la hallada hasta el jugador (`nd >= dist(jugador)`; una
-   vecina útil tiene `dist < d`, así que el desempate no cambia).
+**Evidencia empírica** (300 salas, semilla 1, tres corridas guardadas en `specs/003-fog-of-war/bench-ir-a.txt`).
 
-**Después (300 salas, tres corridas, `specs/003-fog-of-war/bench-ir-a.txt`).**
-
-| | Antes | Después |
+| | Antes (sin archivo guardado) | Después |
 |---|---|---|
 | p99 de la ruta | 5.965 / 4.469 ms | 2.740 / 2.991 / 2.645 ms |
 | máximo de la ruta | 9.757 / 5.775 ms | 9.626 / 5.896 / 4.106 ms |
 | p99 del paso completo | 6.131 / 4.712 ms | 2.472 / 2.982 / 2.622 ms |
 | máximo del paso completo | 8.890 / 7.888 ms | 3.784 / 4.517 / 3.891 ms |
 
-En siete repeticiones aparte de la misma medición, la mediana del p99 fue 2.7 ms (ruta) y 2.8 ms (paso completo),
-con un máximo de 3.4 y 3.3 ms entre repeticiones. Cumple el límite de 5 ms con margen y el paso completo queda cerca
-de 3 ms: el margen de 3 ms es justo, no holgado. Los máximos tienen picos ocasionales (hasta decenas de ms en
-algunas corridas) que vienen de la máquina y no del algoritmo; no entran en el veredicto, que es el p99.
-`bench_ciclo` no cambia: todos sus p99 siguen por debajo de 20 ms.
+Cumple el límite de 5 ms en las tres corridas, con margen. El paso completo queda bajo 3 ms en las tres, pero por poco
+(2.472 a 2.982 ms): el margen de 3 ms es justo, no holgado. Por tamaño (p99 de la ruta, en las tres corridas):
+100 salas, 0.95 a 1.74 ms; 500 salas, 4.11 a 4.82 ms; 1000 salas, 8.58 a 9.29 ms.
+
+**Límites conocidos.**
+
+- Con 1000 salas una cripta así no cumpliría 5 ms (8.58 a 9.29 ms); con 500 queda cerca (4.11 a 4.82 ms). Esos tamaños
+  no son el veredicto de la spec.
+- Los máximos tienen picos ocasionales: el máximo de la ruta con 300 salas llega a 9.6 ms en una corrida, y hay picos
+  de hasta 17.8 ms en el paso completo con 100 salas. No entran en el veredicto, que es el p99. Que vengan de la
+  máquina y no del algoritmo es lo más probable, pero no se comprobó.
+- La columna «Antes» y el perfil con `cProfile` salen de corridas hechas durante la optimización cuya salida no se
+  guardó (el `bench-ir-a.txt` guardado solo tiene las corridas posteriores), así que no se pueden verificar con los
+  archivos del repositorio. El mensaje del commit `f429f82` las resume como «de 5.0-6.0 ms a 2.6-3.0 ms» (ruta) y «de
+  4.7-6.1 ms a 2.5-3.0 ms» (paso completo). Tampoco se guardó una serie aparte de siete repeticiones, de la que se
+  recuerda una mediana del p99 de 2.7 ms (ruta) y 2.8 ms (paso completo), con máximos de 3.4 y 3.3 ms entre
+  repeticiones; no está verificada.
+- La medición usa una cripta sintética de 300 salas, toda explorada y con todas las puertas abiertas, no cripta-06
+  misma. Si el curso publica otra cripta de referencia, la medición se repite con ella (R7).
+- Antes de este cambio, `bench-ir-a.txt` (commit `d393573`) medía con 100 salas: 1.053 ms de p99 de la ruta. Ese
+  tamaño no revelaba el problema.
+
+**Coincidencia con el `plan.md` original.** El plan de antes de implementar (`6166666`) pedía el veredicto con 100 salas;
+la decisión de separar las búsquedas, la regla A y el límite de 5 ms no cambiaron. Lo que cambió: el tamaño del
+veredicto (100 a 300 salas, según la cripta publicada más grande), y la optimización del montículo y de la ruta, que
+el plan no preveía. El plan se sincronizó con el programa entregado en `8243510`.
+
+**Enlaces.** Spec: FR-026, FR-027 y SC-007 de [`specs/003-fog-of-war/spec.md`](../specs/003-fog-of-war/spec.md). Plan:
+[«Measurements»](../specs/003-fog-of-war/plan.md). Investigación: R7 de
+[`research.md`](../specs/003-fog-of-war/research.md). Código: `bench/bench_ir_a.py`.
 
 ## 5.4 Verificación de resolubilidad: una pasada y no una por llave
 
 **Problema.** Obtener una llave puede abrir una región entera, y repetir el recorrido completo por cada llave no
-cumple: el costo total debe crecer de forma aproximadamente lineal con salas, salidas y llaves. El reporte de una
-cripta no resoluble necesita la frontera bloqueada y las dependencias entre llaves, y eso debe salir del mismo
-recorrido. Los ciclos de dependencia se detectan de forma determinista y se reporta el ciclo concreto. El
-`--bench` mide la alternativa ingenua de un recorrido por llave con criptas sintéticas de muchas llaves
-encadenadas.
+cumple: el costo total debe crecer de forma aproximadamente lineal con salas, salidas y llaves (FR-019). El reporte
+de una cripta no resoluble necesita la frontera bloqueada y las dependencias entre llaves, y eso debe salir del mismo
+recorrido (FR-013). Los ciclos de dependencia se detectan de forma determinista y se reporta el ciclo concreto. El
+`--bench` mide la alternativa ingenua de un recorrido por llave con criptas sintéticas de muchas llaves encadenadas.
 
-Esto complementa el [Documento de Decisiones de la primera parte](Documento_de_Decisiones.pdf). El razonamiento
-completo, con las alternativas, está en [`specs/004-crypt-solvability/research.md`](../specs/004-crypt-solvability/research.md)
-(R4 y R5) y los números en `specs/004-crypt-solvability/bench-solvabilidad.txt`.
+**Alternativas consideradas** (`research.md`, R4, R5 y R7).
 
-**Decisión.** Decidir si una cripta se puede ganar con **una sola pasada** que hace crecer a la vez la región alcanzable
-y las llaves tomadas: llegar a una sala vuelve obtenibles las llaves que hay en ella (van a un montículo ordenado por
-id, el de `structures/monticulo.py`), se toma la de menor id, se liberan las puertas que esperaban esa llave y la región
-vuelve a crecer. Cada sala entra una vez, cada salida se examina una vez desde su origen y cada llave entra y sale del
-montículo una vez: `O((V + E) log V + K log K)`, donde el `log V` es buscar la posición de una sala en el vector ordenado.
-El orden en que salen las llaves del montículo es el orden de llaves, y no depende del orden en que el servicio lista las
-llaves ni las salidas.
+| Alternativa | Por qué no |
+|---|---|
+| Una pasada completa por llave: tomar una llave, recorrer otra vez toda la cripta con las llaves que se tienen, repetir | Es lo primero que se escribe, pero cuesta `O(K (V + E))` y se vuelve cuadrática cuando cada llave abre una región (llaves encadenadas). Se dejó solo como alternativa medida en el benchmark y como oráculo de las pruebas. |
+| Ordenamiento topológico de un grafo de dependencias entre llaves | Para armarlo hay que saber de qué llaves depende cada una, que es justo lo que calcula la pasada: haría falta otra pasada. |
+| Una cola de prioridad ordenada por otra cosa (id de sala, orden de descubrimiento) | No cumple FR-011: gana la llave de menor id, comparada como texto. |
+| Una búsqueda de ciclos por llave | Sería otra pasada por llave. |
+| Buscar la llave por id con un diccionario | Prohibido; se usa el vector ordenado con búsqueda binaria que ya existía (R7). |
 
-**Por qué no una pasada completa por llave.** Es lo primero que se escribe: tomar una llave, recorrer otra vez toda la
-cripta con las llaves que se tienen, y repetir. Cuesta `O(K (V + E))`. Cuando obtener una llave abre una región entera, como
-en las criptas de llaves encadenadas, ese costo se vuelve cuadrático. Se dejó solo como alternativa medida en el benchmark y
-como oráculo independiente de las pruebas (que comprueba que ambas dan el mismo orden de llaves).
+**Decisión.** Decidir si una cripta se puede ganar con **una sola pasada** que hace crecer a la vez la región
+alcanzable y las llaves tomadas (`Verificador.verificar`, `model/solvabilidad_logica.py`): llegar a una sala vuelve
+obtenibles las llaves que hay en ella (van a un montículo ordenado por id, el de `structures/monticulo.py`), se toma
+la de menor id, se liberan las puertas que esperaban esa llave y la región vuelve a crecer. El orden en que salen las
+llaves del montículo es el orden de llaves, y no depende del orden en que el servicio lista las llaves ni las salidas
+(FR-010).
 
-**Por qué el informe sale de lo que deja la pasada.** Las llaves que no se tomaron, las salidas que quedaron esperando (que
-son justo la frontera bloqueada) y dónde está cada llave ya están en el estado final de la pasada. Los ciclos salen de un
-barrido lineal sobre las únicas salas que la pasada no alcanzó: cada llave de la frontera, en orden de id, inunda esas salas
-ignorando las cerraduras y las etiqueta si no tenían etiqueta, así que cada sala queda con la menor llave que llega a ella
-(la guardiana); seguir guardianas da cada ciclo una vez. No hay una búsqueda de ciclos por llave, que sería otra pasada por llave.
+**El informe sale de lo que deja la pasada.** Las llaves que no se tomaron, las salidas que quedaron esperando (que son
+justo la frontera bloqueada) y dónde está cada llave ya están en el estado final de la pasada. Los ciclos salen de un
+barrido lineal sobre las únicas salas que la pasada no alcanzó: cada llave de la frontera, en orden de id, inunda esas
+salas ignorando las cerraduras y las etiqueta si no tenían etiqueta, así que cada sala queda con la menor llave que
+llega a ella (la guardiana); seguir guardianas da cada ciclo una vez.
 
-**Medición** (tres corridas, semilla 1; `python -m bench.bench_solvabilidad` dura unos 20 s):
+**Complejidad** (`plan.md`, «Complexity (engine)»). Verificación: `O((V + E) log V + K log K)` en tiempo y `O(V + E + K)`
+en espacio. Cada sala entra una vez, cada salida se examina una vez desde su origen y cada llave entra y sale del
+montículo una vez; el `log V` es buscar la posición de una sala en el vector ordenado. El barrido de ciclos suma
+`O(V_U + E_U)`, con U la parte de la cripta que la pasada no alcanzó. La alternativa ingenua cuesta `O(K (V + E))`.
+
+**Evidencia empírica** (tres corridas, semilla 1, `specs/004-crypt-solvability/bench-solvabilidad.txt`;
+`python -m bench.bench_solvabilidad` dura entre 10 y 20 s según la máquina).
 
 | | Resultado |
 |---|---|
-| Cripta con la forma de la mayor publicada (300 salas, 4 llaves) | máximo de la verificación 5.6, 22.8 y 3.9 ms por corrida (límite 200 ms), con y sin llave de salida alcanzable |
-| Llaves encadenadas, ×10 salas | la verificación tarda 13 a 22 veces más; la alternativa de una pasada por llave, 57 a 143 veces más |
-| 10 000 salas y 200 llaves | verificación 69 a 79 ms; una pasada por llave, 7.4 a 8.5 s |
-| 100 000 salas y 2 000 llaves | verificación 1.1 a 1.5 s (la alternativa ya no se mide: serían unos 2×10⁸ recorridos de sala) |
+| Cripta con la forma de la mayor publicada (300 salas, 4 llaves), con y sin llave de salida alcanzable | máximo de la verificación 5.628, 22.793 y 3.924 ms por corrida (límite 200 ms, FR-018) |
+| Llaves encadenadas, cada ×10 salas | la verificación tarda de 13.2 a 22.0 veces más; la alternativa de una pasada por llave, de 66.9 a 143.2 veces más |
+| 9 849 salas y 200 llaves (el «10 000 y 200» del benchmark) | verificación 68.5 a 71.8 ms; una pasada por llave, 7.4 a 8.5 s |
+| 98 049 salas y 2 000 llaves (el «100 000 y 2 000») | verificación 1.13 a 1.51 s; la alternativa no se mide |
 
-El crecimiento de la verificación es un poco más que lineal (13 a 22 veces por cada ×10), por el `log V` de la búsqueda
-binaria y por la memoria, y el trabajo visto no depende de las llaves: las salas y las salidas visitadas son siempre las de la
-cripta (por ejemplo 98 049 salas y 196 096 salidas con 2 000 llaves).
-
-**Coincidencia con el `plan.md` original.** Sí. El `plan.md` de antes de implementar (commit `6bb5d63`, la versión
-corregida tras el análisis de la primera, `0698354`) es el mismo que el final: no cambió durante la implementación.
-La corrección de `6bb5d63`, todavía antes de implementar, cambió el costo escrito de `O(V + E log K + K log K)` a
-`O((V + E) log V + K log K)` (por buscar la posición de cada sala en el vector ordenado) y limitó la alternativa
-de una pasada por llave a 10 000 salas y 200 llaves. Las mediciones no hicieron cambiar nada: el máximo con 300
-salas queda muy por debajo de 200 ms.
+Las salas y las salidas visitadas son siempre las de la cripta, sin importar las llaves (por ejemplo 98 049 salas y
+196 096 salidas con 2 000 llaves). El crecimiento de la verificación es un poco más que lineal por el `log V` de la
+búsqueda binaria y por la memoria.
 
 **Límites conocidos.**
 
-- El crecimiento es un poco más que lineal: la verificación tarda de 13.2 a 22.0 veces más por cada ×10 salas
-  (`specs/004-crypt-solvability/bench-solvabilidad.txt`), por el `log V` y la memoria. Con 100 000 salas y 2 000
-  llaves tarda de 1.13 a 1.51 s.
 - La cripta de 300 salas es sintética, con la forma de cripta-06 (300 salas, 4 llaves), no cripta-06 misma.
-- El máximo con 300 salas varía entre corridas (5.628, 22.793 y 3.924 ms); sigue muy por debajo de 200 ms.
-- La alternativa de una pasada por llave no se mide con 100 000 salas (serían unos 2×10⁸ recorridos de sala).
-- Cuando varias llaves de la frontera llegan a la misma región, la guardiana es la de menor id: es una elección
-  fija, no una prueba de que la región solo se pueda abrir con esa llave (`research.md`, R5).
+- El máximo con 300 salas varía bastante entre corridas (3.9 a 22.8 ms); sigue muy por debajo de 200 ms.
+- La alternativa de una pasada por llave no se mide con 98 049 salas: serían unos 2×10⁸ recorridos de sala, muchos
+  minutos en Python.
+- Cuando varias llaves de la frontera llegan a la misma región, la guardiana es la de menor id: es una elección fija,
+  no una prueba de que la región solo se pueda abrir con esa llave (`research.md`, R5).
 - `--replay` y cargar una partida guardada dentro de una sesión ya abierta no vuelven a verificar (FR-014).
+
+**Coincidencia con el `plan.md` original.** Sí. El `plan.md` de antes de implementar es el de la versión corregida
+tras el análisis (commit `6bb5d63`, que corrigió el de `0698354`) y no cambió durante la implementación. La
+corrección de `6bb5d63`, todavía antes de implementar, cambió el costo escrito de `O(V + E log K + K log K)` a
+`O((V + E) log V + K log K)` (por buscar la posición de cada sala en el vector ordenado) y limitó la alternativa de
+una pasada por llave a 10 000 salas y 200 llaves. Las mediciones no hicieron cambiar nada.
+
+**Enlaces.** Spec: [`specs/004-crypt-solvability/spec.md`](../specs/004-crypt-solvability/spec.md) (FR-008 a FR-013,
+FR-018, FR-019). Plan: [`specs/004-crypt-solvability/plan.md`](../specs/004-crypt-solvability/plan.md) («The pass»,
+«Complexity (engine)» y «Measurements»). Investigación:
+[`research.md`](../specs/004-crypt-solvability/research.md), R4, R5 y R7. Esto complementa el
+[Documento de Decisiones de la primera parte](Documento_de_Decisiones.pdf).
 
 ## 5.5 Línea de tiempo
 
