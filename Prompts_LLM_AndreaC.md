@@ -393,5 +393,97 @@ Make two commits: first the spec.md changes (1e and 2b) alone, then the edits to
 ### 17 de Noviembre, 2026
 - **Herramienta:** Claude Code
 - **Prompt:** Authorized: run T039 now (python grabar_offline.py against the real service), then T040 and T041. While recording, check that the request count of each crypt stays within its budget (cripta-06 has 63). If the whole offline/ folder is under about 5 MB, commit it in its own commit. Then run "python main.py --verificar <crypt>" on each of the five published crypts and report, for each one, whether it is solvable, the exit status and the report. Finally start cripta-02 online and tell me what the player sees at the start.
+ - **Uso:** verificar la grabación offline de las criptas publicadas, comprobar que el conteo de solicitudes se mantiene dentro del presupuesto, ejecutar la verificación de resolubilidad en cada cripta y reportar los resultados, y finalmente iniciar cripta-02 en línea y describir lo que ve el jugador al inicio.
 
+### 18 de Noviembre, 2026
+- **Herramienta:** Claude Code
+- **Prompt:**  Task: bring docs/DECISIONS-style file docs/DECISIONES.md up to date and correct, WITHOUT touching anything Emily wrote.
 
+  Context
+  - docs/DECISIONES.md is the Part 2 decisions document, written in Spanish. Its numbering must match section 5 of the course statement: 5.1 hunter route, 5.2 route invalidation, 5.3 (and 5.3.1) "ir a" + its performance, 5.4 solvability, 5.5 timeline, 5.6 review of Part 1 decisions (5.6.1 event agenda, 5.6.2 undo history). Keep Spanish and the current voice.
+  - Required fields per section (statement §7.1): problem, alternatives considered, decision, complexity, empirical evidence, known limits, links to spec and plan, and whether the decision matches the original plan.md (with before/after where something changed).
+  - Andrea owns sections 5.3, 5.3.1 and 5.4 (specs 003-fog-of-war and 004-crypt-solvability). Emily owns 5.1, 5.2, 5.5 and 5.6 (specs 001, 002, 005). Do NOT edit, reword, reflow, renumber or reformat Emily's sections or the header table, and do not change any number in them. If you think something in her sections is wrong, list it in your final report and leave it as is.
+
+  What to do (Andrea's sections only: 5.3, 5.3.1, 5.4)
+  1. Read the real project, not just the docs: specs/003-fog-of-war/{spec,plan,tasks,research}.md, specs/004-crypt-solvability/{spec,plan,tasks,research}.md, the bench files (bench-ir-a.txt, bench-antes-ciclo.txt, bench-despues-ciclo.txt, bench-solvabilidad.txt), bench/bench_ir_a.py, bench/bench_solvabilidad.py, model/ruta_conocida.py, model/viaje_logica.py, structures/monticulo.py, the solvability module, and git log for the commits cited in the text.
+  2. Check every claim in 5.3, 5.3.1 and 5.4 against code, specs and bench files: file names, function names, numbers (p99, max, ratios, ms), commit hashes, counts of tests, FR/R numbers, complexity formulas. Fix whatever does not match. Do not invent numbers: if a figure is not in a bench file or the code, remove it or mark it as not measured.
+  3. Known problem to fix: in 5.3, the bullet "Qué la respalda" says the own benchmark "da un p99 de la ruta con 100 salas muy por debajo de 5 ms". The verdict is measured with 300 salas (cripta-06 size): p99 about 2.6-3.0 ms vs the 5 ms limit. Make 5.3 consistent with 5.3.1.
+  4. Make sure each of the three sections has all the §7.1 fields, with links to its spec and plan, a clear "matches plan.md" paragraph (with commit hashes verified in git), and honest limits. Keep each section tight; remove repetition between 5.3 and 5.3.1.
+  5. Check cross-references: the header table, the links to research.md and bench files must point to files that exist. Report broken links; fix only the ones in Andrea's sections.
+  6. Check that nothing in Andrea's sections contradicts Emily's 5.1 and 5.2 (shared heap, shared stamp counter, rule A). If it does, report it.
+
+  Constraints
+  - Constitution applies: no dict/set/heapq/bisect/collections in evaluated code; this task only edits documentation, so do not change any source file, spec or bench file.
+  - Make a single commit with message "docs: correct DECISIONES 5.3, 5.3.1 and 5.4 against specs 003 and 004" and show git diff --stat plus git diff for docs/DECISIONES.md. Confirm that the diff touches no line outside Andrea's sections (5.3, 5.3.1, 5.4).
+  - Final report (short, in Spanish): what you changed and why, anything wrong you found in Emily's sections or elsewhere but did not touch, and any claim you could not verify.
+
+ - **Uso:** actualizar y corregir la sección 5 del documento DECISIONES.md (apartados 5.3, 5.3.1 y 5.4) para reflejar correctamente la implementación real de las especificaciones 003-fog-of-war y 004-crypt-solvability, asegurando consistencia con el código, los benchmarks y los planes, sin modificar secciones de Emily ni código fuente.
+
+### 18 de Noviembre, 2026
+- **Herramienta:** Claude Code
+- **Prompt:** Task: fix a confusing crypt-selection menu in the console view (main.py / the console view that prints "Criptas disponibles").
+
+Problem
+The menu lists the crypts numbered 1..N by position, but the crypt ids are cripta-02 … cripta-06 (cripta-01 is no longer served). Example of what is printed today:
+  1. Catacumbas menores (cripta-02) - 20 salas, dificultad 2
+  2. Catacumbas medias (cripta-03) ...
+  5. Cripta de referencia (cripta-06) ...
+If the player types "02" (or "2") expecting cripta-02, the game starts cripta-03, because the typed number is treated as the list position. This is confusing.
+
+Desired behavior
+- The number shown in the menu must be the crypt's own number, taken from its id (cripta-02 -> 2, cripta-06 -> 6), so what the player sees is what the player types. Example:
+  2. Catacumbas menores (cripta-02) - 20 salas, dificultad 2
+  3. Catacumbas medias (cripta-03) - ...
+  6. Cripta de referencia (cripta-06) - ...
+- Derive the number from the id returned by the service (the numeric suffix of "cripta-NN"); do NOT hardcode 2..6, because the catalog can change. If an id does not follow the "cripta-NN" pattern, fall back to its list position and keep the menu consistent for that entry.
+- Input handling: accept "2", "02" and "cripta-02" (case and surrounding spaces ignored) as the same choice; "salir" still exits. If the input matches no listed crypt, print a clear message ("No existe esa cripta. Elegí un número de la lista.") and ask again; never start a different crypt than the one typed.
+- The prompt text stays in Spanish and should say that the number is the crypt's number, e.g. "Elige una cripta (número, o 'salir'):".
+- Keep the existing layering: the choice logic lives where the current menu logic lives (view/controller); do not move service or data-layer code, and do not change the DTOs unless strictly necessary. Do not add dict, set, heapq, bisect or collections if the constitution forbids them for evaluated code; a simple loop over the list is enough.
+
+Also do
+1. Find every place that prints or parses this menu (main.py, console view, controller, README examples, any test or script that feeds a choice) and make them consistent.
+2. Add or update tests: (a) typing "2", "02" and "cripta-02" selects cripta-02; (b) typing "6" selects cripta-06; (c) an unlisted number ("1", "7", "abc") re-prompts and starts nothing; (d) "salir" exits; (e) ids not matching the pattern fall back to list position. All existing tests must still pass.
+3. Follow the project's spec-kit rules from the constitution for a small fix (read it first). If it requires a spec/tasks entry for any behavior change, add the smallest one; otherwise just reference this fix in the commit message.
+4. Update README if it shows the menu or says how to choose a crypt.
+
+Constraints and report
+- Touch only what this fix needs. Show `git diff --stat`, then commit with a clear message ("fix: crypt menu shows the crypt's own number and accepts 2, 02 or cripta-02").
+- Final report (short, in Spanish): files changed, the new menu output, and the test results.
+
+ - **Uso:** arreglar el menú de selección de cripta en la vista de consola para que muestre el número propio de la cripta y acepte entradas como "2", "02" o "cripta-02", asegurando consistencia en todas las partes del código y pruebas, y reportando los cambios realizados.
+
+### 18 de Noviembre, 2026
+- **Herramienta:** Claude Code
+- **Prompt:** Task: fix the broken replay example and clean up the repository before the final submission. Work in small, separate commits.
+
+Problem
+`python main.py --replay docs/ejemplo_partida.txt` (documented in README section 6) no longer works. The log header was recorded on 2026-10-18 with cripta-04 version d6727c7f4950 and catalog version be68d322d2f5, but the service and the offline package now report different versions (cripta-04 7074a17814ad, catalog 4b9e75a42be5), so the program correctly refuses: "No se puede garantizar una reproducción fiel...". The example must be re-recorded.
+
+1. Re-record docs/ejemplo_partida.txt
+- Use a published crypt (prefer cripta-02, the small one) against the real service (online), with a fixed seed if main.py/aplicacion.py supports choosing one; otherwise use whatever seed the game produces.
+- Produce the log by driving the real game with scripted input (pipe commands to `python main.py <crypt>` or call the same application entry point used by main.py). Do NOT hand-write the log lines. The scripted session must be short (about 15 to 30 commands) and show the main features: movement, `mapa`, `ir a <id>` to an explored room, picking up and using or equipping an item, one `historia <t>` or `historia #k` query (these are not logged, that is fine), and ending with `salir`. If a command in the script is rejected by the game, adjust the script until the log is clean.
+- Copy the resulting saves/partida_<crypt>_<seed>.log to docs/ejemplo_partida.txt (overwrite). Keep the header format exactly as produced by the program.
+- Verify, and show the output of each: 
+  a) `python main.py --replay docs/ejemplo_partida.txt` (online) runs to the end without errors and without asking for input;
+  b) `python main.py --offline --replay docs/ejemplo_partida.txt` also works, which requires that the header versions match the versions in the offline/ package. If they do not match, re-run `python grabar_offline.py` (it is allowed, it records from the real service and keeps only listed crypts) and re-record the log so that both a) and b) pass;
+  c) `python main.py --replay docs/ejemplo_partida.txt --hasta 20` prints the summary of that instant.
+- Check that no test depends on the old docs/ejemplo_partida.txt (grep tests/, README, specs/, docs/). Update any reference (README section 6, tests, quickstart files) to the new crypt/seed if needed. Run the whole suite (`python -m pytest`) and report the count; it must stay green (617 passed at last check).
+- Commit: "docs: re-record ejemplo_partida with current crypt and catalog versions".
+
+2. Prompts log
+- In Prompts_LLM_AndreaC.md there are 57 uncommitted lines. The two newest entries (the DECISIONES.md correction prompt and the crypt menu prompt) are dated "17 de Noviembre, 2026" but were made on 18 de Noviembre; fix those two dates only. Do not edit any other entry. Add one entry (same format: date / Herramienta / Prompt / Uso) for this very task, dated 18 de Noviembre, 2026. Commit: "docs: update Andrea's prompt log".
+
+3. Repository hygiene
+- Add `.claude/settings.local.json` to .gitignore (it is untracked and must not be committed).
+- There is an untracked file prueba_criptas.py in the project root. Move it to pruebas_manuales/ as prueba_criptas.py, fix its docstring (it says probar_criptas.py), and add one line for it in the README note about pruebas_manuales (it queries the real service but does not spend the player's request budget). Do not commit it if you find it cannot run from pruebas_manuales with `python -m pruebas_manuales.prueba_criptas`; in that case delete it and say so.
+- Commit: "chore: ignore local Claude settings; move prueba_criptas to pruebas_manuales".
+
+4. README documentation links (only if the files exist)
+- If docs/Documento_de_Decisiones.docx exists, add it to README section 8 next to the PDF link ("Documento de Decisiones de la primera parte, versión mejorada"). If it does not exist, do nothing and say so. Do not touch docs/DECISIONES.md.
+
+Constraints
+- Do not change source code under model/, structures/, data/, service/, adapters/, controller/ or view/. Do not change any spec, bench or tests except to update a reference to the example log.
+- Do not run `git push`; I will push myself after reviewing.
+- Final report (short, in Spanish): the new log header, the output of checks a), b), c), the test result, `git log --oneline -5`, and anything you could not do.
+
+- **Uso:** arreglar el ejemplo de reproducción de partida en docs/ejemplo_partida.txt, actualizar el registro de prompts de Andrea, limpiar el repositorio y verificar que todo funciona correctamente, sin cambiar código fuente ni especificaciones.
