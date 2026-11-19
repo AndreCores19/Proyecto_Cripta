@@ -718,20 +718,47 @@ Report what you changed in spec.md separately from the rest.
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: 1. The hash 21f70fd is correct; keep it.
+2. Here is the assignment's section 5. Add a short "Problema" paragraph at the start of each section 5.1 to 5.6 of docs/DECISIONES.md, in your own words, from this text. Do not change anything else. Do not commit.
+
+5.1 The hunter's cheapest route
+- Exit costs are not uniform; counting rooms is not enough to find the cheapest route.
+- The decision of a hunter with a small range must not cost in proportion to the size of the crypt, but to the region within its range.
+- The tests will have dozens of active hunters at once, all chasing the same target. You must measure whether one computation per hunter or one shared computation is better, and under which conditions the answer changes.
+- Every auxiliary structure the search needs is your own implementation.
+- The tie-break of §3.2 must always hold, even when there are many routes of equal cost.
+
+5.2 Routes that stop being valid
+- Between two turns of a hunter, these can happen: doors opening and closing, player moves, other actors changing rooms, and speed changes.
+- The decision must always be the one a computation from scratch would give. Reusing an earlier computation is valid only if you can show it does not change the answer.
+- Identify which events invalidate which information, and how much work is really saved.
+- --bench must include at least one scenario where doors change often and another where they almost never change, and measure the alternative of always recomputing.
+
+5.3 The known map
+- Checking whether a room is explored, sighted or unknown, and the remembered state of a door, are frequent operations: they happen in every view, every "ir a" step and every torch update.
+- Exploring new rooms must cost in proportion to the rooms revealed, not to the size of the known map.
+- The known map is reverted by the scroll and rebuilt in the timeline; its design must make recording and reverting changes cheap.
+- The "ir a" route is computed over the known subgraph. Justify whether it shares its implementation with the hunter's search or whether they are better kept separate.
+
+5.4 Solvability
+- Getting a key can make a whole region reachable. Repeating the full traversal every time a key is obtained does not meet the requirement: the total cost must grow roughly linearly with rooms, exits and keys.
+- The report for an unsolvable crypt needs the blocked frontier and the dependencies between keys; that information must come from the same traversal.
+- Dependency-cycle detection must be deterministic and report the concrete cycle.
+- --bench must measure the naive alternative of repeating the traversal per key, on synthetic crypts with many chained keys.
+
+5.5 Timeline and checkpoints
+- A query for an arbitrary instant must apply or undo the changes of at most K player actions.
+- Total memory must grow with the number of changes that occurred, plus one checkpoint every K actions; never with "actions times state size".
+- Locating the checkpoint nearest to a requested instant is a frequent search; its cost matters in long games.
+- When a scroll is used, the timeline must be trimmed without walking the whole history.
+- You must show with measurements how memory and query time vary for at least three values of K, and justify the default.
+- Rebuilding forward or backward is a design decision that must be documented with evidence.
+
+5.6 Review of part-one decisions
+Hunters, variable movement costs and the timeline change the load on existing structures, especially the event agenda and the undo history. Repeat the part-one measurements under the new load. If a decision is no longer adequate, change it and document the before and after; if it is still adequate, show it with data.
+- Uso: agregar un párrafo de "Problema" al inicio de cada sección 5.1 a 5.6 de docs/DECISIONES.md, en mis propias palabras a partir del texto dado del enunciado, sin cambiar nada más ni hacer commit
 
 ### 18 de Noviembre, 2026
 - Herramienta: Claude
-- Prompt: 
-- Uso: 
-
-### 18 de Noviembre, 2026
-- Herramienta: Claude
-- Prompt: 
-- Uso: 
-
-### 18 de Noviembre, 2026
-- Herramienta: Claude
-- Prompt: 
-- Uso: 
+- Prompt: Ayudeme a agregar los nuevos cambios al Readme.md sin tocar la parte de Andrea, según todo lo que se hizo en esta segunda parte del proyecto
+- Uso: agregar los nuevos cambios al Readme.md
